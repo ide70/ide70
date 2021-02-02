@@ -1,0 +1,10 @@
+---
+- compType: page
+  children: ['mainMenu']
+- compType: menu
+  id: mainMenu
+  items:
+  - link: sample/s2
+    title: Unit s2
+  - link: login
+    title: Log out

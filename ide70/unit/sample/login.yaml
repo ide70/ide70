@@ -1,0 +1,29 @@
+---
+- compType: page
+  children: [lblUserName, userName, newline, lblPassword, password, newline2, loginButton]
+- compType: label
+  id: lblUserName
+  refId: userName
+  text: 'Felhasználó név:'
+- compType: textbox
+  id: userName
+  name: userName
+- compType: newline
+  id: newline
+- compType: label
+  id: lblPassword
+  refId: password
+  text: 'Jelszó:'
+- compType: passwordbox
+  id: password
+  name: password
+- compType: newline
+  id: newline2
+- compType: button
+  id: loginButton
+  text: Bejelentkezés
+  eventHandlers:
+    - event: onclick
+      action: 'common_log("Login")'
+    - event: onmouseover
+      action: 'common_log("Mouse over");common_log(wow_key);common_log("Mouse over2");'

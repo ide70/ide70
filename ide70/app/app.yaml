@@ -1,0 +1,6 @@
+---
+description: Sample application
+name: app
+port: 7080
+secure: false
+loginUnit: sample/login

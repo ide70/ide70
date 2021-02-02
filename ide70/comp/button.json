@@ -1,0 +1,3 @@
+<button type="button"{{range .eventHandlers}} {{.event}}="se(event,'{{.event}}',{{$.sid}},null)"{{end}}>
+{{.text}}
+</button>

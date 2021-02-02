@@ -1,0 +1,3 @@
+konfiguráció:
+- leíró alapján struktúra feltöltése konfig állomány string,interface map-jébõl
+- leíróból kód kiegészítés információ szolgáltatása

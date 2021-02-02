@@ -38,17 +38,6 @@ const (
 	paramScrollTop     = "sctp" // Scroll top
 )
 
-// Event response actions (client actions to take after processing an event).
-const (
-	eraNoAction      = iota // Event processing OK and no action required
-	eraReloadWin            // Window name to be reloaded
-	eraDirtyComps           // There are dirty components which needs to be refreshed
-	eraFocusComp            // Focus a compnent
-	eraDirtyAttrs           // There are dirty component attributes which needs to be refreshed
-	eraApplyToParent        // Apply changes to parent window
-	eraScrollDownComp
-)
-
 const sessidCookieName = "ide70-sessid"
 
 type AppServer struct {
@@ -271,14 +260,14 @@ func (s *AppServer) handleEvent(sess *Session, unit *comp.UnitRuntime, wr http.R
 		return
 	}
 
-	comp := unit.CompRegistry[compId]
-	if comp == nil {
+	c := unit.CompRegistry[compId]
+	if c == nil {
 		logger.Error("Component not found:", compId)
 		http.Error(wr, fmt.Sprint("Component not found: ", compId), http.StatusBadRequest)
 		return
 	}
 	
-	logger.Info("event, component found:", comp)
+	logger.Info("event, component found:", c)
 
 	etype := r.FormValue(paramEventType)
 	if etype == "" {
@@ -287,9 +276,10 @@ func (s *AppServer) handleEvent(sess *Session, unit *comp.UnitRuntime, wr http.R
 	}
 	logger.Info("Event from comp:", compId, " event:", etype)
 	
-	comp.CompDef.EventsHandler.ProcessEvent(etype)
+	e := &comp.EventRuntime{TypeCode: etype}
+	c.CompDef.EventsHandler.ProcessEvent(e)
 	
-	wr.Write([]byte("0"))
+	wr.Write([]byte(e.ResponseAction.Encode()))
 
 
 	/*event := newEventImpl(EventType(etype), comp, s, sess, wr, r)

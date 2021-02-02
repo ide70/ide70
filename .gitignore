@@ -12,7 +12,10 @@
 *.out
 
 # Dependency directories (remove the comment below to include it)
-# vendor/
+/src/github.com/chzyer/
+/src/github.com/nbutton23/
+/src/github.com/robertkrimen/
+/src/gopkg.in/
 
 /pkg/
 ide70/cert/

@@ -50,6 +50,10 @@ func InstantiateComp(compDef *CompDef, ctx *UnitCreateContext) *CompRuntime {
 	return comp
 }
 
+func (comp *CompRuntime) Sid() string {
+	return comp.State["sid"].(string)
+}
+
 func deepCopyMap(m map[string]interface{}) (map[string]interface{}, error) {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)

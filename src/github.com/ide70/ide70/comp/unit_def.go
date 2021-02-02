@@ -47,7 +47,7 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 	for _, unitIfTag := range unitIfArr {
 		logger.Info("tag")
 		compDef := ParseCompDef(dataxform.InterfaceMapToStringMap(unitIfTag.(map[interface{}]interface{})), context)
-		unit.CompsMap[compDef.Id] = compDef
+		unit.CompsMap[compDef.ChildRefId] = compDef
 		if unit.RootComp == nil {
 			unit.RootComp = compDef
 		}

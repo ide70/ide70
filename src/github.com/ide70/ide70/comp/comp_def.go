@@ -8,7 +8,7 @@ import (
 type CompDef struct {
 	CompType *CompType
 	Children []*CompDef
-	Id       string
+	ChildRefId string
 	Props    map[string]interface{}
 	EventsHandler *EventsHandler
 }
@@ -21,15 +21,15 @@ func ParseCompDef(def map[string]interface{}, context *UnitDefContext) *CompDef 
 	compDef.Props = def
 	logger.Info("ParseCompDef id before")
 	id := ""
-	if def["id"] != nil {
-		id = def["id"].(string)
+	if def["cr"] != nil {
+		id = def["cr"].(string)
 	}
 	logger.Info("ParseCompDef id", id)
 	if id == "" {
 		id = context.getNextId(compTypeName)
 	}
 	logger.Info("ParseCompDef id gen", id)
-	compDef.Id = id
+	compDef.ChildRefId = id
 	
 	compDef.EventsHandler = newEventsHandler()
 	for _,eventHandlerIf := range dataxform.SIMapGetByKeyAsList(def, "eventHandlers") {

@@ -2,25 +2,25 @@
 - compType: page
   children: [lblUserName, userName, newline, lblPassword, password, newline2, loginButton]
 - compType: label
-  id: lblUserName
+  cr: lblUserName
   refId: userName
   text: 'Felhasználó név:'
 - compType: textbox
-  id: userName
+  cr: userName
   name: userName
 - compType: newline
-  id: newline
+  cr: newline
 - compType: label
-  id: lblPassword
+  cr: lblPassword
   refId: password
   text: 'Jelszó:'
 - compType: passwordbox
-  id: password
+  cr: password
   name: password
 - compType: newline
-  id: newline2
+  cr: newline2
 - compType: button
-  id: loginButton
+  cr: loginButton
   text: Bejelentkezés
   eventHandlers:
     - event: onclick

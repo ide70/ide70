@@ -140,7 +140,7 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	logger.Info("action:", action)
 
 	switch action {
-	case pathEvent:
+	case pathEvent, pathRenderComp:
 		unitId := parts[1]
 		if sess == nil {
 			logger.Error("no session for event")
@@ -156,7 +156,12 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		rwMutex := sess.rwMutex
 		rwMutex.Lock()
 		defer rwMutex.Unlock()
-		s.handleEvent(sess, unit, w, r)
+		switch action {
+		case pathEvent:
+			s.handleEvent(sess, unit, w, r)
+		case pathRenderComp:
+			s.renderComp(unit, w, r)
+		}
 	default:
 		unitName := strings.Join(parts, "/")
 
@@ -266,7 +271,7 @@ func (s *AppServer) handleEvent(sess *Session, unit *comp.UnitRuntime, wr http.R
 		http.Error(wr, fmt.Sprint("Component not found: ", compId), http.StatusBadRequest)
 		return
 	}
-	
+
 	logger.Info("event, component found:", c)
 
 	etype := r.FormValue(paramEventType)
@@ -275,12 +280,12 @@ func (s *AppServer) handleEvent(sess *Session, unit *comp.UnitRuntime, wr http.R
 		return
 	}
 	logger.Info("Event from comp:", compId, " event:", etype)
-	
-	e := &comp.EventRuntime{TypeCode: etype}
-	c.CompDef.EventsHandler.ProcessEvent(e)
-	
-	wr.Write([]byte(e.ResponseAction.Encode()))
 
+	e := comp.NewEventRuntime(unit, etype)
+	c.CompDef.EventsHandler.ProcessEvent(e)
+
+	wr.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	wr.Write([]byte(e.ResponseAction.Encode()))
 
 	/*event := newEventImpl(EventType(etype), comp, s, sess, wr, r)
 	shared := event.shared
@@ -310,7 +315,7 @@ func (s *AppServer) handleEvent(sess *Session, unit *comp.UnitRuntime, wr http.R
 	}
 	*/
 	// ...and send back the result
-	wr.Header().Set("Content-Type", "text/plain; charset=utf-8") // We send it as text
+	//wr.Header().Set("Content-Type", "text/plain; charset=utf-8") // We send it as text
 	//w := NewWriter(wr)
 	/*hasAction := false
 
@@ -364,6 +369,27 @@ func (s *AppServer) handleEvent(sess *Session, unit *comp.UnitRuntime, wr http.R
 	if !hasAction {
 		w.Writev(eraNoAction)
 	}*/
+}
+
+func (s *AppServer) renderComp(unit *comp.UnitRuntime, w http.ResponseWriter, r *http.Request) {
+	compId, err := strconv.ParseInt(r.FormValue(paramCompID), 10, 64)
+	if err != nil {
+		logger.Error("Invalid component id")
+		http.Error(w, "Invalid component id!", http.StatusBadRequest)
+		return
+	}
+
+	c := unit.CompRegistry[compId]
+	if c == nil {
+		logger.Error("Component not found:", compId)
+		http.Error(w, fmt.Sprint("Component not found: ", compId), http.StatusBadRequest)
+		return
+	}
+
+	logger.Info("event, component found:", c)
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8") // We send it as text!
+	c.Render(w)
 }
 
 func (s *AppServer) serveStatic(w http.ResponseWriter, r *http.Request) {

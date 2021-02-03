@@ -11,6 +11,8 @@ type UnitRuntime struct {
 	UnitDef  *UnitDef
 	RootComp *CompRuntime
 	CompRegistry map[int64] *CompRuntime
+	CompByChildRefId map[string] *CompRuntime
+	EventsHandler *UnitRuntimeEventsHandler
 }
 
 type AppParams struct {
@@ -32,11 +34,13 @@ func (ctx *UnitCreateContext) nextId() int64 {
 func (ctx *UnitCreateContext) registerComp(compRuntime *CompRuntime) {
 	compRuntime.ID = ctx.nextId()
 	ctx.UnitRuntime.CompRegistry[compRuntime.ID]=compRuntime;
+	ctx.UnitRuntime.CompByChildRefId[compRuntime.CompDef.ChildRefId]=compRuntime;
 }
 
 func InstantiateUnit(name string, appParams *AppParams) *UnitRuntime {
 	unitRuntime := &UnitRuntime{}
 	unitRuntime.CompRegistry = map[int64] *CompRuntime{}
+	unitRuntime.CompByChildRefId = map[string] *CompRuntime{}
 	unitDef, has := UnitCache[name]
 
 	if !has {
@@ -53,6 +57,7 @@ func InstantiateUnit(name string, appParams *AppParams) *UnitRuntime {
 	unitRuntime.UnitDef = unitDef
 	ctx := &UnitCreateContext{UnitRuntime: unitRuntime}
 	unitRuntime.RootComp = InstantiateComp(unitDef.RootComp, ctx)
+	unitRuntime.EventsHandler = newUnitRuntimeEventsHandler(unitRuntime)
 
 	return unitRuntime
 }

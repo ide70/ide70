@@ -3,9 +3,10 @@ package comp
 import (
 	"github.com/ide70/ide70/util/log"
 	//	"gopkg.in/olebedev/go-duktape.v3"
+	"fmt"
 	"github.com/robertkrimen/otto"
 	"strings"
-	"fmt"
+	"sync"
 )
 
 var eventLogger = log.Logger{"event"}
@@ -21,7 +22,13 @@ const (
 	eraScrollDownComp
 )
 
-type EventsHandler struct {
+type UnitRuntimeEventsHandler struct {
+	Vm      *otto.Otto
+	exMutex *sync.RWMutex
+	Unit    *UnitRuntime
+}
+
+type CompDefEventsHandler struct {
 	Handlers map[string]*EventHandler
 }
 
@@ -30,12 +37,26 @@ type EventHandler struct {
 }
 
 type EventRuntime struct {
-	TypeCode string
-	ResponseAction ResponseAction
+	TypeCode       string
+	UnitRuntime    *UnitRuntime
+	ResponseAction *ResponseAction
+}
+
+func NewEventRuntime(unit *UnitRuntime, typeCode string) *EventRuntime {
+	er := &EventRuntime{}
+	er.UnitRuntime = unit
+	er.TypeCode = typeCode
+	er.ResponseAction = newResponseAction()
+	return er
 }
 
 type ResponseAction struct {
 	compsToRefresh []string
+}
+
+func newResponseAction() *ResponseAction {
+	ra := &ResponseAction{}
+	return ra
 }
 
 func (ra *ResponseAction) Encode() string {
@@ -49,30 +70,9 @@ func (ra *ResponseAction) SetCompRefresh(comp *CompRuntime) {
 	ra.compsToRefresh = append(ra.compsToRefresh, comp.Sid())
 }
 
-func newEventsHandler() *EventsHandler {
-	eventsHandler := &EventsHandler{}
-	eventsHandler.Handlers = map[string]*EventHandler{}
-	return eventsHandler
-}
-
-func (esh *EventsHandler) AddHandler(eventType string, handler *EventHandler) {
-	esh.Handlers[eventType] = handler
-}
-
-func (esh *EventsHandler) ProcessEvent(event *EventRuntime) {
-	eventHandler := esh.Handlers[event.TypeCode]
-	if eventHandler != nil {
-		eventHandler.processEvent()
-	}
-}
-
-func newEventHandler() *EventHandler {
-	eventHandler := &EventHandler{}
-	return eventHandler
-}
-
-func (eh *EventHandler) processEvent() {
-	eventLogger.Info("executing: ", eh.JsCode)
+func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
+	eventsHandler := &UnitRuntimeEventsHandler{}
+	eventsHandler.Unit = unit
 	vm := otto.New()
 	vm.Set("wow_key", "wow")
 	vm.Set("common_log", func(call otto.FunctionCall) otto.Value {
@@ -81,18 +81,76 @@ func (eh *EventHandler) processEvent() {
 		result, _ := vm.ToValue(2)
 		return result
 	})
-	_, err := vm.Run(eh.JsCode)
-	
-	/*ctx := duktape.New()
-	ctx.PushString("wow!")
-	ctx.PutGlobalString("wow_key")
-	ctx.PushGlobalGoFunction("common_log", func(c *duktape.Context) int {
-		eventLogger.Info(c.SafeToString(-1))
-		return 0
+	vm.Set("CompByCr", func(call otto.FunctionCall) otto.Value {
+		childRefId, _ := call.Argument(0).ToString()
+		c := unit.CompByChildRefId[childRefId]
+		eventLogger.Info("CompByCr:", c)
+		result, ev := vm.ToValue(c)
+		if ev != nil {
+			eventLogger.Error("error converting result:", ev.Error())
+		}
+		eventLogger.Info("result:", result)
+		return result
 	})
-	err := ctx.PevalString(eh.JsCode)*/
-	
+	vm.Set("CompSetProp", func(call otto.FunctionCall) otto.Value {
+		compValueIf, _ := call.Argument(0).Export()
+		c := compValueIf.(*CompRuntime)
+		propKey, _ := call.Argument(1).ToString()
+		propValue, _ := call.Argument(2).ToString()
+		eventLogger.Info("CompValue:", c)
+		eventLogger.Info("PropKey:", propKey)
+		eventLogger.Info("PropValue:", propValue)
+		eventVal, _ := vm.Get("currentEvent")
+		eventIf, _ := eventVal.Export()
+		event := eventIf.(*EventRuntime)
+		eventLogger.Info("currentEvent:", event)
+		
+		c.State[propKey] = propValue
+		event.ResponseAction.SetCompRefresh(c)
+		
+		result, _ := vm.ToValue(0)
+		return result
+	})
+	eventsHandler.exMutex = &sync.RWMutex{}
+	eventsHandler.Vm = vm
+
+	return eventsHandler
+}
+
+func newEventsHandler() *CompDefEventsHandler {
+	eventsHandler := &CompDefEventsHandler{}
+	eventsHandler.Handlers = map[string]*EventHandler{}
+	return eventsHandler
+}
+
+func (esh *CompDefEventsHandler) AddHandler(eventType string, handler *EventHandler) {
+	esh.Handlers[eventType] = handler
+}
+
+func (esh *CompDefEventsHandler) ProcessEvent(event *EventRuntime) {
+	eventHandler := esh.Handlers[event.TypeCode]
+	if eventHandler != nil {
+		eventHandler.processEvent(event)
+	}
+}
+
+func newEventHandler() *EventHandler {
+	eventHandler := &EventHandler{}
+	return eventHandler
+}
+
+func (eh *EventHandler) processEvent(e *EventRuntime) {
+	e.UnitRuntime.EventsHandler.runJs(e, eh.JsCode)
+}
+
+func (eh *UnitRuntimeEventsHandler) runJs(e *EventRuntime, jsCode string) {
+	eh.exMutex.Lock()
+	defer eh.exMutex.Unlock()
+	eh.Vm.Set("currentEvent", e)
+	defer eh.Vm.Set("currentEvent", nil)
+	eventLogger.Info("executing: ", jsCode)
+	_, err := eh.Vm.Run(jsCode)
 	if err != nil {
-		eventLogger.Error("error evaluating script:", eh.JsCode, err.Error())
+		eventLogger.Error("error evaluating script:", jsCode, err.Error())
 	}
 }

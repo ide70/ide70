@@ -10,7 +10,7 @@ type CompDef struct {
 	Children []*CompDef
 	ChildRefId string
 	Props    map[string]interface{}
-	EventsHandler *EventsHandler
+	EventsHandler *CompDefEventsHandler
 }
 
 func ParseCompDef(def map[string]interface{}, context *UnitDefContext) *CompDef {

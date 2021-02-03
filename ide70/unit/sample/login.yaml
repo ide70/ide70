@@ -24,6 +24,6 @@
   text: Bejelentkezés
   eventHandlers:
     - event: onclick
-      action: 'common_log("Login")'
+      action: 'CompSetProp(CompByCr("lblUserName"),"text","Atirtuk")'
     - event: onmouseover
       action: 'common_log("Mouse over");common_log(wow_key);common_log("Mouse over2");'

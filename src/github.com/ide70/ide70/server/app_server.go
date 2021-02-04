@@ -285,6 +285,7 @@ func (s *AppServer) handleEvent(sess *Session, unit *comp.UnitRuntime, wr http.R
 	c.CompDef.EventsHandler.ProcessEvent(e)
 
 	wr.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	logger.Info("act result:", e.ResponseAction.Encode())
 	wr.Write([]byte(e.ResponseAction.Encode()))
 
 	/*event := newEventImpl(EventType(etype), comp, s, sess, wr, r)

@@ -50,8 +50,8 @@ func InstantiateComp(compDef *CompDef, ctx *UnitCreateContext) *CompRuntime {
 	return comp
 }
 
-func (comp *CompRuntime) Sid() string {
-	return comp.State["sid"].(string)
+func (comp *CompRuntime) Sid() int64 {
+	return comp.State["sid"].(int64)
 }
 
 func deepCopyMap(m map[string]interface{}) (map[string]interface{}, error) {

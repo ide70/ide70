@@ -7,6 +7,7 @@ import (
 	"github.com/robertkrimen/otto"
 	"strings"
 	"sync"
+	"strconv"
 )
 
 var eventLogger = log.Logger{"event"}
@@ -67,7 +68,7 @@ func (ra *ResponseAction) Encode() string {
 }
 
 func (ra *ResponseAction) SetCompRefresh(comp *CompRuntime) {
-	ra.compsToRefresh = append(ra.compsToRefresh, comp.Sid())
+	ra.compsToRefresh = append(ra.compsToRefresh, strconv.FormatInt(comp.Sid(), 10))
 }
 
 func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
@@ -106,7 +107,9 @@ func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 		eventLogger.Info("currentEvent:", event)
 		
 		c.State[propKey] = propValue
+		eventLogger.Info("add resp action")
 		event.ResponseAction.SetCompRefresh(c)
+		eventLogger.Info("done")
 		
 		result, _ := vm.ToValue(0)
 		return result

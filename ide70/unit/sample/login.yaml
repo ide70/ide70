@@ -24,6 +24,6 @@
   text: Bejelentkezés
   eventHandlers:
     - event: onclick
-      action: 'CompSetProp(CompByCr("lblUserName"),"text","Atirtuk")'
+      action: 'CompByCr("lblUserName").RefreshHTMLAttr("style","background-color: orange;").RefreshHTMLProp("innerHTML","----");'
     - event: onmouseover
-      action: 'common_log("Mouse over");common_log(wow_key);common_log("Mouse over2");'
+      action: 'CompByCr("lblUserName").SetProp("text","uj label").Refresh();'

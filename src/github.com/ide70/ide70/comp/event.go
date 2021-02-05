@@ -5,9 +5,9 @@ import (
 	//	"gopkg.in/olebedev/go-duktape.v3"
 	"fmt"
 	"github.com/robertkrimen/otto"
+	"strconv"
 	"strings"
 	"sync"
-	"strconv"
 )
 
 var eventLogger = log.Logger{"event"}
@@ -19,6 +19,7 @@ const (
 	eraDirtyComps           // There are dirty components which needs to be refreshed
 	eraFocusComp            // Focus a compnent
 	eraDirtyAttrs           // There are dirty component attributes which needs to be refreshed
+	eraDirtyProps           // There are dirty component DOM properties which needs to be refreshed
 	eraApplyToParent        // Apply changes to parent window
 	eraScrollDownComp
 )
@@ -43,6 +44,11 @@ type EventRuntime struct {
 	ResponseAction *ResponseAction
 }
 
+type Attr struct {
+	Key   string
+	Value string
+}
+
 func NewEventRuntime(unit *UnitRuntime, typeCode string) *EventRuntime {
 	er := &EventRuntime{}
 	er.UnitRuntime = unit
@@ -53,22 +59,92 @@ func NewEventRuntime(unit *UnitRuntime, typeCode string) *EventRuntime {
 
 type ResponseAction struct {
 	compsToRefresh []string
+	attrsToRefresh map[string][]Attr
+	propsToRefresh map[string][]Attr
 }
 
 func newResponseAction() *ResponseAction {
 	ra := &ResponseAction{}
+	ra.attrsToRefresh = map[string][]Attr{}
+	ra.propsToRefresh = map[string][]Attr{}
 	return ra
 }
 
+func addSep(sb *strings.Builder, sep string) {
+	if sb.Len() > 0 {
+		sb.WriteString(sep)
+	}
+}
+
 func (ra *ResponseAction) Encode() string {
+	var sb strings.Builder
 	if len(ra.compsToRefresh) > 0 {
-		return fmt.Sprintf("%d,%s", eraDirtyComps, strings.Join(ra.compsToRefresh, ","))
+		sb.WriteString(fmt.Sprintf("%d,%s", eraDirtyComps, strings.Join(ra.compsToRefresh, ",")))
+	}
+
+	if len(ra.attrsToRefresh) > 0 {
+		addSep(&sb, "|")
+		sb.WriteString(fmt.Sprintf("%d", eraDirtyAttrs))
+		for sid, attrs := range ra.attrsToRefresh {
+			for _, attr := range attrs {
+				sb.WriteString(fmt.Sprintf(",%s,%s,%s", sid, attr.Key, attr.Value))
+			}
+		}
+	}
+
+	if len(ra.propsToRefresh) > 0 {
+		addSep(&sb, "|")
+		sb.WriteString(fmt.Sprintf("%d", eraDirtyProps))
+		for sid, attrs := range ra.propsToRefresh {
+			for _, attr := range attrs {
+				sb.WriteString(fmt.Sprintf(",%s,%s,%s", sid, attr.Key, attr.Value))
+			}
+		}
+	}
+	
+	if sb.Len() > 0 {
+		return sb.String()
 	}
 	return fmt.Sprintf("%d", eraNoAction)
 }
 
 func (ra *ResponseAction) SetCompRefresh(comp *CompRuntime) {
 	ra.compsToRefresh = append(ra.compsToRefresh, strconv.FormatInt(comp.Sid(), 10))
+}
+
+func (ra *ResponseAction) SetCompAttrRefresh(comp *CompRuntime, key, value string) {
+	id := strconv.FormatInt(comp.Sid(), 10)
+	ra.attrsToRefresh[id] = append(ra.attrsToRefresh[id], Attr{Key: key, Value: value})
+}
+
+func (ra *ResponseAction) SetCompPropRefresh(comp *CompRuntime, key, value string) {
+	id := strconv.FormatInt(comp.Sid(), 10)
+	ra.propsToRefresh[id] = append(ra.propsToRefresh[id], Attr{Key: key, Value: value})
+}
+
+type CompRuntimeSW struct {
+	c     *CompRuntime
+	event *EventRuntime
+}
+
+func (cSW *CompRuntimeSW) SetProp(key, value string) *CompRuntimeSW {
+	cSW.c.State[key] = value
+	eventLogger.Info("property", key, "set to", value)
+	return cSW
+}
+
+func (cSW *CompRuntimeSW) RefreshHTMLProp(key, value string) *CompRuntimeSW {
+	cSW.event.ResponseAction.SetCompPropRefresh(cSW.c, key, value)
+	return cSW
+}
+
+func (cSW *CompRuntimeSW) RefreshHTMLAttr(key, value string) *CompRuntimeSW {
+	cSW.event.ResponseAction.SetCompAttrRefresh(cSW.c, key, value)
+	return cSW
+}
+
+func (cSW *CompRuntimeSW) Refresh() {
+	cSW.event.ResponseAction.SetCompRefresh(cSW.c)
 }
 
 func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
@@ -85,34 +161,19 @@ func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 	vm.Set("CompByCr", func(call otto.FunctionCall) otto.Value {
 		childRefId, _ := call.Argument(0).ToString()
 		c := unit.CompByChildRefId[childRefId]
-		eventLogger.Info("CompByCr:", c)
-		result, ev := vm.ToValue(c)
-		if ev != nil {
-			eventLogger.Error("error converting result:", ev.Error())
-		}
-		eventLogger.Info("result:", result)
-		return result
-	})
-	vm.Set("CompSetProp", func(call otto.FunctionCall) otto.Value {
-		compValueIf, _ := call.Argument(0).Export()
-		c := compValueIf.(*CompRuntime)
-		propKey, _ := call.Argument(1).ToString()
-		propValue, _ := call.Argument(2).ToString()
-		eventLogger.Info("CompValue:", c)
-		eventLogger.Info("PropKey:", propKey)
-		eventLogger.Info("PropValue:", propValue)
 		eventVal, _ := vm.Get("currentEvent")
 		eventIf, _ := eventVal.Export()
 		event := eventIf.(*EventRuntime)
-		eventLogger.Info("currentEvent:", event)
-		
-		c.State[propKey] = propValue
-		eventLogger.Info("add resp action")
-		event.ResponseAction.SetCompRefresh(c)
-		eventLogger.Info("done")
-		
-		result, _ := vm.ToValue(0)
+		cSW := &CompRuntimeSW{c: c, event: event}
+		result, ev := vm.ToValue(cSW)
+		if ev != nil {
+			eventLogger.Error("error converting result:", ev.Error())
+		}
 		return result
+	})
+	vm.Set("Event", func(call otto.FunctionCall) otto.Value {
+		eventVal, _ := vm.Get("currentEvent")
+		return eventVal
 	})
 	eventsHandler.exMutex = &sync.RWMutex{}
 	eventsHandler.Vm = vm

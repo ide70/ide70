@@ -1,3 +1,19 @@
 konfiguráció:
 - leíró alapján struktúra feltöltése konfig állomány string,interface map-jébõl
 - leíróból kód kiegészítés információ szolgáltatása
+kliens oldal:
++ komponens frissítés
++ HTML attribútum frissítés
++ HTML property frissítés
+- oldal frissítés
+- oldal váltás
+- visszatérés
+kinézet:
+- font awesome beépítése
+komponensek:
+  - menü
+  konténerek:
+  - táblázat
+szerver:
+  - login
+  - logout

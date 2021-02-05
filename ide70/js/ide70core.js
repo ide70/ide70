@@ -22,9 +22,10 @@ var _eraNoAction=0;
 var _eraReloadWin=1; 
 var _eraDirtyComps=2; 
 var _eraFocusComp=3; 
-var _eraDirtyAttrs=4; 
-var _eraApplyToParent=5; 
-var _eraScrollDownComp=6;
+var _eraDirtyAttrs=4;
+var _eraDirtyProps=5;
+var _eraApplyToParent=6; 
+var _eraScrollDownComp=7;
 
 function createXmlHttp() {
 	if (window.XMLHttpRequest) // IE7+, Firefox, Chrome, Opera, Safari
@@ -65,7 +66,7 @@ function se(event, etype, compId, compValue, async, filter) {
 	
 	xhr.onreadystatechange = function() {
 		if (xhr.readyState == 4 && xhr.status == 200) {
-			procEresp(xhr.responseText.split(";"));
+			procEresp(xhr.responseText.split("|"));
 		}
 	}
 	
@@ -133,7 +134,7 @@ function procEresp(actions) {
 	}
 	for (var i = 0; i < actions.length; i++) {
 		var n = actions[i].split(",");
-		
+
 		switch (parseInt(n[0])) {
 		case _eraDirtyComps:
 			for (var j = 1; j < n.length; j++)
@@ -158,6 +159,10 @@ function procEresp(actions) {
 		case _eraDirtyAttrs:
 			for (var j = 1; j+2 < n.length; j+=3)
 				replaceCompAttr(n[j], n[j+1], n[j+2]);
+			break;
+		case _eraDirtyProps:
+			for (var j = 1; j+2 < n.length; j+=3)
+				replaceCompProp(n[j], n[j+1], n[j+2]);
 			break;
 		case _eraApplyToParent:
 			window.parent.procEresp(actions.slice(i+1));
@@ -204,6 +209,15 @@ function replaceCompAttr(compId, attrName, attrValue) {
 		return;
 	
 	e.setAttribute(attrName, attrValue)
+}
+
+function replaceCompProp(compId, attrName, attrValue) {
+	var e = document.getElementById(compId);
+	if (!e) // Component removed or not visible (e.g. on inactive tab of TabPanel)
+		return;
+	
+	e[attrName]=attrValue;
+	
 }
 
 // Get selected indices (of an HTML select)

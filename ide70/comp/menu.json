@@ -1,6 +1,0 @@
-<ul>
-{{range .items}}
-	<li><a href="{{.link}}">{{.title}}</a>
-	</li>
-{{end}}
-</ul>

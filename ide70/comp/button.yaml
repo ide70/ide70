@@ -1,0 +1,7 @@
+---
+include:
+  - common
+body: |
+  <button type="button" id="{{.sid}}"{{template "eventHandlers" .}}>
+  {{.text}}
+  </button>

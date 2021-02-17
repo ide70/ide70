@@ -11,7 +11,7 @@ import (
 
 func main() {
 	log.SetKeyLevel("", log.INFO)
-	log.SetKeyLevel("comp", log.ERROR)
+	log.SetKeyLevel("comp", log.INFO)
 	cwd, err := os.Getwd()
 	if err != nil {
 		log.Error(err.Error())

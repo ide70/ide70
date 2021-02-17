@@ -1,0 +1,19 @@
+---
+body: |
+  <html>
+  <head>
+  <script>
+    var _pathApp='{{app.Path}}';
+    var _pathSessCheck='{{app.Path}}sess_ch';
+    var _pathEvent='{{app.Path}}e/{{._unitID}}';
+    var _pathRenderComp='{{app.Path}}rc/{{._unitID}}';
+    var _focCompId='';
+  </script> 
+  <script src="{{app.PathStatic}}ide70core.js?v={{app.RuntimeID}}"></script>
+  </head>
+  <body>
+  {{range .Children}}
+  {{evalComp .}}
+  {{end}}
+  </body>
+  </html>

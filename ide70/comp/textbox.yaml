@@ -1,0 +1,7 @@
+---
+include:
+  - common
+body: |
+  <input type="text" id="{{.sid}}" name="{{.name}}"{{template "eventHandlers" .}}>
+bodyConsts:
+  eventValue: this.value

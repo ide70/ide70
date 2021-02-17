@@ -20,7 +20,7 @@ func InterfaceListReplaceMapKeyToString(l []interface{}) []interface{} {
 	return dl
 }
 
-func InterfaceMapToStringMap(m map[interface{}]interface{}) map[string]interface{} {
+func InterfaceMapToStringMap(m map[interface{}]interface{}) map[string]interface{} { 
 	dm := map[string]interface{}{}
 	for k, v := range m {
 		dm[k.(string)] = InterfaceReplaceMapKeyToString(v)
@@ -34,6 +34,14 @@ func SIMapGetByKeyAsList(m map[string]interface{}, k string) []interface{} {
 		return []interface{}{}
 	}
 	return entry.([]interface{})
+}
+
+func SIMapGetByKeyAsMap(m map[string]interface{}, k string) map[string]interface{} {
+	entry := m[k]
+	if entry == nil {
+		return map[string]interface{}{}
+	}
+	return entry.(map[string]interface{})
 }
 
 func AsSIMap(i interface{}) map[string]interface{} {

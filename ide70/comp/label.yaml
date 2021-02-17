@@ -1,0 +1,3 @@
+---
+body: |
+  <label for="{{.refId}}" id="{{.sid}}">{{.text}}</label>

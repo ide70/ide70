@@ -8,6 +8,9 @@
 - compType: textbox
   cr: userName
   name: userName
+  eventHandlers:
+    - event: onchange
+      action: 'common_log("textbox onchange");'
 - compType: newline
   cr: newline
 - compType: label

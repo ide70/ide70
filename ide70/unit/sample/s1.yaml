@@ -2,7 +2,7 @@
 - compType: page
   children: ['mainMenu']
 - compType: menu
-  id: mainMenu
+  cr: mainMenu
   items:
   - link: sample/s2
     title: Unit s2

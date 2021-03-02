@@ -280,8 +280,11 @@ func (s *AppServer) handleEvent(sess *Session, unit *comp.UnitRuntime, wr http.R
 		return
 	}
 	logger.Info("Event from comp:", compId, " event:", etype)
+	
+	evalue := r.FormValue(paramCompValue)
+	logger.Info("event,value:", evalue)
 
-	e := comp.NewEventRuntime(unit, etype)
+	e := comp.NewEventRuntime(unit, c, etype, evalue)
 	c.CompDef.EventsHandler.ProcessEvent(e)
 
 	wr.Header().Set("Content-Type", "text/plain; charset=utf-8")

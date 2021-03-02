@@ -1,6 +1,6 @@
 ---
 body: |
-  {{define "eventHandlers"}}{{range .eventHandlers}} {{.event}}="se(event,'{{.event}}',{{$.sid}},{{consts.eventValue}})"{{end}}{{end}}
+  {{define "eventHandlers"}}{{range $eventType, $eventProps := .eventHandlers}} {{$eventType}}="se(event,'{{$eventType}}',{{$.sid}},{{consts.eventValue}})"{{end}}{{end}}
 bodyConsts:
   eventValue: "null"
 

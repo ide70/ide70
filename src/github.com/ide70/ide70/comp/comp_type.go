@@ -16,12 +16,15 @@ var logger = log.Logger{"comp"}
 type CompType struct {
 	Name string
 	Body *template.Template
+	EventsHandler *CompDefEventsHandler
+	AccessibleDef map[string]interface{}
 }
 
 type CompModule struct {
 	Body       string
 	BodyConsts map[string]interface{}
 	Includes   []string
+	Def map[string]interface{}
 }
 
 func loadCompModule(name string) *CompModule {
@@ -56,6 +59,7 @@ func loadCompModule(name string) *CompModule {
 	for _,includeItemIf := range includes {
 		module.Includes = append(module.Includes, includeItemIf.(string))
 	}
+	module.Def = compIfMap
 
 	if module.Body == "" {
 		logger.Warning("Component module", name, "has no body")
@@ -66,7 +70,6 @@ func loadCompModule(name string) *CompModule {
 
 func parseCompType(name string, appParams *AppParams) *CompType {
 	module := loadCompModule(name)
-	
 	body := ""
 	bodyConsts := map[string]interface{}{}
 	processedNames := map[string]bool{}
@@ -86,9 +89,17 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 	for k, v := range module.BodyConsts {
 		bodyConsts[k] = v
 	}
+	
+	logger.Info("parseCompType 1", name)
 
 	comp := &CompType{}
 	comp.Name = name
+	comp.EventsHandler = ParseEventHandlers(module.Def, nil)
+	comp.AccessibleDef = map[string]interface{}{}
+	
+	// TODO: list of non-accessible definitions 
+	comp.AccessibleDef["eventHandlers"] = module.Def["eventHandlers"]
+	logger.Info("parseCompType 1e", name)
 
 	var err error
 	comp.Body, err = template.New(name).Funcs(template.FuncMap{

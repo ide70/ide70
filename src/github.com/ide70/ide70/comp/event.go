@@ -40,7 +40,9 @@ type EventHandler struct {
 
 type EventRuntime struct {
 	TypeCode       string
+	ValueStr       string
 	UnitRuntime    *UnitRuntime
+	Comp           *CompRuntime
 	ResponseAction *ResponseAction
 }
 
@@ -49,10 +51,12 @@ type Attr struct {
 	Value string
 }
 
-func NewEventRuntime(unit *UnitRuntime, typeCode string) *EventRuntime {
+func NewEventRuntime(unit *UnitRuntime, comp *CompRuntime, typeCode string, valueStr string) *EventRuntime {
 	er := &EventRuntime{}
 	er.UnitRuntime = unit
+	er.Comp = comp
 	er.TypeCode = typeCode
+	er.ValueStr = valueStr
 	er.ResponseAction = newResponseAction()
 	return er
 }
@@ -61,6 +65,7 @@ type ResponseAction struct {
 	compsToRefresh []string
 	attrsToRefresh map[string][]Attr
 	propsToRefresh map[string][]Attr
+	loadUnit string
 }
 
 func newResponseAction() *ResponseAction {
@@ -78,6 +83,9 @@ func addSep(sb *strings.Builder, sep string) {
 
 func (ra *ResponseAction) Encode() string {
 	var sb strings.Builder
+	if ra.loadUnit != "" {
+		sb.WriteString(fmt.Sprintf("%d,%s", eraReloadWin, ra.loadUnit))
+	}
 	if len(ra.compsToRefresh) > 0 {
 		sb.WriteString(fmt.Sprintf("%d,%s", eraDirtyComps, strings.Join(ra.compsToRefresh, ",")))
 	}
@@ -101,7 +109,7 @@ func (ra *ResponseAction) Encode() string {
 			}
 		}
 	}
-	
+
 	if sb.Len() > 0 {
 		return sb.String()
 	}
@@ -122,6 +130,10 @@ func (ra *ResponseAction) SetCompPropRefresh(comp *CompRuntime, key, value strin
 	ra.propsToRefresh[id] = append(ra.propsToRefresh[id], Attr{Key: key, Value: value})
 }
 
+func (ra *ResponseAction) SetLoadUnit(unitName string) {
+	ra.loadUnit = unitName
+}
+
 type CompRuntimeSW struct {
 	c     *CompRuntime
 	event *EventRuntime
@@ -131,6 +143,10 @@ func (cSW *CompRuntimeSW) SetProp(key, value string) *CompRuntimeSW {
 	cSW.c.State[key] = value
 	eventLogger.Info("property", key, "set to", value)
 	return cSW
+}
+
+func (cSW *CompRuntimeSW) GetProp(key string) interface{} {
+	return cSW.c.State[key]
 }
 
 func (cSW *CompRuntimeSW) RefreshHTMLProp(key, value string) *CompRuntimeSW {
@@ -145,6 +161,10 @@ func (cSW *CompRuntimeSW) RefreshHTMLAttr(key, value string) *CompRuntimeSW {
 
 func (cSW *CompRuntimeSW) Refresh() {
 	cSW.event.ResponseAction.SetCompRefresh(cSW.c)
+}
+
+func (e *EventRuntime) LoadUnit(unitName string) {
+	e.ResponseAction.SetLoadUnit(unitName)
 }
 
 func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {

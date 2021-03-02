@@ -6,10 +6,10 @@ import (
 
 // a component instance
 type CompDef struct {
-	CompType *CompType
-	Children []*CompDef
-	ChildRefId string
-	Props    map[string]interface{}
+	CompType      *CompType
+	Children      []*CompDef
+	ChildRefId    string
+	Props         map[string]interface{}
 	EventsHandler *CompDefEventsHandler
 }
 
@@ -19,6 +19,10 @@ func ParseCompDef(def map[string]interface{}, context *UnitDefContext) *CompDef 
 	compTypeName := def["compType"].(string)
 	compDef.CompType = GetCompType(compTypeName, context.appParams)
 	compDef.Props = def
+	
+	// TODO: lista merge nem az igazi
+	dataxform.SIMapInjectDefaults(compDef.CompType.AccessibleDef, compDef.Props)
+
 	logger.Info("ParseCompDef id before")
 	id := ""
 	if def["cr"] != nil {
@@ -30,17 +34,31 @@ func ParseCompDef(def map[string]interface{}, context *UnitDefContext) *CompDef 
 	}
 	logger.Info("ParseCompDef id gen", id)
 	compDef.ChildRefId = id
-	
-	compDef.EventsHandler = newEventsHandler()
-	for _,eventHandlerIf := range dataxform.SIMapGetByKeyAsList(def, "eventHandlers") {
-		eventhandlerProps := dataxform.AsSIMap(eventHandlerIf)
-		eventType := dataxform.SIMapGetByKeyAsString(eventhandlerProps, "event")
-		eventAction := dataxform.SIMapGetByKeyAsString(eventhandlerProps, "action")
-		eventHandler := newEventHandler()
-		eventHandler.JsCode = eventAction
-		compDef.EventsHandler.AddHandler(eventType, eventHandler)
-	}
-	
+
+	compDef.EventsHandler = ParseEventHandlers(def, compDef.CompType.EventsHandler)
+
 	logger.Info("ParseCompDef end")
 	return compDef
+}
+
+func ParseEventHandlers(def map[string]interface{}, superEventsHandler *CompDefEventsHandler) *CompDefEventsHandler {
+	eventsHandler := newEventsHandler()
+
+	logger.Info("ParseEventHandlers super:", superEventsHandler)
+	if superEventsHandler != nil {
+		for eventType, handler := range superEventsHandler.Handlers {
+			eventsHandler.AddHandler(eventType, handler)
+		}
+	}
+
+	logger.Info("ParseEventHandlers def:", def)
+	for eventType, eventPropsIf := range dataxform.SIMapGetByKeyAsMap(def, "eventHandlers") {
+		eventProps := dataxform.AsSIMap(eventPropsIf)
+		eventAction := dataxform.SIMapGetByKeyAsString(eventProps, "action")
+		eventHandler := newEventHandler()
+		eventHandler.JsCode = eventAction
+		eventsHandler.AddHandler(eventType, eventHandler)
+	}
+	logger.Info("eventsHandler created:", eventsHandler)
+	return eventsHandler
 }

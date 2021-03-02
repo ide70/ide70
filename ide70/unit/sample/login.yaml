@@ -8,9 +8,7 @@
 - compType: textbox
   cr: userName
   name: userName
-  eventHandlers:
-    - event: onchange
-      action: 'common_log("textbox onchange");'
+  value: jonathan.smith
 - compType: newline
   cr: newline
 - compType: label
@@ -26,7 +24,14 @@
   cr: loginButton
   text: Bejelentkezés
   eventHandlers:
-    - event: onclick
-      action: 'CompByCr("lblUserName").RefreshHTMLAttr("style","background-color: orange;").RefreshHTMLProp("innerHTML","----");'
-    - event: onmouseover
-      action: 'CompByCr("lblUserName").SetProp("text","uj label").Refresh();'
+    onclick:
+      action: |
+          var userName = CompByCr("userName").GetProp("value");
+          var password = CompByCr("password").GetProp("value");
+          if( userName == "adam" && password == "apple") {
+              Event().LoadUnit("sample/s1");
+          }
+    onmouseover:
+      action: |
+          CompByCr("lblUserName").SetProp("text","uj label").Refresh();
+          common_log(CompByCr("userName").GetProp("value"));

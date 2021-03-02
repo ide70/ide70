@@ -34,6 +34,7 @@ func InstantiateComp(compDef *CompDef, ctx *UnitCreateContext) *CompRuntime {
 	// state initially is deep copy of definition properties
 	var err error
 	comp.State, err = deepCopyMap(compDef.Props)
+	logger.Info("ehhhhhh:", comp.State["eventHandlers"])
 	comp.State["sid"] = comp.ID
 	if err != nil {
 		logger.Error(err.Error())

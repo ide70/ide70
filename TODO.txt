@@ -6,7 +6,7 @@ kliens oldal:
 + HTML attribútum frissítés
 + HTML property frissítés
 - oldal frissítés
-- oldal váltás
++ oldal váltás
 - visszatérés
 kinézet:
 - font awesome beépítése
@@ -15,5 +15,5 @@ komponensek:
   konténerek:
   - táblázat
 szerver:
-  - login
+  + login
   - logout

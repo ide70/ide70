@@ -45,7 +45,7 @@ type AppServer struct {
 	AppParams         *comp.AppParams
 	Addr              string              // Server address
 	Secure            bool                // Tells if the server is configured to run in secure (HTTPS) mode
-	sessions          map[string]*Session // Sessions
+	sessions          map[string]*comp.Session // Sessions
 	certFile, keyFile string              // Certificate and key files for secure (HTTPS) mode
 	sessMux           sync.RWMutex        // Mutex to protect state related to session handling
 	sessStop          chan struct{}
@@ -58,7 +58,7 @@ func NewAppServer(addr string, secure bool) *AppServer {
 	appServer := &AppServer{}
 	appServer.Addr = addr
 	appServer.Secure = secure
-	appServer.sessions = map[string]*Session{}
+	appServer.sessions = map[string]*comp.Session{}
 	return appServer
 }
 
@@ -106,7 +106,7 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	//s.addHeaders(w)
 
 	// Check session
-	var sess *Session
+	var sess *comp.Session
 	c, err := r.Cookie(sessidCookieName)
 	if err == nil {
 		s.sessMux.RLock()
@@ -153,7 +153,7 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
-		rwMutex := sess.rwMutex
+		rwMutex := sess.RwMutex()
 		rwMutex.Lock()
 		defer rwMutex.Unlock()
 		switch action {
@@ -172,8 +172,14 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 				logger.Info("session created:", sess.ID)
 			} else {
 				http.Error(w, "no session", http.StatusUnauthorized)
+				return
 			}
 		}
+		
+		if !sess.IsAuthenticated() && unitName != s.App.Access.LoginUnit {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		} 
 
 		logger.Info("new unit runtime...")
 		unit := comp.InstantiateUnit(unitName, s.AppParams)
@@ -184,7 +190,7 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		logger.Info("instantiation finished")
 		if sess != nil {
-			sess.UnitCache.addUnit(unit)
+			sess.UnitCache.AddUnit(unit)
 			logger.Info("unit runtime cached in session")
 		}
 		logger.Info("unit runtime render start..")
@@ -252,7 +258,7 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		}*/
 }
 
-func (s *AppServer) handleEvent(sess *Session, unit *comp.UnitRuntime, wr http.ResponseWriter, r *http.Request) {
+func (s *AppServer) handleEvent(sess *comp.Session, unit *comp.UnitRuntime, wr http.ResponseWriter, r *http.Request) {
 	/*focCompID, err := AtoID(r.FormValue(paramFocusedCompID))
 	if err == nil {
 		win.SetFocusedCompID(focCompID)
@@ -284,7 +290,7 @@ func (s *AppServer) handleEvent(sess *Session, unit *comp.UnitRuntime, wr http.R
 	evalue := r.FormValue(paramCompValue)
 	logger.Info("event,value:", evalue)
 
-	e := comp.NewEventRuntime(unit, c, etype, evalue)
+	e := comp.NewEventRuntime(sess, unit, c, etype, evalue)
 	c.CompDef.EventsHandler.ProcessEvent(e)
 
 	wr.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -454,8 +460,8 @@ func (s *AppServer) sessCleaner(stop chan struct{}) {
 	}
 }
 
-func (s *AppServer) newSession(oldSess *Session) *Session {
-	sess := newSession()
+func (s *AppServer) newSession(oldSess *comp.Session) *comp.Session {
+	sess := comp.NewSession()
 
 	// Store new session
 	s.sessMux.Lock()
@@ -476,7 +482,7 @@ func (s *AppServer) newSession(oldSess *Session) *Session {
 // Only private sessions can be removed, calling this with the
 // public session is a no-op.
 // serverImpl.mux must be locked when this is called.
-func (s *AppServer) removeSession(sess *Session) {
+func (s *AppServer) removeSession(sess *comp.Session) {
 	logger.Info("SESSION removed:", sess.ID)
 
 	// Notify session handlers
@@ -486,7 +492,7 @@ func (s *AppServer) removeSession(sess *Session) {
 	delete(s.sessions, sess.ID)
 }
 
-func (s *AppServer) addSessCookie(sess *Session, w http.ResponseWriter) {
+func (s *AppServer) addSessCookie(sess *comp.Session, w http.ResponseWriter) {
 	// HttpOnly: do not allow non-HTTP access to it (like javascript) to prevent stealing it...
 	// Secure: only send it over HTTPS
 	// MaxAge: to specify the max age of the cookie in seconds, else it's a session cookie and gets deleted after the browser is closed.

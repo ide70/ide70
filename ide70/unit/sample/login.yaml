@@ -29,6 +29,8 @@
           var userName = CompByCr("userName").GetProp("value");
           var password = CompByCr("password").GetProp("value");
           if( userName == "adam" && password == "apple") {
+              Event().Session.SetAuthUser(userName);
+              Event().Session.SetAuthRole("common");
               Event().LoadUnit("sample/s1");
           }
     onmouseover:

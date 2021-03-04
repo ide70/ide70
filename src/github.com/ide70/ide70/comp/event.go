@@ -44,6 +44,7 @@ type EventRuntime struct {
 	UnitRuntime    *UnitRuntime
 	Comp           *CompRuntime
 	ResponseAction *ResponseAction
+	Session        *Session
 }
 
 type Attr struct {
@@ -51,8 +52,9 @@ type Attr struct {
 	Value string
 }
 
-func NewEventRuntime(unit *UnitRuntime, comp *CompRuntime, typeCode string, valueStr string) *EventRuntime {
+func NewEventRuntime(sess *Session, unit *UnitRuntime, comp *CompRuntime, typeCode string, valueStr string) *EventRuntime {
 	er := &EventRuntime{}
+	er.Session = sess
 	er.UnitRuntime = unit
 	er.Comp = comp
 	er.TypeCode = typeCode
@@ -65,7 +67,7 @@ type ResponseAction struct {
 	compsToRefresh []string
 	attrsToRefresh map[string][]Attr
 	propsToRefresh map[string][]Attr
-	loadUnit string
+	loadUnit       string
 }
 
 func newResponseAction() *ResponseAction {

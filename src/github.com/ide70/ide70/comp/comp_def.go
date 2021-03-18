@@ -2,6 +2,7 @@ package comp
 
 import (
 	"github.com/ide70/ide70/dataxform"
+	"strings"
 )
 
 // a component instance
@@ -35,19 +36,23 @@ func ParseCompDef(def map[string]interface{}, context *UnitDefContext) *CompDef 
 	logger.Info("ParseCompDef id gen", id)
 	compDef.ChildRefId = id
 
-	compDef.EventsHandler = ParseEventHandlers(def, compDef.CompType.EventsHandler)
+	compDef.EventsHandler = ParseEventHandlers(def, compDef.CompType.EventsHandler, context, compDef)
 
 	logger.Info("ParseCompDef end")
 	return compDef
 }
 
-func ParseEventHandlers(def map[string]interface{}, superEventsHandler *CompDefEventsHandler) *CompDefEventsHandler {
+func ParseEventHandlers(def map[string]interface{}, superEventsHandler *CompDefEventsHandler, context *UnitDefContext, compDef *CompDef) *CompDefEventsHandler {
 	eventsHandler := newEventsHandler()
 
 	logger.Info("ParseEventHandlers super:", superEventsHandler)
 	if superEventsHandler != nil {
 		for eventType, handler := range superEventsHandler.Handlers {
-			eventsHandler.AddHandler(eventType, handler)
+			if strings.HasPrefix(eventType, EvtUnitPrefix) {
+				context.unitDef.EventsHandler.AddHandler(eventType, &CompEventHandler{CompDef: compDef, EventHandler: handler})
+			} else {
+				eventsHandler.AddHandler(eventType, handler)
+			}
 		}
 	}
 

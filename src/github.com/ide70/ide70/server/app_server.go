@@ -193,6 +193,9 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 			sess.UnitCache.AddUnit(unit)
 			logger.Info("unit runtime cached in session")
 		}
+		logger.Info("unit runtime process create event..")
+		e := comp.NewEventRuntime(sess, unit, nil, comp.EvtUnitCreate, "")
+		unit.ProcessEvent(e)
 		logger.Info("unit runtime render start..")
 		unit.Render(w)
 		logger.Info("unit runtime rendered")

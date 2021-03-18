@@ -13,11 +13,13 @@ const UNIT_PATH = "ide70/unit/"
 type UnitDef struct {
 	RootComp *CompDef
 	CompsMap map[string]*CompDef
+	EventsHandler *UnitDefEventsHandler;
 }
 
 type UnitDefContext struct {
 	idSeq uint
 	appParams *AppParams
+	unitDef *UnitDef
 }
 
 func (context *UnitDefContext) getNextId(compType string) string {
@@ -31,9 +33,9 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 		unitLogger.Error("Unit", name, "not found")
 		return nil
 	}
-	context := &UnitDefContext{appParams: appParams}
 	unit := &UnitDef{}
 	unit.CompsMap = map[string]*CompDef{}
+	unit.EventsHandler = newUnitDefEventsHandler()
 
 	decoder := yaml.NewDecoder(bytes.NewReader(contentB))
 
@@ -43,6 +45,7 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 		unitLogger.Error("Unit", name, "failed to decode:", err.Error())
 	}
 
+	context := &UnitDefContext{appParams: appParams, unitDef: unit}
 	unitIfArr := unitIf.([]interface{})
 	for _, unitIfTag := range unitIfArr {
 		logger.Info("tag")

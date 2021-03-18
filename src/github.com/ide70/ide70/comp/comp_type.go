@@ -94,7 +94,7 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 
 	comp := &CompType{}
 	comp.Name = name
-	comp.EventsHandler = ParseEventHandlers(module.Def, nil)
+	comp.EventsHandler = ParseEventHandlers(module.Def, nil, nil, nil)
 	comp.AccessibleDef = map[string]interface{}{}
 	
 	// TODO: list of non-accessible definitions 

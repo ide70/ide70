@@ -1,0 +1,35 @@
+---
+- compType: page
+  children: [transactionI, lblName, name, newline, lblBreed, breed, newline2, saveButton]
+- compType: transaction
+  cr: transactionI
+  database:
+    table: dogs
+- compType: label
+  cr: lblName
+  refId: name
+  text: 'Név:'
+- compType: textbox
+  cr: name
+  name: name
+  store: name
+- compType: newline
+  cr: newline
+- compType: label
+  cr: lblBreed
+  refId: breed
+  text: 'Fajta:'
+- compType: textbox
+  cr: breed
+  name: breed
+  store: breed
+- compType: newline
+  cr: newline2
+- compType: button
+  cr: saveButton
+  text: Mentés
+  eventHandlers:
+    onclick:
+      action: |
+          Event().Save();
+          Event().LoadUnit("dogs/dogs");

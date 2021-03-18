@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/ide70/ide70/dataxform"
 	"github.com/ide70/ide70/user"
+	"github.com/ide70/ide70/store"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/url"
@@ -18,10 +19,14 @@ type Application struct {
 	URLString   string   // Application URL string
 	URL         *url.URL // Application URL, parsed
 	Description string
-	//	Connectors  Connectors
+	Connectors  Connectors
 	Access user.Access
 	Config map[string]interface{}
 }
+
+type Connectors struct {
+	MainDB    *store.DatabaseContext
+} 
 
 func NewApplication(appName string) *Application {
 	app := &Application{}
@@ -50,9 +55,20 @@ func LoadApplication(configFileName string) *Application {
 	case map[interface{}]interface{}:
 		app := &Application{}
 		app.Config = dataxform.InterfaceMapToStringMap(tpUnitIf)
-		app.Name = app.Config["name"].(string)
+		app.Name = dataxform.SIMapGetByKeyAsString(app.Config, "name")
 		app.Path = "/" + app.Name + "/"
-		app.Access.LoginUnit = app.Config["loginUnit"].(string)
+		app.Access.LoginUnit = dataxform.SIMapGetByKeyAsString(app.Config, "loginUnit")
+		connectors := dataxform.SIMapGetByKeyAsMap(app.Config, "connectors")
+		mainDB := dataxform.SIMapGetByKeyAsMap(connectors, "mainDB")
+		if len(mainDB) > 0 {
+			app.Connectors.MainDB = &store.DatabaseContext{}
+			app.Connectors.MainDB.Host = dataxform.SIMapGetByKeyAsString(mainDB, "host")
+			app.Connectors.MainDB.Port = dataxform.SIMapGetByKeyAsInt(mainDB, "port")
+			app.Connectors.MainDB.DBName = dataxform.SIMapGetByKeyAsString(mainDB, "dbName")
+			app.Connectors.MainDB.User = dataxform.SIMapGetByKeyAsString(mainDB, "user")
+			app.Connectors.MainDB.Password = dataxform.SIMapGetByKeyAsString(mainDB, "password")
+		}
+		
 		return app
 	}
 

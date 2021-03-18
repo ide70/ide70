@@ -69,3 +69,13 @@ func (unit *UnitRuntime) Render(writer io.Writer) {
 func (unit *UnitRuntime) AssignID(id string) {
 	unit.RootComp.State["_unitID"] = id
 }
+
+// process unit lifecycle events
+func (unit *UnitRuntime) ProcessEvent(e *EventRuntime) {
+	compDefHandlers := unit.UnitDef.EventsHandler.Handlers[e.TypeCode]
+	for _, compDefHandler := range compDefHandlers {
+		comp := unit.CompByChildRefId[compDefHandler.CompDef.ChildRefId]
+		e.Comp = comp
+		compDefHandler.EventHandler.processEvent(e)
+	}
+}

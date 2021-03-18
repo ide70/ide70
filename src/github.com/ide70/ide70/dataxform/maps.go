@@ -1,6 +1,7 @@
 package dataxform
 
-import ()
+import (
+)
 
 func InterfaceReplaceMapKeyToString(i interface{}) interface{} {
 	switch itp := i.(type) {
@@ -37,6 +38,9 @@ func SIMapGetByKeyAsList(m map[string]interface{}, k string) []interface{} {
 }
 
 func SIMapGetByKeyAsMap(m map[string]interface{}, k string) map[string]interface{} {
+	if m == nil {
+		return map[string]interface{}{}
+	}
 	entry := m[k]
 	if entry == nil {
 		return map[string]interface{}{}
@@ -54,6 +58,14 @@ func SIMapGetByKeyAsString(m map[string]interface{}, k string) string {
 		return ""
 	}
 	return entry.(string)
+}
+
+func SIMapGetByKeyAsInt(m map[string]interface{}, k string) int {
+	entry := m[k]
+	if entry == nil {
+		return 0
+	}
+	return entry.(int)
 }
 
 // override mbase map with values in mover recursively

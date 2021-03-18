@@ -1,0 +1,4 @@
+---
+eventHandlers:
+  onUnitCreate:
+    action: 'common_log("init called");common_log("db. table:"+Event().Comp.State.database.table);'

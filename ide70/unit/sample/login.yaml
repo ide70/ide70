@@ -8,7 +8,7 @@
 - compType: textbox
   cr: userName
   name: userName
-  value: jonathan.smith
+  value: adam
 - compType: newline
   cr: newline
 - compType: label
@@ -18,6 +18,7 @@
 - compType: passwordbox
   cr: password
   name: password
+  value: apple
 - compType: newline
   cr: newline2
 - compType: button
@@ -31,7 +32,7 @@
           if( userName == "adam" && password == "apple") {
               Event().Session.SetAuthUser(userName);
               Event().Session.SetAuthRole("common");
-              Event().LoadUnit("sample/s1");
+              Event().LoadUnit("sample/menu");
           }
     onmouseover:
       action: |

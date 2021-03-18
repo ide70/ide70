@@ -24,6 +24,12 @@ const (
 	eraScrollDownComp
 )
 
+const EvtUnitPrefix = "onUnit"
+
+const (
+	EvtUnitCreate = "onUnitCreate"
+)
+
 type UnitRuntimeEventsHandler struct {
 	Vm      *otto.Otto
 	exMutex *sync.RWMutex
@@ -32,6 +38,15 @@ type UnitRuntimeEventsHandler struct {
 
 type CompDefEventsHandler struct {
 	Handlers map[string]*EventHandler
+}
+
+type UnitDefEventsHandler struct {
+	Handlers map[string][]*CompEventHandler
+}
+
+type CompEventHandler struct {
+	EventHandler *EventHandler
+	CompDef      *CompDef
 }
 
 type EventHandler struct {
@@ -201,6 +216,16 @@ func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 	eventsHandler.Vm = vm
 
 	return eventsHandler
+}
+
+func newUnitDefEventsHandler() *UnitDefEventsHandler {
+	eventsHandler := &UnitDefEventsHandler{}
+	eventsHandler.Handlers = map[string][]*CompEventHandler{}
+	return eventsHandler
+}
+
+func (esh *UnitDefEventsHandler) AddHandler(eventType string, handler *CompEventHandler) {
+	esh.Handlers[eventType] = append(esh.Handlers[eventType], handler)
 }
 
 func newEventsHandler() *CompDefEventsHandler {

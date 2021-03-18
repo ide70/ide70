@@ -4,3 +4,10 @@ name: app
 port: 7080
 secure: false
 loginUnit: sample/login
+connectors:
+  mainDB:
+    host: localhost
+    port: 5432
+    dbName: ide_70
+    user: ide_70
+    password: ide_70_pwd

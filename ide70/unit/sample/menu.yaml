@@ -4,7 +4,7 @@
 - compType: menu
   cr: mainMenu
   items:
-  - link: sample/s2
-    title: Unit s2
+  - link: ../dogs/dog
+    title: New dog
   - link: login
     title: Log out

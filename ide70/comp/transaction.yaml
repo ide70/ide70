@@ -1,4 +1,13 @@
 ---
 eventHandlers:
   onUnitCreate:
-    action: 'common_log("init called");common_log("db. table:"+Event().Comp.State.database.table);'
+    action: |
+        var ppid = PassParams ? PassParams.id : null;
+        common_log("ppid:"+ppid);
+        if(ppid) {
+            var dbo = Event().DBCtx().FindDBO(Event().Comp.State.database.table, ppid);
+            if(dbo) {
+                Event().UnitRuntime.InitializeStored(dbo.Data);
+            }
+        }
+        common_log("dbo:"+dbo);

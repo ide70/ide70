@@ -4,6 +4,8 @@
 - compType: menu
   cr: mainMenu
   items:
+  - link: ../dogs/dogs
+    title: List of dogs
   - link: ../dogs/dog
     title: New dog
   - link: login

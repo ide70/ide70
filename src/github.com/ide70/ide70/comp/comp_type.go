@@ -14,8 +14,8 @@ var logger = log.Logger{"comp"}
 
 // An user defined component
 type CompType struct {
-	Name string
-	Body *template.Template
+	Name          string
+	Body          *template.Template
 	EventsHandler *CompDefEventsHandler
 	AccessibleDef map[string]interface{}
 }
@@ -24,7 +24,7 @@ type CompModule struct {
 	Body       string
 	BodyConsts map[string]interface{}
 	Includes   []string
-	Def map[string]interface{}
+	Def        map[string]interface{}
 }
 
 func loadCompModule(name string) *CompModule {
@@ -56,7 +56,7 @@ func loadCompModule(name string) *CompModule {
 	module.Body = dataxform.SIMapGetByKeyAsString(compIfMap, "body")
 	module.BodyConsts = dataxform.SIMapGetByKeyAsMap(compIfMap, "bodyConsts")
 	includes := dataxform.SIMapGetByKeyAsList(compIfMap, "include")
-	for _,includeItemIf := range includes {
+	for _, includeItemIf := range includes {
 		module.Includes = append(module.Includes, includeItemIf.(string))
 	}
 	module.Def = compIfMap
@@ -79,31 +79,32 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 		}
 		processedNames[includeName] = true
 		include := loadCompModule(includeName)
-			body += include.Body
-			for k, v := range include.BodyConsts {
-				bodyConsts[k] = v
-			}
+		body += include.Body
+		for k, v := range include.BodyConsts {
+			bodyConsts[k] = v
+		}
 	}
 
 	body += module.Body
 	for k, v := range module.BodyConsts {
 		bodyConsts[k] = v
 	}
-	
+
 	logger.Info("parseCompType 1", name)
 
 	comp := &CompType{}
 	comp.Name = name
 	comp.EventsHandler = ParseEventHandlers(module.Def, nil, nil, nil)
 	comp.AccessibleDef = map[string]interface{}{}
-	
-	// TODO: list of non-accessible definitions 
+
+	// TODO: list of non-accessible definitions
 	comp.AccessibleDef["eventHandlers"] = module.Def["eventHandlers"]
 	logger.Info("parseCompType 1e", name)
 
 	var err error
 	comp.Body, err = template.New(name).Funcs(template.FuncMap{
-		"evalComp": EvalComp,
+		"evalComp":     EvalComp,
+		"generateComp": GenerateComp,
 		"app": func() *AppParams {
 			return appParams
 		},
@@ -129,6 +130,24 @@ func GetCompType(name string, appParams *AppParams) *CompType {
 }
 
 func EvalComp(comp *CompRuntime) string {
+	sb := &strings.Builder{}
+	comp.CompDef.CompType.Body.Execute(sb, comp.State)
+	return sb.String()
+}
+
+func GenerateComp(parentComp *CompRuntime, sourceChildRef, genRuntimeRef string, context interface{}) string {
+	comp := parentComp.GenChilden[genRuntimeRef]
+	if comp == nil {
+		logger.Info("genRuntimeRef", genRuntimeRef)
+		srcCompDef := parentComp.Unit.UnitDef.CompsMap[sourceChildRef]
+		if srcCompDef == nil {
+			logger.Warning("source component not found:", sourceChildRef)
+			return ""
+		}
+		comp = parentComp.Unit.InstantiateComp(srcCompDef)
+		comp.State["parentContext"] = context
+		parentComp.GenChilden[genRuntimeRef] = comp
+	}
 	sb := &strings.Builder{}
 	comp.CompDef.CompType.Body.Execute(sb, comp.State)
 	return sb.String()

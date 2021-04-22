@@ -2,9 +2,11 @@ package server
 
 import (
 	"net/http"
+	"net/url"
 	"time"
 	//	"net/url"
 	"fmt"
+	"github.com/ide70/ide70/app"
 	"github.com/ide70/ide70/comp"
 	"github.com/ide70/ide70/util/log"
 	"strconv"
@@ -41,7 +43,7 @@ const (
 const sessidCookieName = "ide70-sessid"
 
 type AppServer struct {
-	App               *Application
+	App               *app.Application
 	AppParams         *comp.AppParams
 	Addr              string              // Server address
 	Secure            bool                // Tells if the server is configured to run in secure (HTTPS) mode
@@ -62,8 +64,8 @@ func NewAppServer(addr string, secure bool) *AppServer {
 	return appServer
 }
 
-func (s *AppServer) SetApplication(app *Application) {
-	app.registerServer(s)
+func (s *AppServer) SetApplication(app *app.Application) {
+	registerServer(app, s)
 	s.AppParams = &comp.AppParams{
 		PathStatic: app.Path + pathStatic,
 		Path:       app.Path,
@@ -182,7 +184,8 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		} 
 
 		logger.Info("new unit runtime...")
-		unit := comp.InstantiateUnit(unitName, s.AppParams)
+		passParamId := r.FormValue(comp.ParamPassParamID)
+		unit := comp.InstantiateUnit(unitName, s.App, s.AppParams, sess.GetPassParameters(passParamId))
 		if unit == nil {
 			logger.Error("no unit found by name:", unitName)
 			http.NotFound(w, r)
@@ -507,4 +510,21 @@ func (s *AppServer) addSessCookie(sess *comp.Session, w http.ResponseWriter) {
 	}
 	http.SetCookie(w, &c)
 	sess.IsNew = false
+}
+
+func registerServer(app *app.Application, server *AppServer) {
+	addr := server.Addr
+	if strings.HasPrefix(addr, ":") {
+		addr = "localhost" + addr
+	}
+	if server.Secure {
+		app.URLString = "https://" + addr + app.Path
+	} else {
+		app.URLString = "http://" + addr + app.Path
+	}
+
+	var err error
+	if app.URL, err = url.Parse(app.URLString); err != nil {
+		logger.Error("Parse", app.URLString, err)
+	}
 }

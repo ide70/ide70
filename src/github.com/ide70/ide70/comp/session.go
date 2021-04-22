@@ -2,6 +2,7 @@ package comp
 
 import (
 	"crypto/rand"
+	"github.com/kjk/betterguid"
 	"sync"
 	"time"
 )
@@ -15,11 +16,17 @@ type Session struct {
 	rwMutex   *sync.RWMutex          // RW mutex to synchronize session (and related Window and component) access
 	attrs     map[string]interface{} // Session attributes
 	UnitCache *UnitCache
+	passItems map[string]*PassItem
+}
+
+type PassItem struct {
+	Created time.Time
+	params  map[string]interface{}
 }
 
 func NewSession() *Session {
 	now := time.Now()
-	return &Session{ID: genID(), IsNew: true, Created: now, accessed: now, Timeout: 30 * time.Minute, rwMutex: &sync.RWMutex{}, UnitCache: NewUnitCache(), attrs: map[string]interface{}{}}
+	return &Session{ID: genID(), IsNew: true, Created: now, accessed: now, Timeout: 30 * time.Minute, rwMutex: &sync.RWMutex{}, UnitCache: NewUnitCache(), attrs: map[string]interface{}{}, passItems: map[string]*PassItem{}}
 }
 
 // Valid characters (bytes) to be used in session IDs
@@ -28,6 +35,7 @@ const idChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-
 const idLength = 22
 const AUTH_USER = "_authUser"
 const AUTH_ROLE = "_authRole"
+const passParamsMaxLifetimeSec = 120
 
 // genID generates a new session ID.
 func genID() string {
@@ -100,10 +108,41 @@ func (s *Session) AuthRole() string {
 }
 
 func (s *Session) IsAuthenticated() bool {
-	return s.HasAttr(AUTH_USER) 
+	return s.HasAttr(AUTH_USER)
 }
 
 func (s *Session) ClearAuthentication() {
 	s.SetAttr(AUTH_USER, nil)
 	s.SetAttr(AUTH_ROLE, nil)
+}
+
+func (s *Session) SetPassParameters(params map[string]interface{}) string {
+	s.cleanupPassParameters()
+	passItem := &PassItem{}
+	passItem.Created = time.Now()
+	passItem.params = params
+	id := betterguid.New()
+	s.passItems[id] = passItem
+	return id
+}
+
+func (s *Session) GetPassParameters(id string) map[string]interface{} {
+	if id == "" {
+		return nil
+	}
+	passItem := s.passItems[id]
+	if passItem == nil {
+		return nil
+	}
+	delete(s.passItems, id)
+	return passItem.params
+}
+
+func (s *Session) cleanupPassParameters() {
+	nowS := time.Now().Unix()
+	for k, v := range s.passItems {
+		if nowS-v.Created.Unix() > passParamsMaxLifetimeSec {
+			delete(s.passItems, k)
+		}
+	}
 }

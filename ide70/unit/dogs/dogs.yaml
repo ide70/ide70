@@ -1,0 +1,23 @@
+---
+- compType: page
+  children: [transactionI, dlDogs]
+- compType: transaction
+  cr: transactionI
+  database:
+    table: dogs
+- compType: datalist
+  cr: dlDogs
+  rowAction: editButton
+  columns:
+    - header: Név
+      value: name
+    - header: Művelet
+      value: id
+- compType: button
+  cr: editButton
+  text: Szerkeszt
+  eventHandlers:
+    onclick:
+      action: |
+          common_log("editButton");
+          Event().LoadUnit("dogs/dog", Event().Comp.State.parentContext._id);

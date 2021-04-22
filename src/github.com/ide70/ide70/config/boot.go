@@ -2,11 +2,12 @@ package config
 
 import (
 	"fmt"
+	"github.com/ide70/ide70/app"
 	"github.com/ide70/ide70/server"
 )
 
 func LoadServer() *server.AppServer {
-	app := server.LoadApplication("app")
+	app := app.LoadApplication("app")
 	addr := ":7070"
 	if app.Config["port"] != nil {
 		addr = fmt.Sprintf(":%v", app.Config["port"])

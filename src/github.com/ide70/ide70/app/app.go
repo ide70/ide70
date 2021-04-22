@@ -1,17 +1,19 @@
-package server
+package app
 
 import (
 	"bytes"
 	"github.com/ide70/ide70/dataxform"
-	"github.com/ide70/ide70/user"
 	"github.com/ide70/ide70/store"
+	"github.com/ide70/ide70/user"
+	"github.com/ide70/ide70/util/log"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/url"
-	"strings"
 )
 
 const APP_PATH = "ide70/app/"
+
+var logger = log.Logger{"app"}
 
 type Application struct {
 	Name        string
@@ -20,13 +22,13 @@ type Application struct {
 	URL         *url.URL // Application URL, parsed
 	Description string
 	Connectors  Connectors
-	Access user.Access
-	Config map[string]interface{}
+	Access      user.Access
+	Config      map[string]interface{}
 }
 
 type Connectors struct {
-	MainDB    *store.DatabaseContext
-} 
+	MainDB *store.DatabaseContext
+}
 
 func NewApplication(appName string) *Application {
 	app := &Application{}
@@ -68,28 +70,11 @@ func LoadApplication(configFileName string) *Application {
 			app.Connectors.MainDB.User = dataxform.SIMapGetByKeyAsString(mainDB, "user")
 			app.Connectors.MainDB.Password = dataxform.SIMapGetByKeyAsString(mainDB, "password")
 		}
-		
+
 		return app
 	}
 
 	logger.Error("Application", configFileName, "has invalid format")
 
 	return nil
-}
-
-func (app *Application) registerServer(server *AppServer) {
-	addr := server.Addr
-	if strings.HasPrefix(addr, ":") {
-		addr = "localhost" + addr
-	}
-	if server.Secure {
-		app.URLString = "https://" + addr + app.Path
-	} else {
-		app.URLString = "http://" + addr + app.Path
-	}
-
-	var err error
-	if app.URL, err = url.Parse(app.URLString); err != nil {
-		logger.Error("Parse", app.URLString, err)
-	}
 }

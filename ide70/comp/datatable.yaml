@@ -1,0 +1,9 @@
+---
+body: |
+  <table>
+  {{range .displayRows}}
+  <tr>
+    {{range .c}}
+  </tr>
+  {{end}}
+  </table>

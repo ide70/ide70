@@ -12,6 +12,9 @@ type CompRuntime struct {
 	ID       int64
 	State    map[string]interface{}
 	Children []*CompRuntime
+	// on-the-fly generated sub-components
+	GenChilden map[string]*CompRuntime
+	Unit     *UnitRuntime
 }
 
 func init() {
@@ -21,16 +24,21 @@ func init() {
 }
 
 func (comp *CompRuntime) Render(writer io.Writer) {
+	//buf := &bytes.Buffer{}
+	//comp.CompDef.CompType.Body.Execute(buf, comp.State)
+	//logger.Info(buf.String())
 	comp.CompDef.CompType.Body.Execute(writer, comp.State)
 }
 
-func InstantiateComp(compDef *CompDef, ctx *UnitCreateContext) *CompRuntime {
+func InstantiateComp(compDef *CompDef, unit *UnitRuntime) *CompRuntime {
 	logger.Info("InstantiateComp", compDef)
 	comp := &CompRuntime{}
 	comp.CompDef = compDef
+	comp.Unit = unit
 	logger.Info("RegisterComp", compDef)
-	ctx.registerComp(comp)
+	unit.registerComp(comp)
 
+	comp.GenChilden = map[string]*CompRuntime{}
 	// state initially is deep copy of definition properties
 	var err error
 	comp.State, err = deepCopyMap(compDef.Props)
@@ -42,9 +50,10 @@ func InstantiateComp(compDef *CompDef, ctx *UnitCreateContext) *CompRuntime {
 	logger.Info("comp.State", comp.State)
 
 	for _, childDef := range compDef.Children {
-		comp.Children = append(comp.Children, InstantiateComp(childDef, ctx))
+		comp.Children = append(comp.Children, InstantiateComp(childDef, unit))
 	}
 	comp.State["Children"] = comp.Children
+	comp.State["This"] = comp
 
 	logger.Info("InstantiateComp-done")
 

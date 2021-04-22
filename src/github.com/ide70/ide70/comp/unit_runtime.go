@@ -1,6 +1,9 @@
 package comp
 
 import (
+	"github.com/ide70/ide70/app"
+	"github.com/ide70/ide70/dataxform"
+	"github.com/ide70/ide70/store"
 	"github.com/ide70/ide70/util/log"
 	"io"
 )
@@ -13,6 +16,8 @@ type UnitRuntime struct {
 	CompRegistry     map[int64]*CompRuntime
 	CompByChildRefId map[string]*CompRuntime
 	EventsHandler    *UnitRuntimeEventsHandler
+	Application      *app.Application
+	IDSeq            int64
 }
 
 type AppParams struct {
@@ -21,24 +26,20 @@ type AppParams struct {
 	RuntimeID  string
 }
 
-type UnitCreateContext struct {
-	IDSeq       int64
-	UnitRuntime *UnitRuntime
+func (unit *UnitRuntime) nextId() int64 {
+	unit.IDSeq++
+	return unit.IDSeq
 }
 
-func (ctx *UnitCreateContext) nextId() int64 {
-	ctx.IDSeq++
-	return ctx.IDSeq
+func (unit *UnitRuntime) registerComp(compRuntime *CompRuntime) {
+	compRuntime.ID = unit.nextId()
+	unit.CompRegistry[compRuntime.ID] = compRuntime
+	unit.CompByChildRefId[compRuntime.CompDef.ChildRefId] = compRuntime
 }
 
-func (ctx *UnitCreateContext) registerComp(compRuntime *CompRuntime) {
-	compRuntime.ID = ctx.nextId()
-	ctx.UnitRuntime.CompRegistry[compRuntime.ID] = compRuntime
-	ctx.UnitRuntime.CompByChildRefId[compRuntime.CompDef.ChildRefId] = compRuntime
-}
-
-func InstantiateUnit(name string, appParams *AppParams) *UnitRuntime {
+func InstantiateUnit(name string, app *app.Application, appParams *AppParams, passParams map[string]interface{}) *UnitRuntime {
 	unitRuntime := &UnitRuntime{}
+	unitRuntime.Application = app
 	unitRuntime.CompRegistry = map[int64]*CompRuntime{}
 	unitRuntime.CompByChildRefId = map[string]*CompRuntime{}
 	unitDef, has := UnitDefCache[name]
@@ -55,11 +56,17 @@ func InstantiateUnit(name string, appParams *AppParams) *UnitRuntime {
 	}
 
 	unitRuntime.UnitDef = unitDef
-	ctx := &UnitCreateContext{UnitRuntime: unitRuntime}
-	unitRuntime.RootComp = InstantiateComp(unitDef.RootComp, ctx)
-	unitRuntime.EventsHandler = newUnitRuntimeEventsHandler(unitRuntime)
+	unitRuntime.RootComp = InstantiateComp(unitDef.RootComp, unitRuntime)
+	unitRuntime.EventsHandler = newUnitRuntimeEventsHandler(unitRuntime, passParams)
 
 	return unitRuntime
+}
+
+func (unit *UnitRuntime) InstantiateComp(compDef *CompDef) *CompRuntime {
+	comp := InstantiateComp(compDef, unit)
+	// fire initialization event of component
+
+	return comp
 }
 
 func (unit *UnitRuntime) Render(writer io.Writer) {
@@ -72,10 +79,40 @@ func (unit *UnitRuntime) AssignID(id string) {
 
 // process unit lifecycle events
 func (unit *UnitRuntime) ProcessEvent(e *EventRuntime) {
+	logger.Warning("ProcessEvent")
 	compDefHandlers := unit.UnitDef.EventsHandler.Handlers[e.TypeCode]
 	for _, compDefHandler := range compDefHandlers {
 		comp := unit.CompByChildRefId[compDefHandler.CompDef.ChildRefId]
+		logger.Warning("On comp", comp)
+		if comp == nil {
+			logger.Warning("UnitRuntime ProcessEvent: component not found")
+		}
 		e.Comp = comp
 		compDefHandler.EventHandler.processEvent(e)
 	}
+}
+
+func (unit *UnitRuntime) CollectStored() map[string]interface{} {
+	m := map[string]interface{}{}
+	for _, comp := range unit.CompByChildRefId {
+		storeKey := dataxform.SIMapGetByKeyAsString(comp.State, "store")
+		if storeKey != "" {
+			dataxform.SIMapUpdateValue(storeKey, comp.State["value"], m, true)
+		}
+	}
+	return m
+}
+
+func (unit *UnitRuntime) InitializeStored(data map[string]interface{}) {
+	for _, comp := range unit.CompByChildRefId {
+		storeKey := dataxform.SIMapGetByKeyAsString(comp.State, "store")
+		if storeKey != "" {
+			comp.State["value"] =
+				dataxform.SICollGetNode(storeKey, data)
+		}
+	}
+}
+
+func (unit *UnitRuntime) DBContext() *store.DatabaseContext {
+	return unit.Application.Connectors.MainDB
 }

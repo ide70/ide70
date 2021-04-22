@@ -1,0 +1,14 @@
+---
+body: |
+  <table>
+  {{range $i, $a := .DataSet}}
+  <tr>
+    <td>{{$a.name}}</td><td>COL2 {{ $gid := (printf "button_%v" $i) }}{{generateComp $.This $.rowAction $gid $a}}</td>
+  </tr>
+  {{end}}
+  </table>
+eventHandlers:
+  onUnitCreate:
+    action: |
+        Event().Comp.State["DataSet"] = Event().DBCtx().WorksheetFindItemsPage("dogs", 0, 25);
+        common_log("dataSet initialized"+ Event().Comp.State["DataSet"]);

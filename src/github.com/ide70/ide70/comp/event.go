@@ -1,9 +1,9 @@
 package comp
 
 import (
-	"github.com/ide70/ide70/util/log"
-	//	"gopkg.in/olebedev/go-duktape.v3"
 	"fmt"
+	"github.com/ide70/ide70/store"
+	"github.com/ide70/ide70/util/log"
 	"github.com/robertkrimen/otto"
 	"strconv"
 	"strings"
@@ -25,6 +25,7 @@ const (
 )
 
 const EvtUnitPrefix = "onUnit"
+const ParamPassParamID = "ppi" // Event type parameter name
 
 const (
 	EvtUnitCreate = "onUnitCreate"
@@ -180,15 +181,38 @@ func (cSW *CompRuntimeSW) Refresh() {
 	cSW.event.ResponseAction.SetCompRefresh(cSW.c)
 }
 
-func (e *EventRuntime) LoadUnit(unitName string) {
+func passParametersToMap(passParameters ...interface{}) map[string]interface{} {
+	if len(passParameters) == 0 {
+		return nil
+	}
+	switch ppT := passParameters[0].(type) {
+	case int64, string:
+		ppMap := map[string]interface{}{}
+		ppMap["id"] = ppT
+		return ppMap
+	case map[string]interface{}:
+		return ppT
+	}
+	return nil
+}
+
+func (e *EventRuntime) LoadUnit(unitName string, passParameters ...interface{}) {
+	logger.Info("LoadUnit", unitName, passParameters)
+	passParametersMap := passParametersToMap(passParameters...)
+	logger.Info("passParametersMap", passParametersMap)
+	if passParametersMap != nil {
+		id := e.Session.SetPassParameters(passParametersMap)
+		unitName = fmt.Sprintf("%s?%s=%s", unitName, ParamPassParamID, id)
+	}
+	logger.Info("unitName", unitName)
 	e.ResponseAction.SetLoadUnit(unitName)
 }
 
-func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
+func newUnitRuntimeEventsHandler(unit *UnitRuntime, passParams map[string]interface{}) *UnitRuntimeEventsHandler {
 	eventsHandler := &UnitRuntimeEventsHandler{}
 	eventsHandler.Unit = unit
 	vm := otto.New()
-	vm.Set("wow_key", "wow")
+	vm.Set("PassParams", passParams)
 	vm.Set("common_log", func(call otto.FunctionCall) otto.Value {
 		right, _ := call.Argument(0).ToString()
 		eventLogger.Info(right)
@@ -260,8 +284,13 @@ func (eh *UnitRuntimeEventsHandler) runJs(e *EventRuntime, jsCode string) {
 	eh.Vm.Set("currentEvent", e)
 	defer eh.Vm.Set("currentEvent", nil)
 	eventLogger.Info("executing: ", jsCode)
+	eventLogger.Info("event: ", e)
 	_, err := eh.Vm.Run(jsCode)
 	if err != nil {
 		eventLogger.Error("error evaluating script:", jsCode, err.Error())
 	}
+}
+
+func (er *EventRuntime) DBCtx() *store.DatabaseContext {
+	return er.UnitRuntime.Application.Connectors.MainDB
 }

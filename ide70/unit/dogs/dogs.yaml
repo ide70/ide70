@@ -1,10 +1,17 @@
 ---
 - compType: page
-  children: [transactionI, dlDogs]
+  children: [newButton, transactionI, dlDogs]
 - compType: transaction
   cr: transactionI
   database:
     table: dogs
+- compType: button
+  cr: newButton
+  text: Új Kutya
+  eventHandlers:
+    onclick:
+      action: |
+          Event().LoadUnit("dogs/dog");
 - compType: datalist
   cr: dlDogs
   rowAction: editButton
@@ -12,12 +19,25 @@
     - header: Név
       value: name
     - header: Művelet
-      value: id
+      children:
+        - cr: editButton
+        - cr: deleteButton
 - compType: button
   cr: editButton
   text: Szerkeszt
   eventHandlers:
     onclick:
       action: |
-          common_log("editButton");
           Event().LoadUnit("dogs/dog", Event().Comp.State.parentContext._id);
+- compType: button
+  cr: deleteButton
+  text: Töröl
+  eventHandlers:
+    onclick:
+      action: |
+          var tableName = CompByCr("transactionI").GetProp("database").table;
+          var dbo = Event().DBCtx().FindDBO(tableName, Event().Comp.State.parentContext._id);
+          if(dbo) {
+              dbo.Delete();
+          }
+          Event().ReloadUnit();

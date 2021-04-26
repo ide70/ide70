@@ -1,9 +1,21 @@
 ---
 body: |
   <table>
-  {{range $i, $a := .DataSet}}
   <tr>
-    <td>{{$a.name}}</td><td>COL2 {{ $gid := (printf "button_%v" $i) }}{{generateComp $.This $.rowAction $gid $a}}</td>
+  {{range $column := .columns}}
+    <th>{{$column.header}}</th>
+  {{end}}
+  </tr>
+  {{range $i, $dataRow := .DataSet}}
+  <tr>
+    {{range $column := $.columns}}
+    <td>
+    {{if $column.value}}{{index $dataRow $column.value}}{{end}}
+    {{range $child := $column.children}}
+    {{ $generatedId := (printf "%v_%v" $child.cr $i) }}{{generateComp $.This $child.cr $generatedId $dataRow}}
+    {{end}}
+    </td>
+    {{end}}
   </tr>
   {{end}}
   </table>

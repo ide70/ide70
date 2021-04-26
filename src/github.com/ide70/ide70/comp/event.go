@@ -26,6 +26,7 @@ const (
 
 const EvtUnitPrefix = "onUnit"
 const ParamPassParamID = "ppi" // Event type parameter name
+const loadUnitSelf = "."
 
 const (
 	EvtUnitCreate = "onUnitCreate"
@@ -102,7 +103,11 @@ func addSep(sb *strings.Builder, sep string) {
 func (ra *ResponseAction) Encode() string {
 	var sb strings.Builder
 	if ra.loadUnit != "" {
-		sb.WriteString(fmt.Sprintf("%d,%s", eraReloadWin, ra.loadUnit))
+		loadUnit := ra.loadUnit
+		if loadUnit == loadUnitSelf {
+			loadUnit = ""
+		}
+		sb.WriteString(fmt.Sprintf("%d,%s", eraReloadWin, loadUnit))
 	}
 	if len(ra.compsToRefresh) > 0 {
 		sb.WriteString(fmt.Sprintf("%d,%s", eraDirtyComps, strings.Join(ra.compsToRefresh, ",")))
@@ -194,6 +199,10 @@ func passParametersToMap(passParameters ...interface{}) map[string]interface{} {
 		return ppT
 	}
 	return nil
+}
+
+func (e *EventRuntime) ReloadUnit() {
+	e.LoadUnit(loadUnitSelf)
 }
 
 func (e *EventRuntime) LoadUnit(unitName string, passParameters ...interface{}) {

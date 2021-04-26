@@ -36,5 +36,5 @@
           }
     onmouseover:
       action: |
-          CompByCr("lblUserName").SetProp("text","uj label").Refresh();
+          // CompByCr("lblUserName").SetProp("text","uj label").Refresh();
           common_log(CompByCr("userName").GetProp("value"));

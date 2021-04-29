@@ -27,6 +27,7 @@ const (
 const EvtUnitPrefix = "onUnit"
 const ParamPassParamID = "ppi" // Event type parameter name
 const loadUnitSelf = "."
+const PathUnitById = "ubi"
 
 const (
 	EvtUnitCreate = "onUnitCreate"
@@ -201,27 +202,42 @@ func passParametersToMap(passParameters ...interface{}) map[string]interface{} {
 	return nil
 }
 
-func (e *EventRuntime) ReloadUnit() {
-	e.LoadUnit(loadUnitSelf)
+func reloadUnit(e *EventRuntime, unit *UnitRuntime) {
+	unitPath := fmt.Sprintf("%s/%s", PathUnitById, unit.getID())
+	logger.Info("Reload existing unit:", unitPath)
+	e.ResponseAction.SetLoadUnit(unitPath)
 }
 
 func (e *EventRuntime) LoadUnit(unitName string, passParameters ...interface{}) {
 	logger.Info("LoadUnit", unitName, passParameters)
 	passParametersMap := passParametersToMap(passParameters...)
 	logger.Info("passParametersMap", passParametersMap)
-	if passParametersMap != nil {
-		id := e.Session.SetPassParameters(passParametersMap)
-		unitName = fmt.Sprintf("%s?%s=%s", unitName, ParamPassParamID, id)
-	}
+	id := e.Session.SetPassParameters(passParametersMap, e.UnitRuntime)
+	unitName = fmt.Sprintf("%s?%s=%s", unitName, ParamPassParamID, id)
 	logger.Info("unitName", unitName)
 	e.ResponseAction.SetLoadUnit(unitName)
 }
 
-func newUnitRuntimeEventsHandler(unit *UnitRuntime, passParams map[string]interface{}) *UnitRuntimeEventsHandler {
+func (e *EventRuntime) LoadParent() {
+	logger.Info("Loadparent")
+	unit := e.UnitRuntime
+	parentUnit := unit.GetParent(e.Session)
+	if parentUnit == nil {
+		return
+	}
+	reloadUnit(e, parentUnit)
+	e.Session.DeleteUnit(unit)
+}
+
+func (e *EventRuntime) ReloadUnit() {
+	reloadUnit(e, e.UnitRuntime)
+}
+
+func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 	eventsHandler := &UnitRuntimeEventsHandler{}
 	eventsHandler.Unit = unit
 	vm := otto.New()
-	vm.Set("PassParams", passParams)
+	vm.Set("PassParams", unit.PassContext.Params)
 	vm.Set("common_log", func(call otto.FunctionCall) otto.Value {
 		right, _ := call.Argument(0).ToString()
 		eventLogger.Info(right)

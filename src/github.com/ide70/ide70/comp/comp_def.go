@@ -45,7 +45,7 @@ func ParseCompDef(def map[string]interface{}, context *UnitDefContext) *CompDef 
 func ParseEventHandlers(def map[string]interface{}, superEventsHandler *CompDefEventsHandler, context *UnitDefContext, compDef *CompDef) *CompDefEventsHandler {
 	eventsHandler := newEventsHandler()
 
-	logger.Info("ParseEventHandlers super:", superEventsHandler)
+	//logger.Info("ParseEventHandlers super:", superEventsHandler)
 	if superEventsHandler != nil {
 		for eventType, handler := range superEventsHandler.Handlers {
 			if strings.HasPrefix(eventType, EvtUnitPrefix) {
@@ -56,7 +56,7 @@ func ParseEventHandlers(def map[string]interface{}, superEventsHandler *CompDefE
 		}
 	}
 
-	logger.Info("ParseEventHandlers def:", def)
+	//logger.Info("ParseEventHandlers def:", def)
 	for eventType, eventPropsIf := range dataxform.SIMapGetByKeyAsMap(def, "eventHandlers") {
 		eventProps := dataxform.AsSIMap(eventPropsIf)
 		eventAction := dataxform.SIMapGetByKeyAsString(eventProps, "action")
@@ -64,6 +64,6 @@ func ParseEventHandlers(def map[string]interface{}, superEventsHandler *CompDefE
 		eventHandler.JsCode = eventAction
 		eventsHandler.AddHandler(eventType, eventHandler)
 	}
-	logger.Info("eventsHandler created:", eventsHandler)
+	//logger.Info("eventsHandler created:", eventsHandler)
 	return eventsHandler
 }

@@ -45,11 +45,11 @@ const sessidCookieName = "ide70-sessid"
 type AppServer struct {
 	App               *app.Application
 	AppParams         *comp.AppParams
-	Addr              string              // Server address
-	Secure            bool                // Tells if the server is configured to run in secure (HTTPS) mode
+	Addr              string                   // Server address
+	Secure            bool                     // Tells if the server is configured to run in secure (HTTPS) mode
 	sessions          map[string]*comp.Session // Sessions
-	certFile, keyFile string              // Certificate and key files for secure (HTTPS) mode
-	sessMux           sync.RWMutex        // Mutex to protect state related to session handling
+	certFile, keyFile string                   // Certificate and key files for secure (HTTPS) mode
+	sessMux           sync.RWMutex             // Mutex to protect state related to session handling
 	sessStop          chan struct{}
 	httpServer        *http.Server
 }
@@ -142,7 +142,7 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	logger.Info("action:", action)
 
 	switch action {
-	case pathEvent, pathRenderComp:
+	case pathEvent, pathRenderComp, comp.PathUnitById:
 		unitId := parts[1]
 		if sess == nil {
 			logger.Error("no session for event")
@@ -152,6 +152,9 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		unit := sess.UnitCache.ActiveUnits[unitId]
 		if unit == nil {
 			logger.Error("no unit found by id:", unitId)
+			for k,v := range sess.UnitCache.ActiveUnits {
+				logger.Error("unit for key", k, v.UnitDef.Name)
+			}
 			http.NotFound(w, r)
 			return
 		}
@@ -163,6 +166,12 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 			s.handleEvent(sess, unit, w, r)
 		case pathRenderComp:
 			s.renderComp(unit, w, r)
+		case comp.PathUnitById:
+			logger.Info("existing unit runtime process create event..")
+			e := comp.NewEventRuntime(sess, unit, nil, comp.EvtUnitCreate, "")
+			unit.ProcessEvent(e)
+			logger.Info("existing unit runtime render start..")
+			unit.Render(w)
 		}
 	default:
 		unitName := strings.Join(parts, "/")
@@ -177,11 +186,11 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		
+
 		if !sess.IsAuthenticated() && unitName != s.App.Access.LoginUnit {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
-		} 
+		}
 
 		logger.Info("new unit runtime...")
 		passParamId := r.FormValue(comp.ParamPassParamID)
@@ -292,7 +301,7 @@ func (s *AppServer) handleEvent(sess *comp.Session, unit *comp.UnitRuntime, wr h
 		return
 	}
 	logger.Info("Event from comp:", compId, " event:", etype)
-	
+
 	evalue := r.FormValue(paramCompValue)
 	logger.Info("event,value:", evalue)
 

@@ -11,15 +11,16 @@ import (
 const UNIT_PATH = "ide70/unit/"
 
 type UnitDef struct {
-	RootComp *CompDef
-	CompsMap map[string]*CompDef
-	EventsHandler *UnitDefEventsHandler;
+	RootComp      *CompDef
+	CompsMap      map[string]*CompDef
+	EventsHandler *UnitDefEventsHandler
+	Name          string
 }
 
 type UnitDefContext struct {
-	idSeq uint
+	idSeq     uint
 	appParams *AppParams
-	unitDef *UnitDef
+	unitDef   *UnitDef
 }
 
 func (context *UnitDefContext) getNextId(compType string) string {
@@ -34,6 +35,7 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 		return nil
 	}
 	unit := &UnitDef{}
+	unit.Name = name
 	unit.CompsMap = map[string]*CompDef{}
 	unit.EventsHandler = newUnitDefEventsHandler()
 

@@ -1,6 +1,6 @@
 ---
 - compType: page
-  children: [transactionI, lblName, name, newline, lblBreed, breed, newline2, saveButton]
+  children: [transactionI, lblName, name, newline, lblBreed, breed, newline2, backButton, saveButton]
 - compType: transaction
   cr: transactionI
   database:
@@ -26,6 +26,13 @@
 - compType: newline
   cr: newline2
 - compType: button
+  cr: backButton
+  text: Vissza
+  eventHandlers:
+    onclick:
+      action: |
+          Event().LoadParent();
+- compType: button
   cr: saveButton
   text: Mentés
   eventHandlers:
@@ -34,11 +41,10 @@
           var data = Event().UnitRuntime.CollectStored();
           var tableName = CompByCr("transactionI").GetProp("database").table;
           var ppid = PassParams ? PassParams.id : null;
-          common_log("dbo:"+dbo);
           if(dbo) {
               dbo.UpdateData(data)
           } else {
               var dbo = Event().DBCtx().CreateDBO(data, tableName);
           }
           dbo.Save();
-          Event().LoadUnit("dogs/dogs");
+          Event().LoadParent();

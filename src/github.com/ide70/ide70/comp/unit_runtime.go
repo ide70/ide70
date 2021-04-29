@@ -11,6 +11,7 @@ import (
 var unitLogger = log.Logger{"unit"}
 
 type UnitRuntime struct {
+	PassContext      *PassContext
 	UnitDef          *UnitDef
 	RootComp         *CompRuntime
 	CompRegistry     map[int64]*CompRuntime
@@ -37,8 +38,9 @@ func (unit *UnitRuntime) registerComp(compRuntime *CompRuntime) {
 	unit.CompByChildRefId[compRuntime.CompDef.ChildRefId] = compRuntime
 }
 
-func InstantiateUnit(name string, app *app.Application, appParams *AppParams, passParams map[string]interface{}) *UnitRuntime {
+func InstantiateUnit(name string, app *app.Application, appParams *AppParams, passContext *PassContext) *UnitRuntime {
 	unitRuntime := &UnitRuntime{}
+	unitRuntime.PassContext = passContext
 	unitRuntime.Application = app
 	unitRuntime.CompRegistry = map[int64]*CompRuntime{}
 	unitRuntime.CompByChildRefId = map[string]*CompRuntime{}
@@ -57,7 +59,7 @@ func InstantiateUnit(name string, app *app.Application, appParams *AppParams, pa
 
 	unitRuntime.UnitDef = unitDef
 	unitRuntime.RootComp = InstantiateComp(unitDef.RootComp, unitRuntime)
-	unitRuntime.EventsHandler = newUnitRuntimeEventsHandler(unitRuntime, passParams)
+	unitRuntime.EventsHandler = newUnitRuntimeEventsHandler(unitRuntime)
 
 	return unitRuntime
 }
@@ -77,13 +79,17 @@ func (unit *UnitRuntime) AssignID(id string) {
 	unit.RootComp.State["_unitID"] = id
 }
 
+func (unit *UnitRuntime) getID() string {
+	return unit.RootComp.State["_unitID"].(string)
+}
+
 // process unit lifecycle events
 func (unit *UnitRuntime) ProcessEvent(e *EventRuntime) {
-	logger.Warning("ProcessEvent")
+	logger.Info("ProcessEvent")
 	compDefHandlers := unit.UnitDef.EventsHandler.Handlers[e.TypeCode]
 	for _, compDefHandler := range compDefHandlers {
 		comp := unit.CompByChildRefId[compDefHandler.CompDef.ChildRefId]
-		logger.Warning("On comp", comp)
+		logger.Info("On comp", comp)
 		if comp == nil {
 			logger.Warning("UnitRuntime ProcessEvent: component not found")
 		}
@@ -116,3 +122,8 @@ func (unit *UnitRuntime) InitializeStored(data map[string]interface{}) {
 func (unit *UnitRuntime) DBContext() *store.DatabaseContext {
 	return unit.Application.Connectors.MainDB
 }
+
+func (unit *UnitRuntime) GetParent(sess *Session) *UnitRuntime {
+	return sess.UnitCache.ActiveUnits[unit.PassContext.ParentUnitId]
+}
+

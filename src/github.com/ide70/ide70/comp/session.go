@@ -20,8 +20,14 @@ type Session struct {
 }
 
 type PassItem struct {
-	Created time.Time
-	params  map[string]interface{}
+	Created      time.Time
+	params       map[string]interface{}
+	parentUnitId string
+}
+
+type PassContext struct {
+	Params       map[string]interface{}
+	ParentUnitId string
 }
 
 func NewSession() *Session {
@@ -116,26 +122,27 @@ func (s *Session) ClearAuthentication() {
 	s.SetAttr(AUTH_ROLE, nil)
 }
 
-func (s *Session) SetPassParameters(params map[string]interface{}) string {
+func (s *Session) SetPassParameters(params map[string]interface{}, unit *UnitRuntime) string {
 	s.cleanupPassParameters()
 	passItem := &PassItem{}
 	passItem.Created = time.Now()
 	passItem.params = params
+	passItem.parentUnitId = unit.getID()
 	id := betterguid.New()
 	s.passItems[id] = passItem
 	return id
 }
 
-func (s *Session) GetPassParameters(id string) map[string]interface{} {
+func (s *Session) GetPassParameters(id string) *PassContext {
 	if id == "" {
-		return nil
+		return &PassContext{map[string]interface{}{}, ""}
 	}
 	passItem := s.passItems[id]
 	if passItem == nil {
-		return nil
+		return &PassContext{map[string]interface{}{}, ""}
 	}
 	delete(s.passItems, id)
-	return passItem.params
+	return &PassContext{passItem.params, passItem.parentUnitId}
 }
 
 func (s *Session) cleanupPassParameters() {
@@ -145,4 +152,9 @@ func (s *Session) cleanupPassParameters() {
 			delete(s.passItems, k)
 		}
 	}
+}
+
+func (sess *Session) DeleteUnit(unit *UnitRuntime) {
+	delete(sess.UnitCache.ActiveUnits, unit.getID())
+	logger.Info("Active unints in session:", len(sess.UnitCache.ActiveUnits))
 }

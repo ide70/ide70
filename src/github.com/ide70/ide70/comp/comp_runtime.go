@@ -27,6 +27,9 @@ func (comp *CompRuntime) Render(writer io.Writer) {
 	//buf := &bytes.Buffer{}
 	//comp.CompDef.CompType.Body.Execute(buf, comp.State)
 	//logger.Info(buf.String())
+	if len(comp.GenChilden) > 0 {
+		comp.GenChilden = map[string]*CompRuntime{}
+	}
 	comp.CompDef.CompType.Body.Execute(writer, comp.State)
 }
 
@@ -42,7 +45,6 @@ func InstantiateComp(compDef *CompDef, unit *UnitRuntime) *CompRuntime {
 	// state initially is deep copy of definition properties
 	var err error
 	comp.State, err = deepCopyMap(compDef.Props)
-	logger.Info("ehhhhhh:", comp.State["eventHandlers"])
 	comp.State["sid"] = comp.ID
 	if err != nil {
 		logger.Error(err.Error())

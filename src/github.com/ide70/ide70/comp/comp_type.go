@@ -90,8 +90,6 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 		bodyConsts[k] = v
 	}
 
-	logger.Info("parseCompType 1", name)
-
 	comp := &CompType{}
 	comp.Name = name
 	comp.EventsHandler = ParseEventHandlers(module.Def, nil, nil, nil)
@@ -99,7 +97,6 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 
 	// TODO: list of non-accessible definitions
 	comp.AccessibleDef["eventHandlers"] = module.Def["eventHandlers"]
-	logger.Info("parseCompType 1e", name)
 
 	var err error
 	comp.Body, err = template.New(name).Funcs(template.FuncMap{
@@ -117,7 +114,6 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 		return nil
 	}
 	CompCache[name] = comp
-	logger.Info("parseCompType-end")
 	return comp
 }
 
@@ -131,7 +127,7 @@ func GetCompType(name string, appParams *AppParams) *CompType {
 
 func EvalComp(comp *CompRuntime) string {
 	sb := &strings.Builder{}
-	comp.CompDef.CompType.Body.Execute(sb, comp.State)
+	comp.Render(sb)
 	return sb.String()
 }
 
@@ -149,6 +145,6 @@ func GenerateComp(parentComp *CompRuntime, sourceChildRef, genRuntimeRef string,
 		parentComp.GenChilden[genRuntimeRef] = comp
 	}
 	sb := &strings.Builder{}
-	comp.CompDef.CompType.Body.Execute(sb, comp.State)
+	comp.Render(sb)
 	return sb.String()
 }

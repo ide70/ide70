@@ -6,6 +6,7 @@ import (
 	"github.com/ide70/ide70/dataxform"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"reflect"
 )
 
 const UNIT_PATH = "ide70/unit/"
@@ -49,10 +50,21 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 
 	context := &UnitDefContext{appParams: appParams, unitDef: unit}
 	unitIfArr := unitIf.([]interface{})
-	for _, unitIfTag := range unitIfArr {
-		logger.Info("tag")
-		compDef := ParseCompDef(dataxform.InterfaceMapToStringMap(unitIfTag.(map[interface{}]interface{})), context)
-		unit.CompsMap[compDef.ChildRefId] = compDef
+	for i := 0; i < len(unitIfArr); i++ {
+		unitIfArr[i] = dataxform.InterfaceMapToStringMap(unitIfArr[i].(map[interface{}]interface{}))
+	}
+	for i := 0; i < len(unitIfArr); i++ {
+		logger.Info("len:", len(unitIfArr))
+		unitIfTag := unitIfArr[i].(map[string]interface{})
+		logger.Info("before pcd:", unitIfTag, reflect.TypeOf(unitIfTag))
+		compDef := ParseCompDef(unitIfTag, context)
+		logger.Info("after pcd")
+		if compDef.Props["autoInclude"] != nil {
+			unitIfArr = append(unitIfArr, dataxform.IAsArr(compDef.Props["autoInclude"])...)
+			logger.Info("adding comps, new len:", len(unitIfArr))
+		}
+		// handle autoInclude
+		unit.CompsMap[compDef.ChildRefId()] = compDef
 		if unit.RootComp == nil {
 			unit.RootComp = compDef
 		}

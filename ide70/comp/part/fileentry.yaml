@@ -1,0 +1,10 @@
+---
+include:
+  - common
+body: |
+  <i class="far fa-file-alt fa-fw"></i>
+  <span id="{{.sid}}"{{template "eventHandlers" .}}>{{.parentContext.name}}</span>
+eventHandlers:
+  onclick:
+    action: |
+        common_log("onlcick on subdir. element at "+Event().Comp.State.parentContext.name);

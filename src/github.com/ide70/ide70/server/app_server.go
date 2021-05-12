@@ -17,6 +17,7 @@ import (
 // Internal path constants.
 const (
 	pathStatic     = "_static/"
+	pathWebfonts   = "webfonts/"
 	pathSessCheck  = "_sess_ch"
 	pathUnitCreate = "uc" // path for unit create
 	pathEvent      = "e"  // Window-relative path for sending events
@@ -82,6 +83,10 @@ func (s *AppServer) Start() error {
 
 	mux.HandleFunc(s.App.Path+pathStatic, func(w http.ResponseWriter, r *http.Request) {
 		s.serveStatic(w, r)
+	})
+
+	mux.HandleFunc(s.App.Path+pathWebfonts, func(w http.ResponseWriter, r *http.Request) {
+		s.serveWebfonts(w, r)
 	})
 
 	logger.Info("Starting GUI server on:", s.App.URLString)
@@ -152,7 +157,7 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		unit := sess.UnitCache.ActiveUnits[unitId]
 		if unit == nil {
 			logger.Error("no unit found by id:", unitId)
-			for k,v := range sess.UnitCache.ActiveUnits {
+			for k, v := range sess.UnitCache.ActiveUnits {
 				logger.Error("unit for key", k, v.UnitDef.Name)
 			}
 			http.NotFound(w, r)
@@ -418,9 +423,6 @@ func (s *AppServer) renderComp(unit *comp.UnitRuntime, w http.ResponseWriter, r 
 }
 
 func (s *AppServer) serveStatic(w http.ResponseWriter, r *http.Request) {
-	//s.addHeaders(w)
-
-	// Parts example: "/appname/_static/gwu-0.8.0.js" => {"", "appname", "_gwu_static", "gwu-0.8.0.js"}
 	parts := strings.Split(r.URL.Path, "/")
 
 	if len(parts) < 3 {
@@ -446,6 +448,23 @@ func (s *AppServer) serveStatic(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.NotFound(w, r)
+}
+
+func (s *AppServer) serveWebfonts(w http.ResponseWriter, r *http.Request) {
+	parts := strings.Split(r.URL.Path, "/")
+
+	if len(parts) < 3 {
+		// Missing app name from path
+		http.NotFound(w, r)
+		return
+	}
+	// Omit the first empty string, app name and pathStatic
+	parts = parts[3:]
+
+	res := parts[0]
+	w.Header().Set("Expires", time.Now().UTC().Add(72*time.Hour).Format(http.TimeFormat)) // Set 72 hours caching
+	http.ServeFile(w, r, "ide70/webfonts/"+res)
+	return
 }
 
 func (s *AppServer) sessCleaner(stop chan struct{}) {

@@ -1,0 +1,24 @@
+---
+body: |
+  <div class="fileselect">
+  <ul>
+  {{range $i, $entry := .Files}}
+  <li>
+    {{if $entry.isDir}}
+    {{generateComp $.This "subdir" $i $entry}}
+    {{else}}
+    {{generateComp $.This "fileEntry" $i $entry}}
+    {{end}}
+  </li>
+  {{end}}
+  </ul>
+  </div>
+eventHandlers:
+  onUnitCreate:
+    action: |
+        Event().Comp.State["Files"] = Event().FileCtx().ReadDir(Event().Comp.State["basePath"]);
+autoInclude:
+  - compType: part/subdir
+    cr: subdir
+  - compType: part/fileentry
+    cr: fileEntry

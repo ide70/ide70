@@ -1,0 +1,6 @@
+---
+- compType: page
+  children: ['fileTree']
+- compType: filetree
+  cr: fileTree
+  basePath: ide70

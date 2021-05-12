@@ -9,6 +9,30 @@ import (
 
 var logger = log.Logger{"file"}
 
+type FileContext struct {
+}
+
+func (fc *FileContext) ReadDir(basePath string) []interface{} {
+	list := []interface{}{}
+	files, _ := ioutil.ReadDir(basePath)
+	for _, afile := range files {
+		childPath := basePath + "/" + afile.Name()
+
+		stat, err := os.Stat(childPath)
+
+		if err != nil {
+			logger.Error("stat failed:", childPath)
+			continue
+		}
+		entry := map[string]interface{}{}
+		entry["name"] = afile.Name()
+		entry["path"] = childPath
+		entry["isDir"] = stat.IsDir()
+		list = append(list, entry)
+	}
+	return list
+}
+
 func FileList(basePath string, trimPrefix string) []string {
 	list := []string{}
 	files, _ := ioutil.ReadDir(basePath)

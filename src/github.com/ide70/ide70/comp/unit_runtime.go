@@ -35,7 +35,7 @@ func (unit *UnitRuntime) nextId() int64 {
 func (unit *UnitRuntime) registerComp(compRuntime *CompRuntime) {
 	compRuntime.ID = unit.nextId()
 	unit.CompRegistry[compRuntime.ID] = compRuntime
-	unit.CompByChildRefId[compRuntime.CompDef.ChildRefId] = compRuntime
+	unit.CompByChildRefId[compRuntime.ChildRefId()] = compRuntime
 }
 
 func InstantiateUnit(name string, app *app.Application, appParams *AppParams, passContext *PassContext) *UnitRuntime {
@@ -64,8 +64,9 @@ func InstantiateUnit(name string, app *app.Application, appParams *AppParams, pa
 	return unitRuntime
 }
 
-func (unit *UnitRuntime) InstantiateComp(compDef *CompDef) *CompRuntime {
+func (unit *UnitRuntime) InstantiateComp(compDef *CompDef, genChildRefId string) *CompRuntime {
 	comp := InstantiateComp(compDef, unit)
+	comp.State["cr"] = genChildRefId
 	// fire initialization event of component
 
 	return comp
@@ -88,7 +89,7 @@ func (unit *UnitRuntime) ProcessEvent(e *EventRuntime) {
 	logger.Info("ProcessEvent")
 	compDefHandlers := unit.UnitDef.EventsHandler.Handlers[e.TypeCode]
 	for _, compDefHandler := range compDefHandlers {
-		comp := unit.CompByChildRefId[compDefHandler.CompDef.ChildRefId]
+		comp := unit.CompByChildRefId[compDefHandler.CompDef.ChildRefId()]
 		logger.Info("On comp", comp)
 		if comp == nil {
 			logger.Warning("UnitRuntime ProcessEvent: component not found")

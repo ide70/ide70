@@ -1,5 +1,6 @@
 package comp
 
+import "fmt"
 import "bytes"
 import "github.com/ide70/ide70/util/log"
 import "io/ioutil"
@@ -97,6 +98,8 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 
 	// TODO: list of non-accessible definitions
 	comp.AccessibleDef["eventHandlers"] = module.Def["eventHandlers"]
+	comp.AccessibleDef["autoInclude"] = module.Def["autoInclude"]
+	comp.AccessibleDef["css"] = module.Def["css"]
 
 	var err error
 	comp.Body, err = template.New(name).Funcs(template.FuncMap{
@@ -131,18 +134,20 @@ func EvalComp(comp *CompRuntime) string {
 	return sb.String()
 }
 
-func GenerateComp(parentComp *CompRuntime, sourceChildRef, genRuntimeRef string, context interface{}) string {
-	comp := parentComp.GenChilden[genRuntimeRef]
+func GenerateComp(parentComp *CompRuntime, sourceChildRef string, genRuntimeRefIf interface{}, context interface{}) string {
+	genRuntimeRef := dataxform.IAsString(genRuntimeRefIf)
+	genChildRefId := fmt.Sprintf("%s.%s_%s", parentComp.ChildRefId(), sourceChildRef, genRuntimeRef)
+	comp := parentComp.GenChilden[genChildRefId]
 	if comp == nil {
-		logger.Info("genRuntimeRef", genRuntimeRef)
+		logger.Info("genRuntimeRef", genChildRefId)
 		srcCompDef := parentComp.Unit.UnitDef.CompsMap[sourceChildRef]
 		if srcCompDef == nil {
 			logger.Warning("source component not found:", sourceChildRef)
 			return ""
 		}
-		comp = parentComp.Unit.InstantiateComp(srcCompDef)
+		comp = parentComp.Unit.InstantiateComp(srcCompDef, genChildRefId)
 		comp.State["parentContext"] = context
-		parentComp.GenChilden[genRuntimeRef] = comp
+		parentComp.GenChilden[genChildRefId] = comp
 	}
 	sb := &strings.Builder{}
 	comp.Render(sb)

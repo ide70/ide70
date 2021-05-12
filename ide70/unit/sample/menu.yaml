@@ -6,5 +6,7 @@
   items:
   - link: ../dogs/dogs
     title: Kutya nyilvántartás
+  - link: ../ide/ide
+    title: IDE
   - link: login
     title: Log out

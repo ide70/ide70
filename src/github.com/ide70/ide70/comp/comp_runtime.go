@@ -38,17 +38,17 @@ func InstantiateComp(compDef *CompDef, unit *UnitRuntime) *CompRuntime {
 	comp := &CompRuntime{}
 	comp.CompDef = compDef
 	comp.Unit = unit
+	var err error
+	comp.State, err = deepCopyMap(compDef.Props)
+	if err != nil {
+		logger.Error(err.Error())
+	}
 	logger.Info("RegisterComp", compDef)
 	unit.registerComp(comp)
 
 	comp.GenChilden = map[string]*CompRuntime{}
 	// state initially is deep copy of definition properties
-	var err error
-	comp.State, err = deepCopyMap(compDef.Props)
 	comp.State["sid"] = comp.ID
-	if err != nil {
-		logger.Error(err.Error())
-	}
 	logger.Info("comp.State", comp.State)
 
 	for _, childDef := range compDef.Children {
@@ -64,6 +64,10 @@ func InstantiateComp(compDef *CompDef, unit *UnitRuntime) *CompRuntime {
 
 func (comp *CompRuntime) Sid() int64 {
 	return comp.State["sid"].(int64)
+}
+
+func (comp *CompRuntime) ChildRefId() string {
+	return comp.State["cr"].(string)
 }
 
 func deepCopyMap(m map[string]interface{}) (map[string]interface{}, error) {

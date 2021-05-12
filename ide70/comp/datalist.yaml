@@ -12,7 +12,7 @@ body: |
     <td>
     {{if $column.value}}{{index $dataRow $column.value}}{{end}}
     {{range $child := $column.children}}
-    {{ $generatedId := (printf "%v_%v" $child.cr $i) }}{{generateComp $.This $child.cr $generatedId $dataRow}}
+    {{generateComp $.This $child.cr $i $dataRow}}
     {{end}}
     </td>
     {{end}}

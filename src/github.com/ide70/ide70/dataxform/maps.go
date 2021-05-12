@@ -67,6 +67,8 @@ func IAsString(i interface{}) string {
 		return ""
 	}
 	switch iT := i.(type) {
+	case int, int64:
+		return fmt.Sprintf("%d", iT)
 	case string:
 		return iT
 	}

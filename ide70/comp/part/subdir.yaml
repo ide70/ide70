@@ -1,0 +1,36 @@
+---
+include:
+  - common
+body: |
+  <div id="{{.sid}}" class="grp">
+  {{if .parentContext.isOpen}}
+  <i class="fas fa-folder fa-fw"{{template "eventHandlers" .}}></i>
+  <span class="fs-dir open">{{.parentContext.name}}</span>
+  <ul>
+  {{range $i, $entry := .parentContext.Files}}
+  <li>
+    {{if $entry.isDir}}
+    {{generateComp $.This "subdir" $i $entry}}
+    {{else}}
+    {{generateComp $.This "fileEntry" $i $entry}}
+    {{end}}
+  </li>
+  {{end}}
+  </ul>
+  {{else}}
+  <i class="fas fa-folder fa-fw"{{template "eventHandlers" .}}></i>
+  <span class="fs-dir">{{.parentContext.name}}</span>
+  {{end}}
+  </div>
+eventHandlers:
+  onclick:
+    action: |
+        isOpen = Event().Comp.State.parentContext.isOpen;
+        Event().Comp.State.parentContext.isOpen = !isOpen;
+        if(!isOpen) {
+          files = Event().FileCtx().ReadDir(Event().Comp.State.parentContext.path);
+          common_log("files:"+files);
+          Event().Comp.State.parentContext.Files = files;
+        }
+        Event().CurrentComp().Refresh();
+        common_log("onlcick on subdir. element at "+Event().Comp.State.parentContext.name);

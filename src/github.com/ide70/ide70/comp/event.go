@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ide70/ide70/store"
 	"github.com/ide70/ide70/util/log"
+	"github.com/ide70/ide70/util/file"
 	"github.com/robertkrimen/otto"
 	"strconv"
 	"strings"
@@ -208,6 +209,10 @@ func reloadUnit(e *EventRuntime, unit *UnitRuntime) {
 	e.ResponseAction.SetLoadUnit(unitPath)
 }
 
+func (e *EventRuntime) CurrentComp() *CompRuntimeSW{
+	return &CompRuntimeSW{c: e.Comp, event: e}
+}
+
 func (e *EventRuntime) LoadUnit(unitName string, passParameters ...interface{}) {
 	logger.Info("LoadUnit", unitName, passParameters)
 	passParametersMap := passParametersToMap(passParameters...)
@@ -318,4 +323,8 @@ func (eh *UnitRuntimeEventsHandler) runJs(e *EventRuntime, jsCode string) {
 
 func (er *EventRuntime) DBCtx() *store.DatabaseContext {
 	return er.UnitRuntime.Application.Connectors.MainDB
+}
+
+func (er *EventRuntime) FileCtx() *file.FileContext {
+	return er.UnitRuntime.Application.Connectors.FileContext
 }

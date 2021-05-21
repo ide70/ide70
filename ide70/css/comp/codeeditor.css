@@ -1,0 +1,13 @@
+.editorblock .ace_editor {
+	font-size: 14pt;
+}
+
+.editorblock pre {
+	min-width: 1000px;
+	height: 500px;
+	margin: 0px 0px 0px 0px;
+}
+
+.editorblock .title {
+	height: 1em;
+}

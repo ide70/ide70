@@ -10,6 +10,9 @@ body: |
     var _focCompId='';
   </script> 
   <script src="{{app.PathStatic}}ide70core.js?v={{app.RuntimeID}}"></script>
+  {{range .js}}
+  <script src="{{app.PathStatic}}{{.name}}?v={{app.RuntimeID}}"></script>
+  {{end}}
   {{range .css}}
   <link href="{{app.PathStatic}}{{.name}}" rel="stylesheet">
   {{end}}

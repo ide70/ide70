@@ -26,6 +26,7 @@ var _eraDirtyAttrs=4;
 var _eraDirtyProps=5;
 var _eraApplyToParent=6; 
 var _eraScrollDownComp=7;
+var _eraExecuteCompFunc=8;
 
 function createXmlHttp() {
 	if (window.XMLHttpRequest) // IE7+, Firefox, Chrome, Opera, Safari
@@ -164,6 +165,11 @@ function procEresp(actions) {
 			for (var j = 1; j+2 < n.length; j+=3)
 				replaceCompProp(n[j], n[j+1], n[j+2]);
 			break;
+		case _eraExecuteCompFunc:
+			if(n.length >= 3) {
+				executeCompFunc(n[1], n[2], ...n.slice(3));
+			}
+			break;
 		case _eraApplyToParent:
 			window.parent.procEresp(actions.slice(i+1));
 			return;
@@ -217,6 +223,15 @@ function replaceCompProp(compId, attrName, attrValue) {
 		return;
 	
 	e[attrName]=attrValue;
+	
+}
+
+function executeCompFunc(compId, attrName, ...args) {
+	var e = document.getElementById(compId);
+	if (!e || !e.jsObject || !e.jsObject[attrName]) // check if function exists
+		return;
+	
+	e.jsObject[attrName](...args);
 	
 }
 

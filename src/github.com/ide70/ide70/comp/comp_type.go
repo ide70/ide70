@@ -100,6 +100,8 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 	comp.AccessibleDef["eventHandlers"] = module.Def["eventHandlers"]
 	comp.AccessibleDef["autoInclude"] = module.Def["autoInclude"]
 	comp.AccessibleDef["css"] = module.Def["css"]
+	comp.AccessibleDef["injectRootComp"] = module.Def["injectRootComp"]
+	comp.AccessibleDef["injectToComp"] = module.Def["injectToComp"]
 
 	var err error
 	comp.Body, err = template.New(name).Funcs(template.FuncMap{

@@ -3,8 +3,8 @@ package comp
 import (
 	"fmt"
 	"github.com/ide70/ide70/store"
-	"github.com/ide70/ide70/util/log"
 	"github.com/ide70/ide70/util/file"
+	"github.com/ide70/ide70/util/log"
 	"github.com/robertkrimen/otto"
 	"strconv"
 	"strings"
@@ -23,6 +23,7 @@ const (
 	eraDirtyProps           // There are dirty component DOM properties which needs to be refreshed
 	eraApplyToParent        // Apply changes to parent window
 	eraScrollDownComp
+	eraCompFuncExecute
 )
 
 const EvtUnitPrefix = "onUnit"
@@ -71,6 +72,12 @@ type Attr struct {
 	Value string
 }
 
+type JSFuncCall struct {
+	Comp     string
+	FuncName string
+	Args     []string
+}
+
 func NewEventRuntime(sess *Session, unit *UnitRuntime, comp *CompRuntime, typeCode string, valueStr string) *EventRuntime {
 	er := &EventRuntime{}
 	er.Session = sess
@@ -83,10 +90,11 @@ func NewEventRuntime(sess *Session, unit *UnitRuntime, comp *CompRuntime, typeCo
 }
 
 type ResponseAction struct {
-	compsToRefresh []string
-	attrsToRefresh map[string][]Attr
-	propsToRefresh map[string][]Attr
-	loadUnit       string
+	compsToRefresh     []string
+	attrsToRefresh     map[string][]Attr
+	propsToRefresh     map[string][]Attr
+	compFuncsToExecute []JSFuncCall
+	loadUnit           string
 }
 
 func newResponseAction() *ResponseAction {
@@ -135,6 +143,17 @@ func (ra *ResponseAction) Encode() string {
 		}
 	}
 
+	if len(ra.compFuncsToExecute) > 0 {
+		for _, compFuncCall := range ra.compFuncsToExecute {
+			addSep(&sb, "|")
+			sb.WriteString(fmt.Sprintf("%d", eraCompFuncExecute))
+			sb.WriteString(fmt.Sprintf(",%s,%s", compFuncCall.Comp, compFuncCall.FuncName))
+			for _, arg := range compFuncCall.Args {
+				sb.WriteString(fmt.Sprintf(",%s", arg))
+			}
+		}
+	}
+
 	if sb.Len() > 0 {
 		return sb.String()
 	}
@@ -153,6 +172,11 @@ func (ra *ResponseAction) SetCompAttrRefresh(comp *CompRuntime, key, value strin
 func (ra *ResponseAction) SetCompPropRefresh(comp *CompRuntime, key, value string) {
 	id := strconv.FormatInt(comp.Sid(), 10)
 	ra.propsToRefresh[id] = append(ra.propsToRefresh[id], Attr{Key: key, Value: value})
+}
+
+func (ra *ResponseAction) SetCompFuncExecute(comp *CompRuntime, funcName string, args ...string) {
+	id := strconv.FormatInt(comp.Sid(), 10)
+	ra.compFuncsToExecute = append(ra.compFuncsToExecute, JSFuncCall{Comp: id, FuncName: funcName, Args: args})
 }
 
 func (ra *ResponseAction) SetLoadUnit(unitName string) {
@@ -184,6 +208,11 @@ func (cSW *CompRuntimeSW) RefreshHTMLAttr(key, value string) *CompRuntimeSW {
 	return cSW
 }
 
+func (cSW *CompRuntimeSW) FuncExecute(funcName string, args ...string) *CompRuntimeSW {
+	cSW.event.ResponseAction.SetCompFuncExecute(cSW.c, funcName, args...)
+	return cSW
+}
+
 func (cSW *CompRuntimeSW) Refresh() {
 	cSW.event.ResponseAction.SetCompRefresh(cSW.c)
 }
@@ -209,7 +238,7 @@ func reloadUnit(e *EventRuntime, unit *UnitRuntime) {
 	e.ResponseAction.SetLoadUnit(unitPath)
 }
 
-func (e *EventRuntime) CurrentComp() *CompRuntimeSW{
+func (e *EventRuntime) CurrentComp() *CompRuntimeSW {
 	return &CompRuntimeSW{c: e.Comp, event: e}
 }
 
@@ -236,6 +265,10 @@ func (e *EventRuntime) LoadParent() {
 
 func (e *EventRuntime) ReloadUnit() {
 	reloadUnit(e, e.UnitRuntime)
+}
+
+func (e *EventRuntime) CompProps() map[string]interface{} {
+	return e.Comp.State
 }
 
 func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {

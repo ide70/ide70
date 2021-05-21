@@ -3,8 +3,10 @@ include:
   - common
 body: |
   <i class="far fa-file-alt fa-fw"></i>
-  <span id="{{.sid}}"{{template "eventHandlers" .}}>{{.parentContext.name}}</span>
+  <span id="{{.sid}}" class="fs-file"{{template "eventHandlers" .}}>{{.parentContext.name}}</span>
 eventHandlers:
-  onclick:
+  ondblclick:
     action: |
-        common_log("onlcick on subdir. element at "+Event().Comp.State.parentContext.name);
+        var attachedCr = Event().CompProps().attachedCompCr
+        CompByCr("codeEditor").FuncExecute(Event().CompProps().dblClickFunc, Event().CompProps().parentContext.path);
+        common_log("onlcick on subdir. element at "+Event().Comp.State.parentContext.path);

@@ -22,3 +22,8 @@ autoInclude:
     cr: subdir
   - compType: part/fileentry
     cr: fileEntry
+injectToComp:
+  - cr: fileEntry
+    copy:
+      - dblClickFunc
+      - attachedCompCr

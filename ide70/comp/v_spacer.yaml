@@ -1,0 +1,21 @@
+---
+body: |
+  <table id="{{.sid}}">
+  <tr>
+  {{range .Children}}
+  <td style="height: 200px;">
+  {{evalComp .}}
+  </td>
+  {{end}}
+  </tr>
+  </table>
+  <script>
+    window.addEventListener('load', function init() {
+      addResizerToTable(document.getElementById({{.sid}}));
+    });
+  </script>
+injectRootComp:
+  js:
+    - name: comp/v_spacer.js
+  css:
+    - name: comp/v_spacer.css

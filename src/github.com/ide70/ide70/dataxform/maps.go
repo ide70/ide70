@@ -86,6 +86,17 @@ func IAsArr(i interface{}) []interface{} {
 	return []interface{}{}
 }
 
+func IAsSIMap(i interface{}) map[string]interface{} {
+	if i == nil {
+		return map[string]interface{}{}
+	}
+	switch iT := i.(type) {
+	case map[string]interface{}:
+		return iT
+	}
+	return map[string]interface{}{}
+}
+
 func SIMapGetByKeyAsInt(m map[string]interface{}, k string) int {
 	entry := m[k]
 	if entry == nil {

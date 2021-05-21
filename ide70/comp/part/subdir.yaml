@@ -29,8 +29,6 @@ eventHandlers:
         Event().Comp.State.parentContext.isOpen = !isOpen;
         if(!isOpen) {
           files = Event().FileCtx().ReadDir(Event().Comp.State.parentContext.path);
-          common_log("files:"+files);
           Event().Comp.State.parentContext.Files = files;
         }
         Event().CurrentComp().Refresh();
-        common_log("onlcick on subdir. element at "+Event().Comp.State.parentContext.name);

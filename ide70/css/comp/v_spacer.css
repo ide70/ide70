@@ -1,0 +1,13 @@
+div.vspacer {
+	top: 0;
+    right: -5px;
+	width: 10px;
+	height: 100%;
+	position: absolute;
+	cursor: col-resize;
+	user-select: none;
+}
+
+div.vspacer:hover {
+	background-color: lightblue;
+}	

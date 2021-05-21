@@ -17,6 +17,8 @@ import (
 // Internal path constants.
 const (
 	pathStatic     = "_static/"
+	pathFileSystem = "_fs/"
+	pathFileSave = "_save/"
 	pathWebfonts   = "webfonts/"
 	pathSessCheck  = "_sess_ch"
 	pathUnitCreate = "uc" // path for unit create
@@ -84,11 +86,19 @@ func (s *AppServer) Start() error {
 	mux.HandleFunc(s.App.Path+pathStatic, func(w http.ResponseWriter, r *http.Request) {
 		s.serveStatic(w, r)
 	})
+	
+	mux.HandleFunc(s.App.Path+pathFileSystem, func(w http.ResponseWriter, r *http.Request) {
+		s.serveFileSystem(w, r)
+	})
+	
+	mux.HandleFunc(s.App.Path+pathFileSave, func(w http.ResponseWriter, r *http.Request) {
+		s.serveFileSave(w, r)
+	})
 
 	mux.HandleFunc(s.App.Path+pathWebfonts, func(w http.ResponseWriter, r *http.Request) {
 		s.serveWebfonts(w, r)
 	})
-
+	
 	logger.Info("Starting GUI server on:", s.App.URLString)
 
 	s.sessStop = make(chan struct{})
@@ -433,7 +443,7 @@ func (s *AppServer) serveStatic(w http.ResponseWriter, r *http.Request) {
 	// Omit the first empty string, app name and pathStatic
 	parts = parts[3:]
 
-	res := parts[0]
+	res := strings.Join(parts[0:], "/")
 	if strings.HasSuffix(res, ".js") {
 		w.Header().Set("Expires", time.Now().UTC().Add(72*time.Hour).Format(http.TimeFormat)) // Set 72 hours caching
 		w.Header().Set("Content-Type", "application/x-javascript; charset=utf-8")
@@ -448,6 +458,81 @@ func (s *AppServer) serveStatic(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.NotFound(w, r)
+}
+
+func (s *AppServer) serveFileSystem(w http.ResponseWriter, r *http.Request) {
+	parts := strings.Split(r.URL.Path, "/")
+
+	if len(parts) < 3 {
+		// Missing app name from path
+		http.NotFound(w, r)
+		return
+	}
+	// Omit the first empty string, app name and pathStatic
+	parts = parts[3:]
+
+	res := strings.Join(parts[0:], "/")
+	if strings.HasSuffix(res, ".js") {
+		w.Header().Set("Expires", time.Now().UTC().Add(72*time.Hour).Format(http.TimeFormat)) // Set 72 hours caching
+		w.Header().Set("Content-Type", "application/x-javascript; charset=utf-8")
+		http.ServeFile(w, r, res)
+		return
+	}
+	if strings.HasSuffix(res, ".css") {
+		w.Header().Set("Expires", time.Now().UTC().Add(72*time.Hour).Format(http.TimeFormat)) // Set 72 hours caching
+		w.Header().Set("Content-Type", "text/css; charset=utf-8")
+		http.ServeFile(w, r, res)
+		return
+	}
+	if strings.HasSuffix(res, ".yaml") {
+		w.Header().Set("Expires", time.Now().UTC().Add(72*time.Hour).Format(http.TimeFormat)) // Set 72 hours caching
+		w.Header().Set("Content-Type", "application/x-yaml; charset=utf-8")
+		http.ServeFile(w, r, res)
+		return
+	}
+
+	http.NotFound(w, r)
+}
+
+func (s *AppServer) serveFileSave(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	logger.Info("save url:", r.URL)
+	
+	parts := strings.Split(r.URL.Path, "/")
+
+	if len(parts) < 3 {
+		// Missing app name from path
+		http.NotFound(w, r)
+		return
+	}
+	// Omit the first empty string, app name and pathStatic
+	parts = parts[3:]
+	
+	content := r.FormValue("content")
+	logger.Info("Incoming report template:")
+	logger.Info(content)
+	fileName := parts;
+	logger.Info("Incoming save file name:", fileName)
+
+
+
+	/*if fileName != "" {
+		if strings.Contains(fileName, "/") {
+			filePath := path.Dir(fileName)
+			os.Mkdir("design/"+filePath, 0755)
+			if strings.HasPrefix(filePath, "tests") {
+				design.TestDateMode = true
+			}
+		}
+		content := joinDesignAndData(designTxt, dataTxt)
+
+		err := ioutil.WriteFile("design/"+fileName, []byte(content), 0644)
+		if err != nil {
+			logger.Error("cannot save file", err)
+		}
+
+	}*/
+ 
 }
 
 func (s *AppServer) serveWebfonts(w http.ResponseWriter, r *http.Request) {

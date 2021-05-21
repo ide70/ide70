@@ -1,0 +1,7 @@
+---
+body: |
+  <span>hello I am a test component.</span>
+eventHandlers:
+  onclick:
+    action: |
+        common_log("hehe");

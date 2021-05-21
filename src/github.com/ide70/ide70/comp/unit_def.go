@@ -72,6 +72,53 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 	logger.Info("components done")
 
 	for _, comp := range unit.CompsMap {
+		if comp.Props["injectRootComp"] == nil {
+			continue
+		}
+		defs := dataxform.AsSIMap(comp.Props["injectRootComp"])
+		dataxform.SIMapInjectDefaults(defs, unit.RootComp.Props)
+	}
+
+	for _, comp := range unit.CompsMap {
+		logger.Info("itc check")
+		if comp.Props["injectToComp"] == nil {
+			continue
+		}
+		logger.Info("injectToComp")
+		injectDefsArr := dataxform.IAsArr(comp.Props["injectToComp"])
+		logger.Info("injectDefsArr", injectDefsArr)
+		for _, injectDefIf := range injectDefsArr {
+			injectDef := dataxform.AsSIMap(injectDefIf)
+			logger.Info("injectDef", injectDef)
+			cr := dataxform.IAsString(injectDef["cr"])
+			logger.Info("cr", cr)
+			targetComp := unit.CompsMap[cr]
+			logger.Info("targetComp", targetComp)
+			if targetComp == nil {
+				continue
+			}
+
+			defs := dataxform.IAsSIMap(injectDef["defs"])
+			logger.Info("defs", defs)
+			if len(defs) > 0 {
+				dataxform.SIMapInjectDefaults(defs, targetComp.Props)
+			}
+
+			toCopyArr := dataxform.IAsArr(injectDef["copy"])
+			logger.Info("toCopyArr", toCopyArr)
+			if toCopyArr != nil {
+				for _, toCopyIf := range toCopyArr {
+					toCopy := dataxform.IAsString(toCopyIf)
+					targetComp.Props[toCopy] = comp.Props[toCopy]
+					logger.Info("copying: ", toCopy, comp.Props[toCopy])
+				}
+				dataxform.SIMapInjectDefaults(defs, targetComp.Props)
+			}
+		}
+
+	}
+
+	for _, comp := range unit.CompsMap {
 		if comp.Props["children"] == nil {
 			continue
 		}

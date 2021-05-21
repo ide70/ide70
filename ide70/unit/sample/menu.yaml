@@ -8,5 +8,7 @@
     title: Kutya nyilvántartás
   - link: ../ide/ide
     title: IDE
+  - link: ../ide/ide2
+    title: IDE(file-tree)
   - link: login
     title: Log out

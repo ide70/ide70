@@ -12,6 +12,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"os"
+	"io/ioutil"
+	"path"
 )
 
 // Internal path constants.
@@ -496,7 +499,6 @@ func (s *AppServer) serveFileSystem(w http.ResponseWriter, r *http.Request) {
 
 func (s *AppServer) serveFileSave(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	logger.Info("save url:", r.URL)
 	
 	parts := strings.Split(r.URL.Path, "/")
 
@@ -509,29 +511,32 @@ func (s *AppServer) serveFileSave(w http.ResponseWriter, r *http.Request) {
 	parts = parts[3:]
 	
 	content := r.FormValue("content")
-	logger.Info("Incoming report template:")
-	logger.Info(content)
-	fileName := parts;
+	fileName := strings.Join(parts, "/");
 	logger.Info("Incoming save file name:", fileName)
 
 
 
-	/*if fileName != "" {
+	if fileName != "" {
 		if strings.Contains(fileName, "/") {
 			filePath := path.Dir(fileName)
-			os.Mkdir("design/"+filePath, 0755)
-			if strings.HasPrefix(filePath, "tests") {
-				design.TestDateMode = true
-			}
+			os.Mkdir(filePath, 0755)
 		}
-		content := joinDesignAndData(designTxt, dataTxt)
 
-		err := ioutil.WriteFile("design/"+fileName, []byte(content), 0644)
+		err := ioutil.WriteFile(fileName, []byte(content), 0644)
 		if err != nil {
 			logger.Error("cannot save file", err)
 		}
 
-	}*/
+	}
+	
+	if parts[0] == "ide70" {
+		if parts[1] == "comp" {
+			comp.RefreshCompType(strings.TrimSuffix(strings.Join(parts[2:],"/"),".yaml"))
+		}
+		if parts[1] == "unit" {
+			comp.RefreshUnitDef(strings.TrimSuffix(strings.Join(parts[2:],"/"),".yaml"))
+		}
+	}
  
 }
 

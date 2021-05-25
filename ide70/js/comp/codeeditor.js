@@ -51,7 +51,7 @@ class EditorBlock {
 		var editorBlock = this;
 		var editorNode = {};
 		editorNode.key = key;
-		editorNode.title = key.substr(1);
+		editorNode.title = key.substr(6);
 		editorNode.rootElement = document.createElement('div');
 		editorNode.titleElement = document.createElement('div');
 		editorNode.titleElement.className = "title ace_editor ace-twilight";

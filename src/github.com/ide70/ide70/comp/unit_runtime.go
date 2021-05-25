@@ -64,6 +64,18 @@ func InstantiateUnit(name string, app *app.Application, appParams *AppParams, pa
 	return unitRuntime
 }
 
+func RefreshUnitDef(name string) {
+	delete(UnitDefCache, name)
+	logger.Info("refresh unit def:",name)
+}
+
+func RefreshCompType(name string) {
+	delete(CompCache, name)
+	//drop all unit defs
+	UnitDefCache = map[string]*UnitDef{}
+	logger.Info("refresh comp type:",name)
+}
+
 func (unit *UnitRuntime) InstantiateComp(compDef *CompDef, genChildRefId string) *CompRuntime {
 	comp := InstantiateComp(compDef, unit)
 	comp.State["cr"] = genChildRefId

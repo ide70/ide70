@@ -1,0 +1,14 @@
+---
+- compType: page
+  children: [tst, newline2, backButton]
+- compType: testcomp
+  cr: tst
+- compType: newline
+  cr: newline2
+- compType: button
+  cr: backButton
+  text: Vissza
+  eventHandlers:
+    onclick:
+      action: |
+          Event().LoadParent();

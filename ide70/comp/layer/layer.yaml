@@ -1,0 +1,11 @@
+---
+body: |
+  <iframe id="{{.sid}}" class="layer off">
+  </iframe>
+eventHandlers:
+  onclick:
+    action: |
+      common_log("layer clicked");
+injectRootComp:
+  css:
+    - name: comp/layer/layer.css

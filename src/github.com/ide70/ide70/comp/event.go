@@ -65,6 +65,8 @@ type EventRuntime struct {
 	Comp           *CompRuntime
 	ResponseAction *ResponseAction
 	Session        *Session
+	MouseWX        int64
+	MouseWY        int64
 }
 
 type Attr struct {
@@ -76,6 +78,11 @@ type JSFuncCall struct {
 	Comp     string
 	FuncName string
 	Args     []string
+}
+
+type EventForward struct {
+	To        *CompRuntime
+	EventType string
 }
 
 func NewEventRuntime(sess *Session, unit *UnitRuntime, comp *CompRuntime, typeCode string, valueStr string) *EventRuntime {
@@ -95,6 +102,8 @@ type ResponseAction struct {
 	propsToRefresh     map[string][]Attr
 	compFuncsToExecute []JSFuncCall
 	loadUnit           string
+	loadTargetCr       string
+	forward            *EventForward
 }
 
 func newResponseAction() *ResponseAction {
@@ -117,9 +126,10 @@ func (ra *ResponseAction) Encode() string {
 		if loadUnit == loadUnitSelf {
 			loadUnit = ""
 		}
-		sb.WriteString(fmt.Sprintf("%d,%s", eraReloadWin, loadUnit))
+		sb.WriteString(fmt.Sprintf("%d,%s,%s", eraReloadWin, loadUnit, ra.loadTargetCr))
 	}
 	if len(ra.compsToRefresh) > 0 {
+		addSep(&sb, "|")
 		sb.WriteString(fmt.Sprintf("%d,%s", eraDirtyComps, strings.Join(ra.compsToRefresh, ",")))
 	}
 
@@ -169,8 +179,22 @@ func (ra *ResponseAction) SetCompAttrRefresh(comp *CompRuntime, key, value strin
 	ra.attrsToRefresh[id] = append(ra.attrsToRefresh[id], Attr{Key: key, Value: value})
 }
 
+func (ra *ResponseAction) SetSubAttrRefresh(comp *CompRuntime, idPostfix, key, value string) {
+	id := strconv.FormatInt(comp.Sid(), 10) + "-" + idPostfix
+	ra.attrsToRefresh[id] = append(ra.attrsToRefresh[id], Attr{Key: key, Value: value})
+}
+
+func (ra *ResponseAction) SetForwardEvent(comp *CompRuntime, eventType string) {
+	ra.forward = &EventForward{To: comp, EventType: eventType}
+}
+
 func (ra *ResponseAction) SetCompPropRefresh(comp *CompRuntime, key, value string) {
 	id := strconv.FormatInt(comp.Sid(), 10)
+	ra.propsToRefresh[id] = append(ra.propsToRefresh[id], Attr{Key: key, Value: value})
+}
+
+func (ra *ResponseAction) SetSubPropRefresh(comp *CompRuntime, idPostfix, key, value string) {
+	id := strconv.FormatInt(comp.Sid(), 10) + "-" + idPostfix
 	ra.propsToRefresh[id] = append(ra.propsToRefresh[id], Attr{Key: key, Value: value})
 }
 
@@ -181,6 +205,11 @@ func (ra *ResponseAction) SetCompFuncExecute(comp *CompRuntime, funcName string,
 
 func (ra *ResponseAction) SetLoadUnit(unitName string) {
 	ra.loadUnit = unitName
+}
+
+func (ra *ResponseAction) SetLoadUnitToTarget(unitName string, target *CompRuntime) {
+	ra.loadUnit = unitName
+	ra.loadTargetCr = strconv.FormatInt(target.Sid(), 10)
 }
 
 type CompRuntimeSW struct {
@@ -205,6 +234,25 @@ func (cSW *CompRuntimeSW) RefreshHTMLProp(key, value string) *CompRuntimeSW {
 
 func (cSW *CompRuntimeSW) RefreshHTMLAttr(key, value string) *CompRuntimeSW {
 	cSW.event.ResponseAction.SetCompAttrRefresh(cSW.c, key, value)
+	return cSW
+}
+
+func (cSW *CompRuntimeSW) RefreshSubHTMLAttr(idPostfix, key, value string) *CompRuntimeSW {
+	cSW.event.ResponseAction.SetSubAttrRefresh(cSW.c, idPostfix, key, value)
+	return cSW
+}
+
+func (cSW *CompRuntimeSW) RefreshSubHTMLProp(idPostfix, key, value string) *CompRuntimeSW {
+	cSW.event.ResponseAction.SetSubPropRefresh(cSW.c, idPostfix, key, value)
+	return cSW
+}
+
+func (cSW *CompRuntimeSW) ForwardEvent(eventType string) *CompRuntimeSW {
+	if eventType == "" {
+		eventType = cSW.event.TypeCode
+	}
+	logger.Info("cSW.c", cSW.c)
+	cSW.event.ResponseAction.SetForwardEvent(cSW.c, eventType)
 	return cSW
 }
 
@@ -243,13 +291,26 @@ func (e *EventRuntime) CurrentComp() *CompRuntimeSW {
 }
 
 func (e *EventRuntime) LoadUnit(unitName string, passParameters ...interface{}) {
+	e.LoadUnitToTarget(unitName, nil, passParameters)
+}
+
+func (e *EventRuntime) LoadUnitToTarget(unitName string, target *CompRuntime, passParameters ...interface{}) {
 	logger.Info("LoadUnit", unitName, passParameters)
 	passParametersMap := passParametersToMap(passParameters...)
 	logger.Info("passParametersMap", passParametersMap)
 	id := e.Session.SetPassParameters(passParametersMap, e.UnitRuntime)
 	unitName = fmt.Sprintf("%s?%s=%s", unitName, ParamPassParamID, id)
-	logger.Info("unitName", unitName)
-	e.ResponseAction.SetLoadUnit(unitName)
+	if target == nil {
+		logger.Info("unitName", unitName)
+		e.ResponseAction.SetLoadUnit(unitName)
+	} else {
+		logger.Info("unitName and target", unitName, target.ChildRefId())
+		e.ResponseAction.SetLoadUnitToTarget(unitName, target)
+	}
+}
+
+func (cSW *CompRuntimeSW) LoadUnitInto(unitName string, passParameters ...interface{}) {
+	cSW.event.LoadUnitToTarget(unitName, cSW.c, passParameters)
 }
 
 func (e *EventRuntime) LoadParent() {
@@ -260,6 +321,16 @@ func (e *EventRuntime) LoadParent() {
 		return
 	}
 	reloadUnit(e, parentUnit)
+	e.Session.DeleteUnit(unit)
+}
+
+func (e *EventRuntime) CloseLayer() {
+	logger.Info("CloseLayer")
+	unit := e.UnitRuntime
+	//parentUnit := unit.GetParent(e.Session)
+	// iframe-et megkeresni, src-t üresre állítani, elrejteni
+	// ide70js parent operations
+	
 	e.Session.DeleteUnit(unit)
 }
 
@@ -284,10 +355,22 @@ func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 	})
 	vm.Set("CompByCr", func(call otto.FunctionCall) otto.Value {
 		childRefId, _ := call.Argument(0).ToString()
-		c := unit.CompByChildRefId[childRefId]
 		eventVal, _ := vm.Get("currentEvent")
 		eventIf, _ := eventVal.Export()
 		event := eventIf.(*EventRuntime)
+		var c *CompRuntime = nil
+		if childRefId == "" {
+			c = event.Comp
+		} else {
+			c = unit.CompByChildRefId[childRefId]
+		}
+		if c == nil {
+			result, ev := vm.ToValue(nil)
+			if ev != nil {
+				eventLogger.Error("error converting result:", ev.Error())
+			}
+			return result
+		}
 		cSW := &CompRuntimeSW{c: c, event: event}
 		result, ev := vm.ToValue(cSW)
 		if ev != nil {
@@ -323,6 +406,21 @@ func newEventsHandler() *CompDefEventsHandler {
 
 func (esh *CompDefEventsHandler) AddHandler(eventType string, handler *EventHandler) {
 	esh.Handlers[eventType] = handler
+}
+
+func ProcessCompEvent(e *EventRuntime) {
+	for {
+		logger.Info("compDef.eh:", e.Comp.CompDef.EventsHandler)
+		e.Comp.CompDef.EventsHandler.ProcessEvent(e)
+		if e.ResponseAction.forward != nil {
+			logger.Info("event forward to type:" + e.ResponseAction.forward.EventType)
+			e.Comp = e.ResponseAction.forward.To
+			e.TypeCode = e.ResponseAction.forward.EventType
+			e.ResponseAction.forward = nil
+			continue
+		}
+		break
+	}
 }
 
 func (esh *CompDefEventsHandler) ProcessEvent(event *EventRuntime) {

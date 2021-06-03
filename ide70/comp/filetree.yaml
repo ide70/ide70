@@ -27,3 +27,9 @@ injectToComp:
     copy:
       - dblClickFunc
       - attachedCompCr
+  - cr: subdir
+    copy:
+      - dirClickCompCr
+injectRootComp:
+  css:
+    - name: comp/fileTree.css

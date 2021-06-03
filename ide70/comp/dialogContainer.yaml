@@ -1,0 +1,12 @@
+---
+body: |
+    <div id="{{.sid}}" class="dialog-container-out">
+    <div class="dialog-container">
+    {{range .Children}}
+    {{evalComp .}}
+    {{end}}
+    </div>
+    </div>
+injectRootComp:
+  css:
+    - name: comp/dialogContainer.css

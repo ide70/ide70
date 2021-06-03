@@ -1,6 +1,6 @@
 ---
 body: |
-  <span>hello I am a test component !!</span>
+  <span>hello I am a test component: {{ .uzenet }}</span>
 eventHandlers:
   onclick:
     action: |

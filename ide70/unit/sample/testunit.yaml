@@ -3,6 +3,7 @@
   children: [tst, newline2, backButton]
 - compType: testcomp
   cr: tst
+  uzenet: true
 - compType: newline
   cr: newline2
 - compType: button

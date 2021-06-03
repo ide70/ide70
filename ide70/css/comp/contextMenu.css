@@ -1,0 +1,23 @@
+.absolute {
+    position: absolute;
+}
+.hidden {
+    /* The menu is hidden at first */
+    display: none;
+}
+
+.overlay-cntr {
+    background-color: Linen;
+    font-family: arial, sans-serif;
+    font-size: 4mm;
+    border: 1px solid Silver;
+}
+
+.menu-item {
+    padding: 1mm 3mm 1mm 3mm;
+    margin: 0mm 1mm 0mm 1mm;
+}
+
+.menu-item:hover {
+    background-color: LightSkyBlue;
+}

@@ -1,6 +1,6 @@
 ---
 - compType: page
-  children: ['vspacer']
+  children: ['vspacer', 'dirMenu', 'firstLayer']
 - compType: v_spacer
   cr: vspacer
   children: ['fileTree', 'codeEditor']
@@ -9,5 +9,23 @@
   basePath: ide70
   dblClickFunc: select
   attachedCompCr: codeEditor
+  dirClickCompCr: dirMenu
 - compType: codeeditor
   cr: codeEditor
+- compType: contextMenu
+  cr: dirMenu
+  items:
+  - key: egy
+    title: New...
+  - key: ketto
+    title: Delete
+  eventHandlers:
+    menu_egy:
+      action: |
+        CompByCr("firstLayer").RefreshHTMLProp("className","layer on").LoadUnitInto("ide/createNewFile");
+        common_log('EGY');
+    menu_ketto:
+      action: |
+        common_log('KETTO');
+- compType: layer/layer
+  cr: firstLayer

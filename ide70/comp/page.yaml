@@ -18,6 +18,7 @@ body: |
   {{end}}
   </head>
   <body>
+  <div id="subunit_holder"></div>
   {{range .Children}}
   {{evalComp .}}
   {{end}}

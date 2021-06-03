@@ -107,6 +107,8 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 	comp.Body, err = template.New(name).Funcs(template.FuncMap{
 		"evalComp":     EvalComp,
 		"generateComp": GenerateComp,
+		"eventHandler": GenerateEventHandler,
+		"eventHandlerWithKey": GenerateEventHandlerWithKey,
 		"app": func() *AppParams {
 			return appParams
 		},
@@ -134,6 +136,17 @@ func EvalComp(comp *CompRuntime) string {
 	sb := &strings.Builder{}
 	comp.Render(sb)
 	return sb.String()
+}
+
+func GenerateEventHandler(comp *CompRuntime, eventTypeCli, eventTypeSvr string) string {
+	if eventTypeSvr == "" {
+		eventTypeSvr = eventTypeCli
+	}
+	return fmt.Sprintf(" %s=\"se(event,'%s',%d,null)\"", eventTypeCli, eventTypeSvr, comp.Sid())
+}
+
+func GenerateEventHandlerWithKey(comp *CompRuntime, eventTypeCli, key string) string {
+	return fmt.Sprintf(" %s=\"se(event,'%s',%d,'%s')\"", eventTypeCli, eventTypeCli, comp.Sid(), key)
 }
 
 func GenerateComp(parentComp *CompRuntime, sourceChildRef string, genRuntimeRefIf interface{}, context interface{}) string {

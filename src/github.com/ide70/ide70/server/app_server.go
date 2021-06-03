@@ -9,19 +9,19 @@ import (
 	"github.com/ide70/ide70/app"
 	"github.com/ide70/ide70/comp"
 	"github.com/ide70/ide70/util/log"
+	"io/ioutil"
+	"os"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
-	"os"
-	"io/ioutil"
-	"path"
 )
 
 // Internal path constants.
 const (
 	pathStatic     = "_static/"
 	pathFileSystem = "_fs/"
-	pathFileSave = "_save/"
+	pathFileSave   = "_save/"
 	pathWebfonts   = "webfonts/"
 	pathSessCheck  = "_sess_ch"
 	pathUnitCreate = "uc" // path for unit create
@@ -89,11 +89,11 @@ func (s *AppServer) Start() error {
 	mux.HandleFunc(s.App.Path+pathStatic, func(w http.ResponseWriter, r *http.Request) {
 		s.serveStatic(w, r)
 	})
-	
+
 	mux.HandleFunc(s.App.Path+pathFileSystem, func(w http.ResponseWriter, r *http.Request) {
 		s.serveFileSystem(w, r)
 	})
-	
+
 	mux.HandleFunc(s.App.Path+pathFileSave, func(w http.ResponseWriter, r *http.Request) {
 		s.serveFileSave(w, r)
 	})
@@ -101,7 +101,7 @@ func (s *AppServer) Start() error {
 	mux.HandleFunc(s.App.Path+pathWebfonts, func(w http.ResponseWriter, r *http.Request) {
 		s.serveWebfonts(w, r)
 	})
-	
+
 	logger.Info("Starting GUI server on:", s.App.URLString)
 
 	s.sessStop = make(chan struct{})
@@ -324,7 +324,14 @@ func (s *AppServer) handleEvent(sess *comp.Session, unit *comp.UnitRuntime, wr h
 	logger.Info("event,value:", evalue)
 
 	e := comp.NewEventRuntime(sess, unit, c, etype, evalue)
-	c.CompDef.EventsHandler.ProcessEvent(e)
+
+	mouseWX, _ := strconv.ParseInt(r.FormValue(paramMouseWX), 10, 64)
+	e.MouseWX = mouseWX
+	mouseWY, _ := strconv.ParseInt(r.FormValue(paramMouseWY), 10, 64)
+	e.MouseWY = mouseWY
+
+	//c.CompDef.EventsHandler.ProcessEvent(e)
+	comp.ProcessCompEvent(e)
 
 	wr.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	logger.Info("act result:", e.ResponseAction.Encode())
@@ -499,7 +506,7 @@ func (s *AppServer) serveFileSystem(w http.ResponseWriter, r *http.Request) {
 
 func (s *AppServer) serveFileSave(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	
+
 	parts := strings.Split(r.URL.Path, "/")
 
 	if len(parts) < 3 {
@@ -509,12 +516,10 @@ func (s *AppServer) serveFileSave(w http.ResponseWriter, r *http.Request) {
 	}
 	// Omit the first empty string, app name and pathStatic
 	parts = parts[3:]
-	
+
 	content := r.FormValue("content")
-	fileName := strings.Join(parts, "/");
+	fileName := strings.Join(parts, "/")
 	logger.Info("Incoming save file name:", fileName)
-
-
 
 	if fileName != "" {
 		if strings.Contains(fileName, "/") {
@@ -528,16 +533,16 @@ func (s *AppServer) serveFileSave(w http.ResponseWriter, r *http.Request) {
 		}
 
 	}
-	
+
 	if parts[0] == "ide70" {
 		if parts[1] == "comp" {
-			comp.RefreshCompType(strings.TrimSuffix(strings.Join(parts[2:],"/"),".yaml"))
+			comp.RefreshCompType(strings.TrimSuffix(strings.Join(parts[2:], "/"), ".yaml"))
 		}
 		if parts[1] == "unit" {
-			comp.RefreshUnitDef(strings.TrimSuffix(strings.Join(parts[2:],"/"),".yaml"))
+			comp.RefreshUnitDef(strings.TrimSuffix(strings.Join(parts[2:], "/"), ".yaml"))
 		}
 	}
- 
+
 }
 
 func (s *AppServer) serveWebfonts(w http.ResponseWriter, r *http.Request) {

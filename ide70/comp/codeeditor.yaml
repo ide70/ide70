@@ -4,7 +4,6 @@ body: |
   </div>
   <script>
     var editor = new EditorBlock(document.getElementById("{{.sid}}"));
-    editor.select("ide70/app/app.yaml");
   </script>
 injectRootComp:
   js:

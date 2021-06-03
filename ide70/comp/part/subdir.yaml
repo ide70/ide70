@@ -19,7 +19,7 @@ body: |
   </ul>
   {{else}}
   <i class="fas fa-folder fa-fw"{{template "eventHandlers" .}}></i>
-  <span class="fs-dir">{{.parentContext.name}}</span>
+  <span class="fs-dir"{{eventHandler $.This "onclick" "onclick_dirname"}}>{{.parentContext.name}}</span>
   {{end}}
   </div>
 eventHandlers:
@@ -32,3 +32,15 @@ eventHandlers:
           Event().Comp.State.parentContext.Files = files;
         }
         Event().CurrentComp().Refresh();
+  onclick_dirname:
+    action: |
+        common_log("click on dir name");
+        dirNameCr = Event().CompProps().dirClickCompCr;
+        common_log("registeredComp:" + dirNameCr);
+        if(dirNameCr) {
+            dirNameComp = CompByCr(dirNameCr);
+            common_log("dirNameComp:" + dirNameComp);
+            if(dirNameComp) {
+                dirNameComp.ForwardEvent("display");
+            }
+        }

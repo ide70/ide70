@@ -83,6 +83,8 @@ function se(event, etype, compId, compValue, async, filter) {
 	
 	if (etype != null)
 		data += "&" + _pEventType + "=" + etype;
+	// remove special event types
+	etype = etype.split('_')[0];
 	if (compId != null)
 		data += "&" + _pCompId + "=" + compId;
 	if (compValue != null)
@@ -152,10 +154,18 @@ function procEresp(actions) {
 		case _eraNoAction:
 			break;
 		case _eraReloadWin:
-			if (n.length > 1 && n[1].length > 0)
-				window.location.href = _pathApp + n[1];
-			else
+			if (n.length > 1 && n[1].length > 0) {
+			    if (n.length > 2 && n[2].length > 0) {
+			        var e = document.getElementById(n[2]);
+			        if(e) {
+			            e.src = _pathApp + n[1];
+			        }
+			    } else {
+				    window.location.href = _pathApp + n[1];
+			    }
+			} else {
 				window.location.reload(true); // force reload
+			}
 			break;
 		case _eraDirtyAttrs:
 			for (var j = 1; j+2 < n.length; j+=3)
@@ -221,8 +231,16 @@ function replaceCompProp(compId, attrName, attrValue) {
 	var e = document.getElementById(compId);
 	if (!e) // Component removed or not visible (e.g. on inactive tab of TabPanel)
 		return;
+		
+	var attrNames = attrName.split('.')
+	for(var i=0;i<attrNames.length-1;i++) {
+	   e = e[attrNames[i]];
+	   if (!e) {
+	       return;
+	   }
+	}
 	
-	e[attrName]=attrValue;
+	e[attrNames[attrNames.length-1]]=attrValue;
 	
 }
 

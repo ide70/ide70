@@ -1,0 +1,22 @@
+---
+- compType: page
+  children: [dialogBox]
+- compType: dialogContainer
+  cr: dialogBox
+  children: [lblFileName, fileName, newline, create]
+- compType: label
+  cr: lblFileName
+  refId: fileName
+  text: 'File name:'
+- compType: textbox
+  cr: fileName
+  name: fileName
+- compType: newline
+  cr: newline
+- compType: button
+  cr: create
+  text: Create
+  eventHandlers:
+    onclick:
+      action: |
+          common_log("File created");

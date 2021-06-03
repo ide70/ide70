@@ -1,0 +1,27 @@
+---
+body: |
+    <div id="{{.sid}}-content" {{eventHandler $.This "onclick" "onclick_cntr"}} class="absolute hidden">
+    {{range .items}}
+      {{$targetAction:=.Year}}
+      <div {{eventHandlerWithKey $.This "onclick" .key}} class="menu-item">{{.title}}</div>
+    {{end}}
+    </div>
+eventHandlers:
+  display:
+    action: |
+        common_log("Display!");
+        CompByCr("").RefreshSubHTMLProp("content","className","absolute overlay-cntr");
+        CompByCr("").RefreshSubHTMLProp("content","style.left",Event().MouseWX+"px");
+        CompByCr("").RefreshSubHTMLProp("content","style.top",Event().MouseWY+"px");
+        common_log("Finished!");
+  onclick:
+    action: |
+        common_log("context:"+Event().ValueStr);
+        CompByCr("").ForwardEvent("menu_"+Event().ValueStr);
+  onclick_cntr:
+    action: |
+        common_log("Hide!");
+        CompByCr("").RefreshSubHTMLProp("content","className","absolute hidden");
+injectRootComp:
+  css:
+    - name: comp/contextMenu.css

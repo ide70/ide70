@@ -34,7 +34,7 @@ func (comp *CompRuntime) Render(writer io.Writer) {
 }
 
 func InstantiateComp(compDef *CompDef, unit *UnitRuntime) *CompRuntime {
-	logger.Info("InstantiateComp", compDef)
+	logger.Info("InstantiateComp", compDef.ChildRefId(), compDef.CompType.Name)
 	comp := &CompRuntime{}
 	comp.CompDef = compDef
 	comp.Unit = unit

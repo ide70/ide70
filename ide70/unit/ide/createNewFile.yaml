@@ -3,7 +3,7 @@
   children: [dialogBox]
 - compType: dialogContainer
   cr: dialogBox
-  children: [lblFileName, fileName, newline, create]
+  children: [lblFileName, fileName, newline, create, close]
 - compType: label
   cr: lblFileName
   refId: fileName
@@ -20,3 +20,10 @@
     onclick:
       action: |
           common_log("File created");
+- compType: button
+  cr: close
+  text: Close
+  eventHandlers:
+    onclick:
+      action: |
+          CompByCr("").ForwardToParent("firstLayer","close");

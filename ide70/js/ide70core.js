@@ -27,6 +27,7 @@ var _eraDirtyProps=5;
 var _eraApplyToParent=6; 
 var _eraScrollDownComp=7;
 var _eraExecuteCompFunc=8;
+var _eraForwardToParent=9;
 
 function createXmlHttp() {
 	if (window.XMLHttpRequest) // IE7+, Firefox, Chrome, Opera, Safari
@@ -183,6 +184,9 @@ function procEresp(actions) {
 		case _eraApplyToParent:
 			window.parent.procEresp(actions.slice(i+1));
 			return;
+		case _eraForwardToParent:
+		    window.parent.se(null, n[1], n[2])
+		    return;
 		default:
 			window.alert("Unknown response code:" + n[0]);
 			break;

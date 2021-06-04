@@ -6,6 +6,9 @@ eventHandlers:
   onclick:
     action: |
       common_log("layer clicked");
+  close:
+    action: |
+      CompByCr("").RefreshHTMLProp("className","layer off")
 injectRootComp:
   css:
     - name: comp/layer/layer.css

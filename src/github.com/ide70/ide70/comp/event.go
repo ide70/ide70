@@ -24,6 +24,7 @@ const (
 	eraApplyToParent        // Apply changes to parent window
 	eraScrollDownComp
 	eraCompFuncExecute
+	eraForwardToParent
 )
 
 const EvtUnitPrefix = "onUnit"
@@ -85,6 +86,11 @@ type EventForward struct {
 	EventType string
 }
 
+type ParentForward struct {
+	SID       int64
+	EventType string
+}
+
 func NewEventRuntime(sess *Session, unit *UnitRuntime, comp *CompRuntime, typeCode string, valueStr string) *EventRuntime {
 	er := &EventRuntime{}
 	er.Session = sess
@@ -104,6 +110,8 @@ type ResponseAction struct {
 	loadUnit           string
 	loadTargetCr       string
 	forward            *EventForward
+	applyToParent      bool
+	parentForward      *ParentForward
 }
 
 func newResponseAction() *ResponseAction {
@@ -121,7 +129,11 @@ func addSep(sb *strings.Builder, sep string) {
 
 func (ra *ResponseAction) Encode() string {
 	var sb strings.Builder
+	if ra.applyToParent {
+		sb.WriteString(fmt.Sprintf("%d", eraApplyToParent))
+	}
 	if ra.loadUnit != "" {
+		addSep(&sb, "|")
 		loadUnit := ra.loadUnit
 		if loadUnit == loadUnitSelf {
 			loadUnit = ""
@@ -164,10 +176,19 @@ func (ra *ResponseAction) Encode() string {
 		}
 	}
 
+	if ra.parentForward != nil {
+		addSep(&sb, "|")
+		sb.WriteString(fmt.Sprintf("%d,%s,%d", eraForwardToParent, ra.parentForward.EventType, ra.parentForward.SID))
+	}
+
 	if sb.Len() > 0 {
 		return sb.String()
 	}
 	return fmt.Sprintf("%d", eraNoAction)
+}
+
+func (ra *ResponseAction) ApplyToParent(applyToParent bool) {
+	ra.applyToParent = applyToParent
 }
 
 func (ra *ResponseAction) SetCompRefresh(comp *CompRuntime) {
@@ -186,6 +207,10 @@ func (ra *ResponseAction) SetSubAttrRefresh(comp *CompRuntime, idPostfix, key, v
 
 func (ra *ResponseAction) SetForwardEvent(comp *CompRuntime, eventType string) {
 	ra.forward = &EventForward{To: comp, EventType: eventType}
+}
+
+func (ra *ResponseAction) SetParentForwardEvent(sid int64, eventType string) {
+	ra.parentForward = &ParentForward{SID: sid, EventType: eventType}
 }
 
 func (ra *ResponseAction) SetCompPropRefresh(comp *CompRuntime, key, value string) {
@@ -227,6 +252,11 @@ func (cSW *CompRuntimeSW) GetProp(key string) interface{} {
 	return cSW.c.State[key]
 }
 
+func (cSW *CompRuntimeSW) ApplyToParent() *CompRuntimeSW {
+	cSW.event.ResponseAction.ApplyToParent(true)
+	return cSW
+}
+
 func (cSW *CompRuntimeSW) RefreshHTMLProp(key, value string) *CompRuntimeSW {
 	cSW.event.ResponseAction.SetCompPropRefresh(cSW.c, key, value)
 	return cSW
@@ -253,6 +283,23 @@ func (cSW *CompRuntimeSW) ForwardEvent(eventType string) *CompRuntimeSW {
 	}
 	logger.Info("cSW.c", cSW.c)
 	cSW.event.ResponseAction.SetForwardEvent(cSW.c, eventType)
+	return cSW
+}
+
+func (cSW *CompRuntimeSW) ForwardToParent(parentCompCr, eventType string) *CompRuntimeSW {
+	if eventType == "" {
+		eventType = cSW.event.TypeCode
+	}
+	unit := cSW.event.UnitRuntime
+	parentUnit := unit.GetParent(cSW.event.Session)
+	if parentUnit == nil {
+		return cSW
+	}
+	comp := parentUnit.CompByChildRefId[parentCompCr]
+	if comp == nil {
+		return cSW
+	}
+	cSW.event.ResponseAction.SetParentForwardEvent(comp.Sid(), eventType)
 	return cSW
 }
 
@@ -330,7 +377,7 @@ func (e *EventRuntime) CloseLayer() {
 	//parentUnit := unit.GetParent(e.Session)
 	// iframe-et megkeresni, src-t üresre állítani, elrejteni
 	// ide70js parent operations
-	
+
 	e.Session.DeleteUnit(unit)
 }
 

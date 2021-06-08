@@ -28,7 +28,7 @@
   eventHandlers:
     onclick:
       action: |
-          Event().LoadUnit("dogs/dog", Event().Comp.State.parentContext._id);
+          CompByCr("").LoadUnit("dogs/dog").AddPassParam("id", Event().Comp.State.parentContext._id);
 - compType: button
   cr: deleteButton
   text: Töröl

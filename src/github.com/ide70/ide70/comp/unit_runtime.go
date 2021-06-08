@@ -70,7 +70,8 @@ func RefreshUnitDef(name string) {
 }
 
 func RefreshCompType(name string) {
-	delete(CompCache, name)
+	//delete(CompCache, name)
+	CompCache = map[string]*CompType{}
 	//drop all unit defs
 	UnitDefCache = map[string]*UnitDef{}
 	logger.Info("refresh comp type:",name)

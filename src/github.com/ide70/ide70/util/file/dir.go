@@ -33,6 +33,14 @@ func (fc *FileContext) ReadDir(basePath string) []interface{} {
 	return list
 }
 
+func (fc *FileContext) CreateFile(path string) {
+	emptyFile, err := os.Create(path)
+	if err != nil {
+		logger.Error(err.Error())
+	}
+	emptyFile.Close()
+}
+
 func FileList(basePath string, trimPrefix string) []string {
 	list := []string{}
 	files, _ := ioutil.ReadDir(basePath)

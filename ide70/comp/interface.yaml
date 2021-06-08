@@ -1,0 +1,14 @@
+---
+eventHandlers:
+  onUnitCreate:
+    action: |
+        common_log("PassParams:"+PassParams);
+        var binds = CompByCr("").GetProp("bind");
+        binds.forEach(function (bind) {
+            var toComp = CompByCr(bind.cr);
+            if (!toComp) {
+                return;
+            }
+            toComp.SetProp(bind.toProp, PassParams[bind.key]);
+            common_log(bind.cr + "." + bind.toProp + " <- " + PassParams[bind.key]);
+        });

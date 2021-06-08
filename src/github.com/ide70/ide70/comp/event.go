@@ -68,6 +68,7 @@ type EventRuntime struct {
 	Session        *Session
 	MouseWX        int64
 	MouseWY        int64
+	Params         []interface{}
 }
 
 type Attr struct {
@@ -84,11 +85,18 @@ type JSFuncCall struct {
 type EventForward struct {
 	To        *CompRuntime
 	EventType string
+	Params    []interface{}
 }
 
 type ParentForward struct {
 	SID       int64
 	EventType string
+}
+
+type LoadUnit struct {
+	unit       string
+	passParams map[string]interface{}
+	targetCr   string
 }
 
 func NewEventRuntime(sess *Session, unit *UnitRuntime, comp *CompRuntime, typeCode string, valueStr string) *EventRuntime {
@@ -107,8 +115,7 @@ type ResponseAction struct {
 	attrsToRefresh     map[string][]Attr
 	propsToRefresh     map[string][]Attr
 	compFuncsToExecute []JSFuncCall
-	loadUnit           string
-	loadTargetCr       string
+	loadUnit           *LoadUnit
 	forward            *EventForward
 	applyToParent      bool
 	parentForward      *ParentForward
@@ -132,13 +139,13 @@ func (ra *ResponseAction) Encode() string {
 	if ra.applyToParent {
 		sb.WriteString(fmt.Sprintf("%d", eraApplyToParent))
 	}
-	if ra.loadUnit != "" {
+	if ra.loadUnit != nil {
 		addSep(&sb, "|")
-		loadUnit := ra.loadUnit
-		if loadUnit == loadUnitSelf {
-			loadUnit = ""
+		unit := ra.loadUnit.unit
+		if unit == loadUnitSelf {
+			unit = ""
 		}
-		sb.WriteString(fmt.Sprintf("%d,%s,%s", eraReloadWin, loadUnit, ra.loadTargetCr))
+		sb.WriteString(fmt.Sprintf("%d,%s,%s", eraReloadWin, unit, ra.loadUnit.targetCr))
 	}
 	if len(ra.compsToRefresh) > 0 {
 		addSep(&sb, "|")
@@ -205,8 +212,8 @@ func (ra *ResponseAction) SetSubAttrRefresh(comp *CompRuntime, idPostfix, key, v
 	ra.attrsToRefresh[id] = append(ra.attrsToRefresh[id], Attr{Key: key, Value: value})
 }
 
-func (ra *ResponseAction) SetForwardEvent(comp *CompRuntime, eventType string) {
-	ra.forward = &EventForward{To: comp, EventType: eventType}
+func (ra *ResponseAction) SetForwardEvent(comp *CompRuntime, eventType string, params ...interface{}) {
+	ra.forward = &EventForward{To: comp, EventType: eventType, Params: params}
 }
 
 func (ra *ResponseAction) SetParentForwardEvent(sid int64, eventType string) {
@@ -228,13 +235,26 @@ func (ra *ResponseAction) SetCompFuncExecute(comp *CompRuntime, funcName string,
 	ra.compFuncsToExecute = append(ra.compFuncsToExecute, JSFuncCall{Comp: id, FuncName: funcName, Args: args})
 }
 
+func (ra *ResponseAction) initLoadUnit() {
+	if ra.loadUnit == nil {
+		ra.loadUnit = &LoadUnit{passParams: map[string]interface{}{}}
+	}
+}
+
 func (ra *ResponseAction) SetLoadUnit(unitName string) {
-	ra.loadUnit = unitName
+	ra.initLoadUnit()
+	ra.loadUnit.unit = unitName
 }
 
 func (ra *ResponseAction) SetLoadUnitToTarget(unitName string, target *CompRuntime) {
-	ra.loadUnit = unitName
-	ra.loadTargetCr = strconv.FormatInt(target.Sid(), 10)
+	ra.initLoadUnit()
+	ra.loadUnit.unit = unitName
+	ra.loadUnit.targetCr = strconv.FormatInt(target.Sid(), 10)
+}
+
+func (ra *ResponseAction) AddLoadUnitParam(key string, value interface{}) {
+	ra.initLoadUnit()
+	ra.loadUnit.passParams[key]=value
 }
 
 type CompRuntimeSW struct {
@@ -277,12 +297,12 @@ func (cSW *CompRuntimeSW) RefreshSubHTMLProp(idPostfix, key, value string) *Comp
 	return cSW
 }
 
-func (cSW *CompRuntimeSW) ForwardEvent(eventType string) *CompRuntimeSW {
+func (cSW *CompRuntimeSW) ForwardEvent(eventType string, params ...interface{}) *CompRuntimeSW {
 	if eventType == "" {
 		eventType = cSW.event.TypeCode
 	}
 	logger.Info("cSW.c", cSW.c)
-	cSW.event.ResponseAction.SetForwardEvent(cSW.c, eventType)
+	cSW.event.ResponseAction.SetForwardEvent(cSW.c, eventType, params...)
 	return cSW
 }
 
@@ -312,21 +332,6 @@ func (cSW *CompRuntimeSW) Refresh() {
 	cSW.event.ResponseAction.SetCompRefresh(cSW.c)
 }
 
-func passParametersToMap(passParameters ...interface{}) map[string]interface{} {
-	if len(passParameters) == 0 {
-		return nil
-	}
-	switch ppT := passParameters[0].(type) {
-	case int64, string:
-		ppMap := map[string]interface{}{}
-		ppMap["id"] = ppT
-		return ppMap
-	case map[string]interface{}:
-		return ppT
-	}
-	return nil
-}
-
 func reloadUnit(e *EventRuntime, unit *UnitRuntime) {
 	unitPath := fmt.Sprintf("%s/%s", PathUnitById, unit.getID())
 	logger.Info("Reload existing unit:", unitPath)
@@ -337,27 +342,41 @@ func (e *EventRuntime) CurrentComp() *CompRuntimeSW {
 	return &CompRuntimeSW{c: e.Comp, event: e}
 }
 
-func (e *EventRuntime) LoadUnit(unitName string, passParameters ...interface{}) {
-	e.LoadUnitToTarget(unitName, nil, passParameters)
+func (e *EventRuntime) LoadUnit(unitName string) {
+	e.LoadUnitToTarget(unitName, nil)
 }
 
-func (e *EventRuntime) LoadUnitToTarget(unitName string, target *CompRuntime, passParameters ...interface{}) {
-	logger.Info("LoadUnit", unitName, passParameters)
-	passParametersMap := passParametersToMap(passParameters...)
-	logger.Info("passParametersMap", passParametersMap)
-	id := e.Session.SetPassParameters(passParametersMap, e.UnitRuntime)
-	unitName = fmt.Sprintf("%s?%s=%s", unitName, ParamPassParamID, id)
+func (e *EventRuntime) setPassParamteres() {
+	if e.ResponseAction.loadUnit != nil {
+		id := e.Session.SetPassParameters(e.ResponseAction.loadUnit.passParams, e.UnitRuntime)
+		unitName := fmt.Sprintf("%s?%s=%s", e.ResponseAction.loadUnit.unit, ParamPassParamID, id)
+		e.ResponseAction.SetLoadUnit(unitName);
+	}
+}
+
+func (e *EventRuntime) LoadUnitToTarget(unitName string, target *CompRuntime) {
 	if target == nil {
-		logger.Info("unitName", unitName)
+		logger.Info("LoadUnit unitName", unitName)
 		e.ResponseAction.SetLoadUnit(unitName)
 	} else {
-		logger.Info("unitName and target", unitName, target.ChildRefId())
+		logger.Info("LoadUnit unitName and target", unitName, target.ChildRefId())
 		e.ResponseAction.SetLoadUnitToTarget(unitName, target)
 	}
 }
 
-func (cSW *CompRuntimeSW) LoadUnitInto(unitName string, passParameters ...interface{}) {
-	cSW.event.LoadUnitToTarget(unitName, cSW.c, passParameters)
+func (cSW *CompRuntimeSW) LoadUnitInto(unitName string) *CompRuntimeSW {
+	cSW.event.LoadUnitToTarget(unitName, cSW.c)
+	return cSW
+}
+
+func (cSW *CompRuntimeSW) LoadUnit(unitName string) *CompRuntimeSW {
+	cSW.event.LoadUnit(unitName)
+	return cSW
+}
+
+func (cSW *CompRuntimeSW) AddPassParam(key string, value interface{}) *CompRuntimeSW {
+	cSW.event.ResponseAction.AddLoadUnitParam(key, value)
+	return cSW
 }
 
 func (e *EventRuntime) LoadParent() {
@@ -463,11 +482,13 @@ func ProcessCompEvent(e *EventRuntime) {
 			logger.Info("event forward to type:" + e.ResponseAction.forward.EventType)
 			e.Comp = e.ResponseAction.forward.To
 			e.TypeCode = e.ResponseAction.forward.EventType
+			e.Params = e.ResponseAction.forward.Params
 			e.ResponseAction.forward = nil
 			continue
 		}
 		break
 	}
+	e.setPassParamteres()
 }
 
 func (esh *CompDefEventsHandler) ProcessEvent(event *EventRuntime) {

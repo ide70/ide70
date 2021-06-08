@@ -1,9 +1,28 @@
 ---
 - compType: page
-  children: [dialogBox]
+  children: [dialogBox, interface]
+- compType: interface
+  cr: interface
+  bind:
+    - key: dirName
+      cr: dirName
+      toProp: value
 - compType: dialogContainer
   cr: dialogBox
-  children: [lblFileName, fileName, newline, create, close]
+  children: [lblDirName, dirName, newline2, lblFileName, fileName, newline, create, close]
+- compType: label
+  cr: lblDirName
+  refId: dirName
+  text: 'Dir name:'
+- compType: textbox
+  cr: dirName
+  name: dirName
+  eventHandlers:
+    onUnitCreate:
+      action: |
+          common_log("PP:"+PassParams);
+- compType: newline
+  cr: newline2
 - compType: label
   cr: lblFileName
   refId: fileName
@@ -11,6 +30,7 @@
 - compType: textbox
   cr: fileName
   name: fileName
+  value: ""
 - compType: newline
   cr: newline
 - compType: button
@@ -19,7 +39,14 @@
   eventHandlers:
     onclick:
       action: |
-          common_log("File created");
+          var dirName = CompByCr("dirName").GetProp("value");
+          var fileName = CompByCr("fileName").GetProp("value");
+          var dirTokens = dirName.split("/");
+          dirTokens.push(fileName);
+          var fullName = dirTokens.join("/");
+          Event().FileCtx().CreateFile(fullName);
+          common_log("File created: "+fullName);
+          CompByCr("").ForwardToParent("firstLayer","close");
 - compType: button
   cr: close
   text: Close

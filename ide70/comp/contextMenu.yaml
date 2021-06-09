@@ -10,15 +10,15 @@ eventHandlers:
   display:
     action: |
         common_log("Display!");
-        CompByCr("").SetProp("contextParam", Event().Params[0]);
+        CompByCr("").SetProp("contextParam", Event().Params);
         CompByCr("").RefreshSubHTMLProp("content","className","absolute overlay-cntr");
         CompByCr("").RefreshSubHTMLProp("content","style.left",Event().MouseWX+"px");
         CompByCr("").RefreshSubHTMLProp("content","style.top",Event().MouseWY+"px");
-        common_log("Finished!");
   onclick:
     action: |
         common_log("context:"+Event().ValueStr);
-        CompByCr("").ForwardEvent("menu_"+Event().ValueStr, CompByCr("").GetProp("contextParam"));
+        CompByCr("").ForwardEvent("menu_"+Event().ValueStr).
+            AddForwardParams(CompByCr("").GetProp("contextParam"));
   onclick_cntr:
     action: |
         common_log("Hide!");

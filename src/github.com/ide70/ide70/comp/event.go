@@ -68,7 +68,7 @@ type EventRuntime struct {
 	Session        *Session
 	MouseWX        int64
 	MouseWY        int64
-	Params         []interface{}
+	Params         map[string]interface{}
 }
 
 type Attr struct {
@@ -85,7 +85,7 @@ type JSFuncCall struct {
 type EventForward struct {
 	To        *CompRuntime
 	EventType string
-	Params    []interface{}
+	Params    map[string]interface{}
 }
 
 type ParentForward struct {
@@ -212,8 +212,20 @@ func (ra *ResponseAction) SetSubAttrRefresh(comp *CompRuntime, idPostfix, key, v
 	ra.attrsToRefresh[id] = append(ra.attrsToRefresh[id], Attr{Key: key, Value: value})
 }
 
-func (ra *ResponseAction) SetForwardEvent(comp *CompRuntime, eventType string, params ...interface{}) {
-	ra.forward = &EventForward{To: comp, EventType: eventType, Params: params}
+func (ra *ResponseAction) SetForwardEvent(comp *CompRuntime, eventType string) {
+	ra.forward = &EventForward{To: comp, EventType: eventType, Params: map[string]interface{}{}}
+}
+
+func (ra *ResponseAction) AddForwardEventParam(key string, value interface{}) {
+	if ra.forward != nil {
+		ra.forward.Params[key] = value
+	}
+}
+
+func (ra *ResponseAction) AddForwardEventParams(params map[string]interface{}) {
+	if ra.forward != nil {
+		ra.forward.Params = params
+	}
 }
 
 func (ra *ResponseAction) SetParentForwardEvent(sid int64, eventType string) {
@@ -250,11 +262,12 @@ func (ra *ResponseAction) SetLoadUnitToTarget(unitName string, target *CompRunti
 	ra.initLoadUnit()
 	ra.loadUnit.unit = unitName
 	ra.loadUnit.targetCr = strconv.FormatInt(target.Sid(), 10)
+	ra.loadUnit.passParams["parentCr"] = target.CompDef.ChildRefId()
 }
 
 func (ra *ResponseAction) AddLoadUnitParam(key string, value interface{}) {
 	ra.initLoadUnit()
-	ra.loadUnit.passParams[key]=value
+	ra.loadUnit.passParams[key] = value
 }
 
 type CompRuntimeSW struct {
@@ -262,7 +275,7 @@ type CompRuntimeSW struct {
 	event *EventRuntime
 }
 
-func (cSW *CompRuntimeSW) SetProp(key, value string) *CompRuntimeSW {
+func (cSW *CompRuntimeSW) SetProp(key string, value interface{}) *CompRuntimeSW {
 	cSW.c.State[key] = value
 	eventLogger.Info("property", key, "set to", value)
 	return cSW
@@ -297,12 +310,22 @@ func (cSW *CompRuntimeSW) RefreshSubHTMLProp(idPostfix, key, value string) *Comp
 	return cSW
 }
 
-func (cSW *CompRuntimeSW) ForwardEvent(eventType string, params ...interface{}) *CompRuntimeSW {
+func (cSW *CompRuntimeSW) ForwardEvent(eventType string) *CompRuntimeSW {
 	if eventType == "" {
 		eventType = cSW.event.TypeCode
 	}
 	logger.Info("cSW.c", cSW.c)
-	cSW.event.ResponseAction.SetForwardEvent(cSW.c, eventType, params...)
+	cSW.event.ResponseAction.SetForwardEvent(cSW.c, eventType)
+	return cSW
+}
+
+func (cSW *CompRuntimeSW) AddForwardParam(key string, value interface{}) *CompRuntimeSW {
+	cSW.event.ResponseAction.AddForwardEventParam(key, value)
+	return cSW
+}
+
+func (cSW *CompRuntimeSW) AddForwardParams(params map[string]interface{}) *CompRuntimeSW {
+	cSW.event.ResponseAction.AddForwardEventParams(params)
 	return cSW
 }
 
@@ -350,7 +373,7 @@ func (e *EventRuntime) setPassParamteres() {
 	if e.ResponseAction.loadUnit != nil {
 		id := e.Session.SetPassParameters(e.ResponseAction.loadUnit.passParams, e.UnitRuntime)
 		unitName := fmt.Sprintf("%s?%s=%s", e.ResponseAction.loadUnit.unit, ParamPassParamID, id)
-		e.ResponseAction.SetLoadUnit(unitName);
+		e.ResponseAction.SetLoadUnit(unitName)
 	}
 }
 
@@ -406,6 +429,15 @@ func (e *EventRuntime) ReloadUnit() {
 
 func (e *EventRuntime) CompProps() map[string]interface{} {
 	return e.Comp.State
+}
+
+func (e *EventRuntime) GetParam(key string) interface{} {
+	logger.Info("GetParam:", e.Params)
+	if e.Params == nil {
+		return nil
+	}
+	logger.Info("GetParam:", key, e.Params[key])
+	return e.Params[key]
 }
 
 func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
@@ -483,6 +515,7 @@ func ProcessCompEvent(e *EventRuntime) {
 			e.Comp = e.ResponseAction.forward.To
 			e.TypeCode = e.ResponseAction.forward.EventType
 			e.Params = e.ResponseAction.forward.Params
+			logger.Info("with params:", e.Params)
 			e.ResponseAction.forward = nil
 			continue
 		}

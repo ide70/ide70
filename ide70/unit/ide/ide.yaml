@@ -22,8 +22,9 @@
   eventHandlers:
     menu_egy:
       action: |
-        CompByCr("firstLayer").RefreshHTMLProp("className","layer on").LoadUnitInto("ide/createNewFile")
-        .AddPassParam("dirName", Event().Params[0]);
+        common_log('ep2:'+Event().GetParam("path"));
+        CompByCr("firstLayer").ForwardEvent("show").LoadUnitInto("ide/createNewFile")
+        .AddPassParam("dirName", Event().GetParam("path"));
         common_log('EGY');
     menu_ketto:
       action: |

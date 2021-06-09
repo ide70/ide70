@@ -42,6 +42,7 @@ eventHandlers:
             common_log("dirNameComp:" + dirNameComp);
             if(dirNameComp) {
                 common_log("FWD:"+Event().Comp.State.parentContext.path);
-                dirNameComp.ForwardEvent("display", Event().Comp.State.parentContext.path);
+                dirNameComp.ForwardEvent("display").
+                    AddForwardParam("path", Event().Comp.State.parentContext.path);
             }
         }

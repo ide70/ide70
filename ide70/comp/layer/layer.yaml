@@ -6,6 +6,9 @@ eventHandlers:
   onclick:
     action: |
       common_log("layer clicked");
+  show:
+    action: |
+      CompByCr("").RefreshHTMLProp("className","layer on")  
   close:
     action: |
       CompByCr("").RefreshHTMLProp("className","layer off")

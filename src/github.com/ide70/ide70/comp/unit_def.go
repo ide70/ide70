@@ -144,5 +144,38 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 		}
 	}
 
+	childrenIf := unit.RootComp.Props["tree"]
+	logger.Info("tree scruct:", childrenIf)
+	if childrenIf != nil {
+		processCompTree(unit, unit.RootComp, dataxform.IAsArr(childrenIf))
+	}
+
 	return unit
+}
+
+func registerChild(unit *UnitDef, comp *CompDef, childRef string) *CompDef {
+	childDef := unit.CompsMap[childRef]
+	if childDef == nil {
+		logger.Error("tree: childRef not found:", childRef)
+		return nil
+	} else {
+		comp.Children = append(comp.Children, childDef)
+		return childDef
+	}
+}
+
+func processCompTree(unit *UnitDef, comp *CompDef, children []interface{}) {
+	for _, child := range children {
+		switch Tchild := child.(type) {
+		case string:
+			registerChild(unit, comp, Tchild)
+		case map[string]interface{}:
+			for childRef, subNode := range Tchild {
+				childComp := registerChild(unit, comp, childRef)
+				if childComp != nil {
+					processCompTree(unit, childComp, dataxform.IAsArr(subNode))
+				}
+			}
+		}
+	}
 }

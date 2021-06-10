@@ -4,7 +4,7 @@ include:
 body: |
   <div id="{{.sid}}" class="grp">
   {{if .parentContext.isOpen}}
-  <i class="fas fa-folder fa-fw"{{template "eventHandlers" .}}></i>
+  <i class="fas fa-folder-open fa-fw"{{template "eventHandlers" .}}></i>
   <span class="fs-dir open">{{.parentContext.name}}</span>
   <ul>
   {{range $i, $entry := .parentContext.Files}}

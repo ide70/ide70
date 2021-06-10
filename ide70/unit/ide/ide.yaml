@@ -1,9 +1,13 @@
 ---
 - compType: page
-  children: ['vspacer', 'dirMenu', 'firstLayer']
+  tree:
+    - vspacer:
+      - fileTree
+      - codeEditor
+    - dirMenu
+    - firstLayer
 - compType: v_spacer
   cr: vspacer
-  children: ['fileTree', 'codeEditor']
 - compType: filetree
   cr: fileTree
   basePath: ide70

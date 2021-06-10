@@ -8,30 +8,19 @@ div.fileselect {
     height: 500px;
     overflow: scroll;
 }
-	
-.fs-dir::before {
-  content: "\25B8";
-  color: black;
-  display: inline-block;
-  margin-right: 6px;
-}
 
 .fs-file:hover, .fs-dir:hover {
 	background-color: lightsteelblue;
 	border-radius: 3px 3px 3px 3px;
 }
 
-.fa-folder {
+.fa-folder, .fa-folder-open {
   color: Moccasin;
   text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
 }
 	
 .fa-file-alt {
 	color: darkgrey;
-}
-
-.fs-dir.open::before {
-  content: "\25BE";
 }
 
 .fileselect span {

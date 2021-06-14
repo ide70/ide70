@@ -186,7 +186,7 @@ function procEresp(actions) {
 			return;
 		case _eraForwardToParent:
 		    window.parent.se(null, n[1], n[2])
-		    return;
+		    continue;
 		default:
 			window.alert("Unknown response code:" + n[0]);
 			break;

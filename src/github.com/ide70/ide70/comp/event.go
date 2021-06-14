@@ -118,7 +118,7 @@ type ResponseAction struct {
 	loadUnit           *LoadUnit
 	forward            *EventForward
 	applyToParent      bool
-	parentForward      *ParentForward
+	parentForward      []*ParentForward
 }
 
 func newResponseAction() *ResponseAction {
@@ -183,9 +183,9 @@ func (ra *ResponseAction) Encode() string {
 		}
 	}
 
-	if ra.parentForward != nil {
+	for _,parentForward := range ra.parentForward {
 		addSep(&sb, "|")
-		sb.WriteString(fmt.Sprintf("%d,%s,%d", eraForwardToParent, ra.parentForward.EventType, ra.parentForward.SID))
+		sb.WriteString(fmt.Sprintf("%d,%s,%d", eraForwardToParent, parentForward.EventType, parentForward.SID))
 	}
 
 	if sb.Len() > 0 {
@@ -228,8 +228,8 @@ func (ra *ResponseAction) AddForwardEventParams(params map[string]interface{}) {
 	}
 }
 
-func (ra *ResponseAction) SetParentForwardEvent(sid int64, eventType string) {
-	ra.parentForward = &ParentForward{SID: sid, EventType: eventType}
+func (ra *ResponseAction) AddParentForwardEvent(sid int64, eventType string) {
+	ra.parentForward = append(ra.parentForward, &ParentForward{SID: sid, EventType: eventType})
 }
 
 func (ra *ResponseAction) SetCompPropRefresh(comp *CompRuntime, key, value string) {
@@ -342,7 +342,12 @@ func (cSW *CompRuntimeSW) ForwardToParent(parentCompCr, eventType string) *CompR
 	if comp == nil {
 		return cSW
 	}
-	cSW.event.ResponseAction.SetParentForwardEvent(comp.Sid(), eventType)
+	cSW.event.ResponseAction.AddParentForwardEvent(comp.Sid(), eventType)
+	return cSW
+}
+
+func (cSW *CompRuntimeSW) ForwardToParentComp(parentComp *CompRuntime, eventType string) *CompRuntimeSW {
+	cSW.event.ResponseAction.AddParentForwardEvent(parentComp.Sid(), eventType)
 	return cSW
 }
 

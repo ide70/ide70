@@ -5,7 +5,7 @@ body: |
   <div id="{{.sid}}" class="grp">
   {{if .parentContext.isOpen}}
   <i class="fas fa-folder-open fa-fw"{{template "eventHandlers" .}}></i>
-  <span class="fs-dir open">{{.parentContext.name}}</span>
+  <span class="fs-dir open"{{eventHandler $.This "onclick" "onclick_dirname"}}>{{.parentContext.name}}</span>
   <ul>
   {{range $i, $entry := .parentContext.Files}}
   <li>
@@ -18,7 +18,7 @@ body: |
   {{end}}
   </ul>
   {{else}}
-  <i class="fas fa-folder fa-fw"{{template "eventHandlers" .}}></i>
+  <i class="fas fa-folder fa-fw"{{eventHandler $.This "onclick"}}></i>
   <span class="fs-dir"{{eventHandler $.This "onclick" "onclick_dirname"}}>{{.parentContext.name}}</span>
   {{end}}
   </div>
@@ -32,17 +32,20 @@ eventHandlers:
           Event().Comp.State.parentContext.Files = files;
         }
         Event().CurrentComp().Refresh();
+  refresh:
+    action: |
+        common_log("refresh called.");
+        var files = Event().FileCtx().ReadDir(Event().Comp.State.parentContext.path);
+        Event().Comp.State.parentContext.Files = files;
+        Event().CurrentComp().Refresh();
   onclick_dirname:
     action: |
-        common_log("click on dir name");
         dirNameCr = Event().CompProps().dirClickCompCr;
-        common_log("registeredComp:" + dirNameCr);
         if(dirNameCr) {
             dirNameComp = CompByCr(dirNameCr);
-            common_log("dirNameComp:" + dirNameComp);
             if(dirNameComp) {
-                common_log("FWD:"+Event().Comp.State.parentContext.path);
                 dirNameComp.ForwardEvent("display").
-                    AddForwardParam("path", Event().Comp.State.parentContext.path);
+                    AddForwardParam("path", Event().Comp.State.parentContext.path).
+                    AddForwardParam("dirComp", Event().Comp);
             }
         }

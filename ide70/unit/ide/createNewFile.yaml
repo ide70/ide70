@@ -42,7 +42,9 @@
           var fullName = dirTokens.join("/");
           Event().FileCtx().CreateFile(fullName);
           common_log("File created: "+fullName);
-          CompByCr("").ForwardToParent(PassParams.parentCr,"close");
+          common_log("PPdc: "+PassParams.dirComp);
+          CompByCr("").ForwardToParent(PassParams.parentCr,"close").
+          ForwardToParentComp(PassParams.dirComp, "refresh");
 - compType: button
   cr: close
   text: Close

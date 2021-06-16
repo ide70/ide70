@@ -1,0 +1,17 @@
+---
+body: |
+  <table class="labeled-table">
+  {{range .Children}}
+  <tr>
+  <td>
+  {{.GetProp "label"}}:
+  </td>
+  <td>
+  {{evalComp .}}
+  </td>
+  </tr>
+  {{end}}
+  </table>
+injectRootComp:
+  css:
+    - name: comp/labeledTable.css

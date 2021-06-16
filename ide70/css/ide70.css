@@ -2,18 +2,6 @@ div.grp {
 	display: contents;
 }
 
-table {
-    font-family: arial, sans-serif;
-    border-collapse: collapse;
-    width: 100%;
-}
-
-td, th {
-    border: 1px solid #aaaaaa;
-    text-align: left;
-    padding: 8px;
-}
-
-tr:nth-child(even) {
-    background-color: #dddddd;
+body {
+    font-family: Arial, sans-serif;
 }

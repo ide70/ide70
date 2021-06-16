@@ -1,9 +1,12 @@
 ---
 body: |
-  <table>
+  <table class="datatable">
   {{range .displayRows}}
   <tr>
     {{range .c}}
   </tr>
   {{end}}
   </table>
+injectRootComp:
+  css:
+    - name: comp/dataTable.css

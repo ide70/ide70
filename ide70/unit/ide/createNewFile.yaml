@@ -1,6 +1,13 @@
 ---
 - compType: page
-  children: [dialogBox, interface]
+  tree:
+    - dialogBox:
+      - inputs:
+        - dirName
+        - fileName
+      - create
+      - cancel
+    - interface
 - compType: interface
   cr: interface
   bind:
@@ -9,26 +16,18 @@
       toProp: value
 - compType: dialogContainer
   cr: dialogBox
-  children: [lblDirName, dirName, newline2, lblFileName, fileName, newline, create, close]
-- compType: label
-  cr: lblDirName
-  refId: dirName
-  text: 'Dir name:'
+  title: Create New File
+- compType: labeledTable
+  cr : inputs
 - compType: textbox
   cr: dirName
   name: dirName
-- compType: newline
-  cr: newline2
-- compType: label
-  cr: lblFileName
-  refId: fileName
-  text: 'File name:'
+  label: 'Dir name'
 - compType: textbox
   cr: fileName
   name: fileName
   value: ""
-- compType: newline
-  cr: newline
+  label: 'File name'
 - compType: button
   cr: create
   text: Create
@@ -46,8 +45,8 @@
           CompByCr("").ForwardToParent(PassParams.parentCr,"close").
           ForwardToParentComp(PassParams.dirComp, "refresh");
 - compType: button
-  cr: close
-  text: Close
+  cr: cancel
+  text: Cancel
   eventHandlers:
     onclick:
       action: |

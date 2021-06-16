@@ -1,6 +1,6 @@
 ---
 body: |
-  <table>
+  <table class="datatable">
   <tr>
   {{range $column := .columns}}
     <th>{{$column.header}}</th>
@@ -24,3 +24,6 @@ eventHandlers:
     action: |
         Event().Comp.State["DataSet"] = Event().DBCtx().WorksheetFindItemsPage("dogs", 0, 25);
         common_log("dataSet initialized"+ Event().Comp.State["DataSet"]);
+injectRootComp:
+  css:
+    - name: comp/dataTable.css

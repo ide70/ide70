@@ -2,9 +2,14 @@
 body: |
     <div id="{{.sid}}" class="dialog-container-out">
     <div class="dialog-container">
+    <div class="dialog-header">
+      <div class="dialog-text">{{.title}}</div>
+    </div>
+    <div class="dialog-content">
     {{range .Children}}
     {{evalComp .}}
     {{end}}
+    </div>
     </div>
     </div>
 injectRootComp:

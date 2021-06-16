@@ -10,4 +10,22 @@
     top: -50%;
     background-color: Linen;
     border: 1px solid Silver;
+    box-shadow: 5px 5px 5px grey;
+}
+
+.dialog-header {
+    width: 100%;
+    background-color: white;
+    padding-top: 2mm;
+    padding-bottom: 2mm;
+    border-bottom: 1px solid grey;
+}
+
+.dialog-text {
+    padding-left: 2mm;
+    padding-right: 2mm;
+}
+
+.dialog-content {
+    padding: 2mm;
 }

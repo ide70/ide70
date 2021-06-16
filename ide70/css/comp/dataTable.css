@@ -1,0 +1,15 @@
+table.datatable {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+table.datatable td, table.datatable th {
+    border: 1px solid #aaaaaa;
+    text-align: left;
+    padding: 8px;
+}
+
+table.datatable tr:nth-child(even) {
+    background-color: #dddddd;
+}

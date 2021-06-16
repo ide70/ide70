@@ -285,6 +285,10 @@ func (cSW *CompRuntimeSW) GetProp(key string) interface{} {
 	return cSW.c.State[key]
 }
 
+func (c *CompRuntime) GetProp(key string) interface{} {
+	return c.State[key]
+}
+
 func (cSW *CompRuntimeSW) ApplyToParent() *CompRuntimeSW {
 	cSW.event.ResponseAction.ApplyToParent(true)
 	return cSW

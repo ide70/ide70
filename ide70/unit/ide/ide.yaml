@@ -19,20 +19,23 @@
 - compType: contextMenu
   cr: dirMenu
   items:
-  - key: egy
-    title: New...
-  - key: ketto
-    title: Delete
+  - key: new_file
+    title: Create New File
+  - key: new_folder
+    title: Create New Folder
   eventHandlers:
-    menu_egy:
+    menu_new_file:
       action: |
         common_log('ep2:'+Event().GetParam("path"));
         CompByCr("firstLayer").ForwardEvent("show").LoadUnitInto("ide/createNewFile")
         .AddPassParam("dirName", Event().GetParam("path"))
         .AddPassParam("dirComp", Event().GetParam("dirComp"));
         common_log('EGY');
-    menu_ketto:
+    menu_new_folder:
       action: |
+        CompByCr("firstLayer").ForwardEvent("show").LoadUnitInto("ide/createNewFolder")
+        .AddPassParam("dirName", Event().GetParam("path"))
+        .AddPassParam("dirComp", Event().GetParam("dirComp"));
         common_log('KETTO');
 - compType: layer/layer
   cr: firstLayer

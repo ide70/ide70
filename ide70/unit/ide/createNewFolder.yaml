@@ -3,8 +3,8 @@
   tree:
     - dialogBox:
       - inputs:
-        - dirName
-        - fileName
+        - parentName
+        - folderName
       - buttonBar:
         - create
         - cancel
@@ -13,22 +13,22 @@
   cr: interface
   bind:
     - key: dirName
-      cr: dirName
+      cr: parentName
       toProp: value
 - compType: dialogContainer
   cr: dialogBox
-  title: Create New File
+  title: Create New Folder
 - compType: labeledTable
   cr : inputs
 - compType: textbox
-  cr: dirName
-  name: dirName
-  label: 'Dir name'
+  cr: parentName
+  name: parentName
+  label: 'Parent folder'
 - compType: textbox
-  cr: fileName
-  name: fileName
+  cr: folderName
+  name: folderName
   value: ""
-  label: 'File name'
+  label: 'New folder'
 - compType: horizontalBar
   cr: buttonBar
 - compType: button
@@ -37,14 +37,13 @@
   eventHandlers:
     onclick:
       action: |
-          var dirName = CompByCr("dirName").GetProp("value");
-          var fileName = CompByCr("fileName").GetProp("value");
-          var dirTokens = dirName.split("/");
-          dirTokens.push(fileName);
+          var parentName = CompByCr("parentName").GetProp("value");
+          var folderName = CompByCr("folderName").GetProp("value");
+          var dirTokens = parentName.split("/");
+          dirTokens.push(folderName);
           var fullName = dirTokens.join("/");
-          Event().FileCtx().CreateFile(fullName);
-          common_log("File created: "+fullName);
-          common_log("PPdc: "+PassParams.dirComp);
+          Event().FileCtx().CreateFolder(fullName);
+          common_log("Folder created: "+fullName);
           CompByCr("").ForwardToParent(PassParams.parentCr,"close").
           ForwardToParentComp(PassParams.dirComp, "refresh");
 - compType: button

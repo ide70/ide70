@@ -1,0 +1,12 @@
+table.horizontal-bar {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+table.horizontal-bar td, .horizontal-bar th {
+    padding: 2mm;
+}
+
+table.horizontal-bar tr td:last-child {
+    text-align: right;
+}

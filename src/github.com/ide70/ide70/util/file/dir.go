@@ -41,6 +41,13 @@ func (fc *FileContext) CreateFile(path string) {
 	emptyFile.Close()
 }
 
+func (fc *FileContext) CreateFolder(path string) {
+	err := os.Mkdir(path, 0755)
+	if err != nil {
+		logger.Error(err.Error())
+	}
+}
+
 func FileList(basePath string, trimPrefix string) []string {
 	list := []string{}
 	files, _ := ioutil.ReadDir(basePath)

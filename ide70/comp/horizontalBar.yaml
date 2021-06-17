@@ -1,0 +1,14 @@
+---
+body: |
+  <table class="horizontal-bar">
+    <tr>
+  {{range .Children}}
+      <td>
+  {{evalComp .}}
+      </td>
+  {{end}}
+    </tr>
+  </table>
+injectRootComp:
+  css:
+    - name: comp/horizontalBar.css

@@ -48,6 +48,20 @@ func (fc *FileContext) CreateFolder(path string) {
 	}
 }
 
+func (fc *FileContext) RemoveAll(path string) {
+	err := os.RemoveAll(path)
+	if err != nil {
+		logger.Error(err.Error())
+	}
+}
+
+func (fc *FileContext) Remove(path string) {
+	err := os.Remove(path)
+	if err != nil {
+		logger.Error(err.Error())
+	}
+}
+
 func FileList(basePath string, trimPrefix string) []string {
 	list := []string{}
 	files, _ := ioutil.ReadDir(basePath)
@@ -107,6 +121,7 @@ func compactFileList(basePath string, name string, list *strings.Builder) {
 	}
 	list.WriteString("]")
 }
+
 //strings.TrimPrefix(basePath, trimPrefix)
 
 func addFileName(name string, list *strings.Builder) {

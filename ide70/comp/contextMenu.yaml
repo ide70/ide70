@@ -2,8 +2,14 @@
 body: |
     <div id="{{.sid}}-content" {{eventHandler $.This "onclick" "onclick_cntr"}} class="absolute hidden">
     {{range .items}}
-      {{$targetAction:=.Year}}
-      <div {{eventHandlerWithKey $.This "onclick" .key}} class="menu-item">{{.title}}</div>
+      <div {{eventHandlerWithKey $.This "onclick" .key}} class="menu-item">
+        <div class="menu-item-icon-holder">
+          {{if .icon}}
+          <i class="{{.icon}}" aria-hidden="true"></i>
+          {{end}}
+        </div>
+        <span>{{.title}}</span>
+      </div>
     {{end}}
     </div>
 eventHandlers:

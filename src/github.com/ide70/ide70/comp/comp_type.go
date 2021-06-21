@@ -163,6 +163,7 @@ func GenerateComp(parentComp *CompRuntime, sourceChildRef string, genRuntimeRefI
 		}
 		comp = parentComp.Unit.InstantiateComp(srcCompDef, genChildRefId)
 		comp.State["parentContext"] = context
+		comp.State["parentComp"] = parentComp
 		parentComp.GenChilden[genChildRefId] = comp
 	}
 	sb := &strings.Builder{}

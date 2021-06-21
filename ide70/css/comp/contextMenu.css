@@ -11,6 +11,7 @@
     font-family: arial, sans-serif;
     font-size: 4mm;
     border: 1px solid Silver;
+    box-shadow: 5px 5px 5px grey;
 }
 
 .menu-item {
@@ -20,4 +21,9 @@
 
 .menu-item:hover {
     background-color: LightSkyBlue;
+}
+
+.menu-item-icon-holder {
+    width: 1em;
+    display: inline-block;
 }

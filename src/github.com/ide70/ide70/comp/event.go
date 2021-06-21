@@ -183,7 +183,7 @@ func (ra *ResponseAction) Encode() string {
 		}
 	}
 
-	for _,parentForward := range ra.parentForward {
+	for _, parentForward := range ra.parentForward {
 		addSep(&sb, "|")
 		sb.WriteString(fmt.Sprintf("%d,%s,%d", eraForwardToParent, parentForward.EventType, parentForward.SID))
 	}
@@ -364,6 +364,10 @@ func (cSW *CompRuntimeSW) Refresh() {
 	cSW.event.ResponseAction.SetCompRefresh(cSW.c)
 }
 
+func (cSW *CompRuntimeSW) GetParentComp() *CompRuntimeSW {
+	return &CompRuntimeSW{c: cSW.c.State["parentComp"].(*CompRuntime), event: cSW.event}
+}
+
 func reloadUnit(e *EventRuntime, unit *UnitRuntime) {
 	unitPath := fmt.Sprintf("%s/%s", PathUnitById, unit.getID())
 	logger.Info("Reload existing unit:", unitPath)
@@ -372,6 +376,10 @@ func reloadUnit(e *EventRuntime, unit *UnitRuntime) {
 
 func (e *EventRuntime) CurrentComp() *CompRuntimeSW {
 	return &CompRuntimeSW{c: e.Comp, event: e}
+}
+
+func (e *EventRuntime) ParentComp() *CompRuntimeSW {
+	return &CompRuntimeSW{c: e.Comp.State["parentComp"].(*CompRuntime), event: e}
 }
 
 func (e *EventRuntime) LoadUnit(unitName string) {

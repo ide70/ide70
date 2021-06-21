@@ -1,0 +1,45 @@
+---
+- compType: page
+  tree:
+    - dialogBox:
+      - inputs:
+        - folderName
+      - buttonBar:
+        - delete
+        - cancel
+    - interface
+- compType: interface
+  cr: interface
+  bind:
+    - key: dirName
+      cr: folderName
+      toProp: value
+- compType: dialogContainer
+  cr: dialogBox
+  title: Remove Folder
+- compType: labeledTable
+  cr : inputs
+- compType: textbox
+  cr: folderName
+  name: folderName
+  label: 'Folder to remove'
+- compType: horizontalBar
+  cr: buttonBar
+- compType: button
+  cr: delete
+  text: Delete
+  eventHandlers:
+    onclick:
+      action: |
+          var folderName = CompByCr("folderName").GetProp("value");
+          Event().FileCtx().RemoveAll(folderName);
+          common_log("Folder removed: "+folderName);
+          CompByCr("").ForwardToParent(PassParams.parentCr,"close").
+          ForwardToParentComp(PassParams.dirComp, "refresh_parent");
+- compType: button
+  cr: cancel
+  text: Cancel
+  eventHandlers:
+    onclick:
+      action: |
+          CompByCr("").ForwardToParent(PassParams.parentCr,"close");

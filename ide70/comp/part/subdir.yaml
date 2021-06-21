@@ -38,6 +38,10 @@ eventHandlers:
         var files = Event().FileCtx().ReadDir(Event().Comp.State.parentContext.path);
         Event().Comp.State.parentContext.Files = files;
         Event().CurrentComp().Refresh();
+  refresh_parent:
+    action: |
+        common_log("refresh parent called.");
+        Event().CurrentComp().GetParentComp().ForwardEvent("refresh");
   onclick_dirname:
     action: |
         dirNameCr = Event().CompProps().dirClickCompCr;

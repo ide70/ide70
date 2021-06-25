@@ -1,0 +1,5 @@
+.textbox:read-only {
+    background-color: whitesmoke;
+    color: gray;
+    border: 1px solid gray;
+}

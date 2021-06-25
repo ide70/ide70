@@ -27,3 +27,8 @@ body: |
 css:
   - name: all.css
   - name: ide70.css
+autoInclude:
+  - compType: devtools
+    cr: _devtools
+    injectRootComp:
+      children: [ _devtools ]

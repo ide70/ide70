@@ -5,6 +5,7 @@
       - fileTree
       - codeEditor
     - dirMenu
+    - fileMenu
     - firstLayer
 - compType: v_spacer
   cr: vspacer
@@ -14,6 +15,7 @@
   dblClickFunc: select
   attachedCompCr: codeEditor
   dirClickCompCr: dirMenu
+  fileClickCompCr: fileMenu
 - compType: codeeditor
   cr: codeEditor
 - compType: contextMenu
@@ -43,6 +45,29 @@
       action: |
         CompByCr("firstLayer").ForwardEvent("show").LoadUnitInto("ide/removeFolder")
         .AddPassParam("dirName", Event().GetParam("path"))
+        .AddPassParam("dirComp", Event().GetParam("dirComp"));
+- compType: contextMenu
+  cr: fileMenu
+  items:
+  - key: del_file
+    title: Remove File
+    icon: fa fa-times
+  - key: rename_file
+    title: Rename File
+  eventHandlers:
+    menu_del_file:
+      action: |
+        CompByCr("firstLayer").ForwardEvent("show").LoadUnitInto("ide/removeFile")
+        .AddPassParam("fileName", Event().GetParam("path"))
+        .AddPassParam("dirComp", Event().GetParam("dirComp"));
+    menu_rename_file:
+      action: |
+        path = Event().GetParam("path");
+        fileName = Event().FileCtx().GetLastPathTag(path);
+        parentDir = Event().FileCtx().TrimLastPathTag(path);
+        CompByCr("firstLayer").ForwardEvent("show").LoadUnitInto("ide/renameFile")
+        .AddPassParam("parentDir",parentDir)
+        .AddPassParam("fileName", fileName)
         .AddPassParam("dirComp", Event().GetParam("dirComp"));
 - compType: layer/layer
   cr: firstLayer

@@ -2,6 +2,7 @@ package file
 
 import (
 	"github.com/ide70/ide70/util/log"
+	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -10,6 +11,22 @@ import (
 var logger = log.Logger{"file"}
 
 type FileContext struct {
+}
+
+func (fc *FileContext) GetLastPathTag(path string) string {
+	tokens := strings.Split(path, "/")
+	return tokens[len(tokens)-1]
+}
+
+func (fc *FileContext) TrimLastPathTag(path string) string {
+	tokens := strings.Split(path, "/")
+	return strings.Join(tokens[0:len(tokens)-1], "/")
+}
+
+func (fc *FileContext) AppendPath(path, tag string) string {
+	tokens := strings.Split(path, "/")
+	tokens = append(tokens, tag)
+	return strings.Join(tokens, "/")
 }
 
 func (fc *FileContext) ReadDir(basePath string) []interface{} {
@@ -57,6 +74,44 @@ func (fc *FileContext) RemoveAll(path string) {
 
 func (fc *FileContext) Remove(path string) {
 	err := os.Remove(path)
+	if err != nil {
+		logger.Error(err.Error())
+	}
+}
+
+func (fc *FileContext) Move(oldpath, newpath string) {
+	err := os.Rename(oldpath, newpath)
+	if err != nil {
+		logger.Error(err.Error())
+	}
+}
+
+func (fc *FileContext) Copy(src, dst string) {
+	sourceFileStat, err := os.Stat(src)
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+
+	if !sourceFileStat.Mode().IsRegular() {
+		logger.Error("%s is not a regular file", src)
+		return
+	}
+
+	source, err := os.Open(src)
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+	defer source.Close()
+
+	destination, err := os.Create(dst)
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+	defer destination.Close()
+	_, err = io.Copy(destination, source)
 	if err != nil {
 		logger.Error(err.Error())
 	}

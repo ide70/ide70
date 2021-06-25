@@ -1,0 +1,27 @@
+---
+body: |
+  <script>
+    function KeyPress(e) {
+      var evtobj = window.event? event : e
+      if (evtobj.shiftKey && evtobj.altKey) {
+            if(evtobj.keyCode == 67) {
+                reloadCss();
+            } else if(evtobj.keyCode == 65) {
+                alert("Dev tools\nShift+Alt+C - Refresh page css");
+            }
+      }
+    }
+    
+    function reloadCss() {
+        var links = document.getElementsByTagName("link");
+        for (var cl in links) {
+            var link = links[cl];
+            if (link.rel === "stylesheet") {
+                var hrefOld = link.href.split("?")[0];
+                link.href = hrefOld + "?v=" + Date.now();
+            }
+        }
+    }
+    
+    document.onkeydown = KeyPress;
+  </script>

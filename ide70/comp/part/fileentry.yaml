@@ -2,11 +2,27 @@
 include:
   - common
 body: |
-  <i class="far fa-file-alt fa-fw"></i>
-  <span id="{{.sid}}" class="fs-file"{{template "eventHandlers" .}}>{{.parentContext.name}}</span>
+  <i class="far fa-file-alt fa-fw"{{eventHandler $.This "onclick"}}></i>
+  <span id="{{.sid}}" class="fs-file"{{eventHandler $.This "ondblclick"}}>{{.parentContext.name}}</span>
 eventHandlers:
   ondblclick:
     action: |
         var attachedCr = Event().CompProps().attachedCompCr
         CompByCr("codeEditor").FuncExecute(Event().CompProps().dblClickFunc, Event().CompProps().parentContext.path);
-        common_log("onlcick on subdir. element at "+Event().Comp.State.parentContext.path);
+        common_log("ondbllcick on subdir. element at "+Event().Comp.State.parentContext.path);
+  onclick:
+    action: |
+        fileNameCr = Event().CompProps().fileClickCompCr;
+        if(fileNameCr) {
+            fileNameComp = CompByCr(fileNameCr);
+            if(fileNameComp) {
+                fileNameComp.ForwardEvent("display").
+                    AddForwardParam("path", Event().Comp.State.parentContext.path).
+                    AddForwardParam("dirComp", Event().Comp);
+            }
+        }
+        common_log("onlcick on folder "+Event().Comp.State.parentContext.path);
+  refresh_parent:
+    action: |
+        common_log("refresh parent (of file) called.");
+        Event().CurrentComp().GetParentComp().ForwardEvent("refresh");

@@ -76,6 +76,7 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 			continue
 		}
 		defs := dataxform.AsSIMap(comp.Props["injectRootComp"])
+		logger.Info("injectRootComp defs:", defs)
 		dataxform.SIMapInjectDefaults(defs, unit.RootComp.Props)
 	}
 

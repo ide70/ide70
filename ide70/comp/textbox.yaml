@@ -2,9 +2,12 @@
 include:
   - common
 body: |
-  <input type="text" value="{{.value}}" id="{{.sid}}" name="{{.name}}"{{template "eventHandlers" .}}>
+  <input class="textbox" type="text" value="{{.value}}" id="{{.sid}}" name="{{.name}}"{{template "eventHandlers" .}}{{if .readonly}}readonly{{end}}>
 bodyConsts:
   eventValue: this.value
 eventHandlers:
   onchange:
     action: 'Event().Comp.State.value=Event().ValueStr;'
+injectRootComp:
+  css:
+    - name: comp/textbox.css

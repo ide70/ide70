@@ -100,10 +100,11 @@ func (unit *UnitRuntime) getID() string {
 // process unit lifecycle events
 func (unit *UnitRuntime) ProcessEvent(e *EventRuntime) {
 	logger.Info("ProcessEvent")
+	logger.Info("handlers", unit.UnitDef.EventsHandler.Handlers)
 	compDefHandlers := unit.UnitDef.EventsHandler.Handlers[e.TypeCode]
 	for _, compDefHandler := range compDefHandlers {
 		comp := unit.CompByChildRefId[compDefHandler.CompDef.ChildRefId()]
-		logger.Info("On comp", comp)
+		logger.Info("On comp", comp.ChildRefId())
 		if comp == nil {
 			logger.Warning("UnitRuntime ProcessEvent: component not found")
 		}

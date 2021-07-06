@@ -153,7 +153,8 @@ func GenerateEventHandlerWithKey(comp *CompRuntime, eventTypeCli, key string) st
 func GenerateComp(parentComp *CompRuntime, sourceChildRef string, genRuntimeRefIf interface{}, context interface{}) string {
 	genRuntimeRef := dataxform.IAsString(genRuntimeRefIf)
 	genChildRefId := fmt.Sprintf("%s.%s_%s", parentComp.ChildRefId(), sourceChildRef, genRuntimeRef)
-	comp := parentComp.GenChilden[genChildRefId]
+	comp := parentComp.GenChildren[genChildRefId]
+
 	if comp == nil {
 		logger.Info("genRuntimeRef", genChildRefId)
 		srcCompDef := parentComp.Unit.UnitDef.CompsMap[sourceChildRef]
@@ -164,8 +165,20 @@ func GenerateComp(parentComp *CompRuntime, sourceChildRef string, genRuntimeRefI
 		comp = parentComp.Unit.InstantiateComp(srcCompDef, genChildRefId)
 		comp.State["parentContext"] = context
 		comp.State["parentComp"] = parentComp
-		parentComp.GenChilden[genChildRefId] = comp
+
+		rootCompIf := parentComp.State["rootCompSt"]
+		if rootCompIf == nil {
+			comp.State["rootCompSt"] = parentComp.State
+		} else {
+			comp.State["rootCompSt"] = rootCompIf
+		}
+		
+		parentComp.GenChildren[genChildRefId] = comp
 	}
+
+	e := NewEventRuntime(nil, parentComp.Unit, comp, EvtBeforeCompRefresh, "")
+	ProcessCompEvent(e);
+		
 	sb := &strings.Builder{}
 	comp.Render(sb)
 	return sb.String()

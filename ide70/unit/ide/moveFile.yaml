@@ -1,0 +1,68 @@
+---
+- compType: page
+  tree:
+    - dialogBox:
+      - inputs:
+        - parentDir
+        - fileName
+        - newDir
+      - buttonBar:
+        - create
+        - cancel
+    - interface
+- compType: interface
+  cr: interface
+  bind:
+    - key: fileName
+      cr: fileName
+      toProp: value
+    - key: parentDir
+      cr: parentDir
+      toProp: value
+    - key: parentDir
+      cr: newDir
+      toProp: value
+- compType: dialogContainer
+  cr: dialogBox
+  title: Move File
+- compType: labeledTable
+  cr : inputs
+- compType: textbox
+  cr: parentDir
+  name: parentDir
+  label: 'Original folder'
+  readonly: true
+- compType: textbox
+  cr: fileName
+  name: fileName
+  label: 'File name'
+  readonly: true
+- compType: textbox
+  cr: newDir
+  name: newDir
+  value: ""
+  label: 'New folder'
+- compType: horizontalBar
+  cr: buttonBar
+- compType: button
+  cr: create
+  text: Move
+  eventHandlers:
+    onclick:
+      action: |
+          var dirName = CompByCr("parentDir").GetProp("value");
+          var fileName = CompByCr("fileName").GetProp("value");
+          var newDir = CompByCr("newDir").GetProp("value");
+          var fullNameOld = Event().FileCtx().AppendPath(dirName, fileName);
+          var fullName = Event().FileCtx().AppendPath(newDir, fileName);
+          Event().FileCtx().Move(fullNameOld, fullName);
+          common_log("File moved: "+fullNameOld+" -> "+fullName);
+          CompByCr("").ForwardToParent(PassParams.parentCr,"close").
+          ForwardToParentComp(PassParams.treeComp, "refresh");
+- compType: button
+  cr: cancel
+  text: Cancel
+  eventHandlers:
+    onclick:
+      action: |
+          CompByCr("").ForwardToParent(PassParams.parentCr,"close");

@@ -94,7 +94,7 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 			cr := dataxform.IAsString(injectDef["cr"])
 			logger.Info("cr", cr)
 			targetComp := unit.CompsMap[cr]
-			logger.Info("targetComp", targetComp)
+			logger.Info("targetComp", targetComp.ChildRefId())
 			if targetComp == nil {
 				continue
 			}

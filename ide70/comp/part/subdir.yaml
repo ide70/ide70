@@ -3,7 +3,7 @@ include:
   - common
 body: |
   <div id="{{.sid}}" class="grp">
-  {{if .parentContext.isOpen}}
+  {{if index .rootCompSt.open .parentContext.path}}
   <i class="fas fa-folder-open fa-fw"{{template "eventHandlers" .}}></i>
   <span class="fs-dir open"{{eventHandler $.This "onclick" "onclick_dirname"}}>{{.parentContext.name}}</span>
   <ul>
@@ -25,8 +25,8 @@ body: |
 eventHandlers:
   onclick:
     action: |
-        isOpen = Event().Comp.State.parentContext.isOpen;
-        Event().Comp.State.parentContext.isOpen = !isOpen;
+        isOpen = Event().Comp.State.rootCompSt.open[Event().Comp.State.parentContext.path];
+        Event().Comp.State.rootCompSt.open[Event().Comp.State.parentContext.path] = !isOpen;
         if(!isOpen) {
           files = Event().FileCtx().ReadDir(Event().Comp.State.parentContext.path);
           Event().Comp.State.parentContext.Files = files;
@@ -38,6 +38,26 @@ eventHandlers:
         var files = Event().FileCtx().ReadDir(Event().Comp.State.parentContext.path);
         Event().Comp.State.parentContext.Files = files;
         Event().CurrentComp().Refresh();
+  beforeCompRefresh:
+    action: |
+        isOpen = Event().Comp.State.rootCompSt.open[Event().Comp.State.parentContext.path];
+        common_log("befcr:"+Event().Comp.State.parentContext.path+" "+isOpen);
+        if(isOpen) {
+          files = Event().FileCtx().ReadDir(Event().Comp.State.parentContext.path);
+          Event().Comp.State.parentContext.Files = files;
+        }
+  refresh_subtree:
+    action: |
+        var files = Event().FileCtx().ReadDir(Event().Comp.State.parentContext.path);
+        Event().Comp.State.parentContext.Files = files;
+        common_log("files re-read:" + Event().Comp.State.parentContext.path);
+        CompByCr("").GeneratedChildren().forEach(function(child) {
+            isChildOpen = Event().Comp.State.rootCompSt.open[child.GetProp("parentContext")["path"]];
+            if(child.GetProp("compType") == "part/subdir" && isChildOpen) {
+                child.ForwardEvent("refresh_subtree");
+            }
+        });
+        common_log("----subtree rfefresh done");
   refresh_parent:
     action: |
         common_log("refresh parent called.");

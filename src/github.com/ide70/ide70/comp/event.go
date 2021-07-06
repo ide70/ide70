@@ -34,6 +34,7 @@ const PathUnitById = "ubi"
 
 const (
 	EvtUnitCreate = "onUnitCreate"
+	EvtBeforeCompRefresh = "beforeCompRefresh"
 )
 
 type UnitRuntimeEventsHandler struct {
@@ -116,7 +117,7 @@ type ResponseAction struct {
 	propsToRefresh     map[string][]Attr
 	compFuncsToExecute []JSFuncCall
 	loadUnit           *LoadUnit
-	forward            *EventForward
+	forward            []*EventForward
 	applyToParent      bool
 	parentForward      []*ParentForward
 }
@@ -213,18 +214,20 @@ func (ra *ResponseAction) SetSubAttrRefresh(comp *CompRuntime, idPostfix, key, v
 }
 
 func (ra *ResponseAction) SetForwardEvent(comp *CompRuntime, eventType string) {
-	ra.forward = &EventForward{To: comp, EventType: eventType, Params: map[string]interface{}{}}
+	ra.forward = append(ra.forward, &EventForward{To: comp, EventType: eventType, Params: map[string]interface{}{}})
 }
 
 func (ra *ResponseAction) AddForwardEventParam(key string, value interface{}) {
-	if ra.forward != nil {
-		ra.forward.Params[key] = value
+	last := len(ra.forward) -1
+	if last >= 0 {
+		ra.forward[last].Params[key] = value
 	}
 }
 
 func (ra *ResponseAction) AddForwardEventParams(params map[string]interface{}) {
-	if ra.forward != nil {
-		ra.forward.Params = params
+	last := len(ra.forward) -1
+	if last >= 0 {
+		ra.forward[last].Params = params
 	}
 }
 
@@ -281,6 +284,11 @@ func (cSW *CompRuntimeSW) SetProp(key string, value interface{}) *CompRuntimeSW 
 	return cSW
 }
 
+func (cSW *CompRuntimeSW) CreateMapProp(key string) *CompRuntimeSW {
+	cSW.c.State[key] = map[string]interface{}{}
+	return cSW
+}
+
 func (cSW *CompRuntimeSW) GetProp(key string) interface{} {
 	return cSW.c.State[key]
 }
@@ -318,7 +326,7 @@ func (cSW *CompRuntimeSW) ForwardEvent(eventType string) *CompRuntimeSW {
 	if eventType == "" {
 		eventType = cSW.event.TypeCode
 	}
-	logger.Info("cSW.c", cSW.c)
+	logger.Info("cSW.c", cSW.c.ChildRefId())
 	cSW.event.ResponseAction.SetForwardEvent(cSW.c, eventType)
 	return cSW
 }
@@ -331,6 +339,10 @@ func (cSW *CompRuntimeSW) AddForwardParam(key string, value interface{}) *CompRu
 func (cSW *CompRuntimeSW) AddForwardParams(params map[string]interface{}) *CompRuntimeSW {
 	cSW.event.ResponseAction.AddForwardEventParams(params)
 	return cSW
+}
+
+func (cSW *CompRuntimeSW) Comp() *CompRuntime {
+	return cSW.c
 }
 
 func (cSW *CompRuntimeSW) ForwardToParent(parentCompCr, eventType string) *CompRuntimeSW {
@@ -351,6 +363,8 @@ func (cSW *CompRuntimeSW) ForwardToParent(parentCompCr, eventType string) *CompR
 }
 
 func (cSW *CompRuntimeSW) ForwardToParentComp(parentComp *CompRuntime, eventType string) *CompRuntimeSW {
+	//logger.Info("ForwardToParentComp pc:", parentComp)
+	logger.Info("ForwardToParentComp:", parentComp.Sid(), eventType)
 	cSW.event.ResponseAction.AddParentForwardEvent(parentComp.Sid(), eventType)
 	return cSW
 }
@@ -419,6 +433,14 @@ func (cSW *CompRuntimeSW) AddPassParam(key string, value interface{}) *CompRunti
 	return cSW
 }
 
+func (cSW *CompRuntimeSW) GeneratedChildren() []*CompRuntimeSW {
+	children := []*CompRuntimeSW{}
+	for _,child := range cSW.c.GenChildren {
+		children = append(children, &CompRuntimeSW{c:child,event: cSW.event})
+	}
+	return children
+}
+
 func (e *EventRuntime) LoadParent() {
 	logger.Info("Loadparent")
 	unit := e.UnitRuntime
@@ -464,7 +486,7 @@ func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 	vm.Set("PassParams", unit.PassContext.Params)
 	vm.Set("common_log", func(call otto.FunctionCall) otto.Value {
 		right, _ := call.Argument(0).ToString()
-		eventLogger.Info(right)
+		eventLogger.Info("EXE: "+right)
 		result, _ := vm.ToValue(2)
 		return result
 	})
@@ -527,13 +549,13 @@ func ProcessCompEvent(e *EventRuntime) {
 	for {
 		logger.Info("compDef.eh:", e.Comp.CompDef.EventsHandler)
 		e.Comp.CompDef.EventsHandler.ProcessEvent(e)
-		if e.ResponseAction.forward != nil {
-			logger.Info("event forward to type:" + e.ResponseAction.forward.EventType)
-			e.Comp = e.ResponseAction.forward.To
-			e.TypeCode = e.ResponseAction.forward.EventType
-			e.Params = e.ResponseAction.forward.Params
+		if len(e.ResponseAction.forward) > 0 {
+			logger.Info("event forward to type:" + e.ResponseAction.forward[0].EventType)
+			e.Comp = e.ResponseAction.forward[0].To
+			e.TypeCode = e.ResponseAction.forward[0].EventType
+			e.Params = e.ResponseAction.forward[0].Params
 			logger.Info("with params:", e.Params)
-			e.ResponseAction.forward = nil
+			e.ResponseAction.forward = e.ResponseAction.forward[1:]
 			continue
 		}
 		break
@@ -562,8 +584,8 @@ func (eh *UnitRuntimeEventsHandler) runJs(e *EventRuntime, jsCode string) {
 	defer eh.exMutex.Unlock()
 	eh.Vm.Set("currentEvent", e)
 	defer eh.Vm.Set("currentEvent", nil)
-	eventLogger.Info("executing: ", jsCode)
-	eventLogger.Info("event: ", e)
+	//eventLogger.Info("executing: ", jsCode)
+	//eventLogger.Info("event: ", e)
 	_, err := eh.Vm.Run(jsCode)
 	if err != nil {
 		eventLogger.Error("error evaluating script:", jsCode, err.Error())

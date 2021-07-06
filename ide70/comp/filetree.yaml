@@ -1,6 +1,6 @@
 ---
 body: |
-  <div class="fileselect">
+  <div class="fileselect" id={{.sid}}>
   <ul>
   {{range $i, $entry := .Files}}
   <li>
@@ -17,6 +17,19 @@ eventHandlers:
   onUnitCreate:
     action: |
         Event().Comp.State["Files"] = Event().FileCtx().ReadDir(Event().Comp.State["basePath"]);
+        CompByCr("").CreateMapProp("open");
+  refresh:
+    action: |
+        common_log("----self rfefresh start");
+        /* CompByCr("").GeneratedChildren().forEach(function(child) {
+            isChildOpen = CompByCr("").GetProp("open")[child.GetProp("parentContext")["path"]];
+            common_log("ico:"+isChildOpen);
+            if(child.GetProp("compType") == "part/subdir" && isChildOpen) {
+                child.ForwardEvent("refresh_subtree");
+            }
+        }); */
+        CompByCr("").Refresh();
+        common_log("----self rfefresh done");
 autoInclude:
   - compType: part/subdir
     cr: subdir

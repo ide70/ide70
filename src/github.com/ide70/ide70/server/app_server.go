@@ -311,7 +311,7 @@ func (s *AppServer) handleEvent(sess *comp.Session, unit *comp.UnitRuntime, wr h
 		return
 	}
 
-	logger.Info("event, component found:", c)
+	logger.Info("event, component found:", c.ChildRefId())
 
 	etype := r.FormValue(paramEventType)
 	if etype == "" {
@@ -436,7 +436,7 @@ func (s *AppServer) renderComp(unit *comp.UnitRuntime, w http.ResponseWriter, r 
 		return
 	}
 
-	logger.Info("event, component found:", c)
+	logger.Info("event, component found:", c.ChildRefId())
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8") // We send it as text!
 	c.Render(w)

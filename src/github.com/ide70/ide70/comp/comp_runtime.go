@@ -13,7 +13,7 @@ type CompRuntime struct {
 	State    map[string]interface{}
 	Children []*CompRuntime
 	// on-the-fly generated sub-components
-	GenChilden map[string]*CompRuntime
+	GenChildren map[string]*CompRuntime
 	Unit     *UnitRuntime
 }
 
@@ -27,8 +27,8 @@ func (comp *CompRuntime) Render(writer io.Writer) {
 	//buf := &bytes.Buffer{}
 	//comp.CompDef.CompType.Body.Execute(buf, comp.State)
 	//logger.Info(buf.String())
-	if len(comp.GenChilden) > 0 {
-		comp.GenChilden = map[string]*CompRuntime{}
+	if len(comp.GenChildren) > 0 {
+		comp.GenChildren = map[string]*CompRuntime{}
 	}
 	comp.CompDef.CompType.Body.Execute(writer, comp.State)
 }
@@ -43,13 +43,13 @@ func InstantiateComp(compDef *CompDef, unit *UnitRuntime) *CompRuntime {
 	if err != nil {
 		logger.Error(err.Error())
 	}
-	logger.Info("RegisterComp", compDef)
+	logger.Debug("RegisterComp", compDef)
 	unit.registerComp(comp)
 
-	comp.GenChilden = map[string]*CompRuntime{}
+	comp.GenChildren = map[string]*CompRuntime{}
 	// state initially is deep copy of definition properties
 	comp.State["sid"] = comp.ID
-	logger.Info("comp.State", comp.State)
+	logger.Debug("comp.State", comp.State)
 
 	for _, childDef := range compDef.Children {
 		comp.Children = append(comp.Children, InstantiateComp(childDef, unit))

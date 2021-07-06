@@ -27,6 +27,8 @@
   - key: new_folder
     title: Create New Folder
     icon: fa fa-folder
+  - key: move_folder
+    title: Move Folder
   - key: del_folder
     title: Remove Folder
     icon: fa fa-times
@@ -41,6 +43,15 @@
         CompByCr("firstLayer").ForwardEvent("show").LoadUnitInto("ide/createNewFolder")
         .AddPassParam("dirName", Event().GetParam("path"))
         .AddPassParam("dirComp", Event().GetParam("dirComp"));
+    menu_move_folder:
+      action: |
+        path = Event().GetParam("path");
+        fileName = Event().FileCtx().GetLastPathTag(path);
+        parentDir = Event().FileCtx().TrimLastPathTag(path);
+        CompByCr("firstLayer").ForwardEvent("show").LoadUnitInto("ide/moveFolder")
+        .AddPassParam("parentDir",parentDir)
+        .AddPassParam("fileName", fileName)
+        .AddPassParam("treeComp", CompByCr("fileTree").Comp());
     menu_del_folder:
       action: |
         CompByCr("firstLayer").ForwardEvent("show").LoadUnitInto("ide/removeFolder")
@@ -49,9 +60,14 @@
 - compType: contextMenu
   cr: fileMenu
   items:
+  - key: copy_file
+    title: Copy File
+    icon: far fa-copy
   - key: del_file
     title: Remove File
     icon: fa fa-times
+  - key: move_file
+    title: Move File
   - key: rename_file
     title: Rename File
   eventHandlers:
@@ -66,6 +82,24 @@
         fileName = Event().FileCtx().GetLastPathTag(path);
         parentDir = Event().FileCtx().TrimLastPathTag(path);
         CompByCr("firstLayer").ForwardEvent("show").LoadUnitInto("ide/renameFile")
+        .AddPassParam("parentDir",parentDir)
+        .AddPassParam("fileName", fileName)
+        .AddPassParam("dirComp", Event().GetParam("dirComp"));
+    menu_move_file:
+      action: |
+        path = Event().GetParam("path");
+        fileName = Event().FileCtx().GetLastPathTag(path);
+        parentDir = Event().FileCtx().TrimLastPathTag(path);
+        CompByCr("firstLayer").ForwardEvent("show").LoadUnitInto("ide/moveFile")
+        .AddPassParam("parentDir",parentDir)
+        .AddPassParam("fileName", fileName)
+        .AddPassParam("treeComp", CompByCr("fileTree").Comp());
+    menu_copy_file:
+      action: |
+        path = Event().GetParam("path");
+        fileName = Event().FileCtx().GetLastPathTag(path);
+        parentDir = Event().FileCtx().TrimLastPathTag(path);
+        CompByCr("firstLayer").ForwardEvent("show").LoadUnitInto("ide/copyFile")
         .AddPassParam("parentDir",parentDir)
         .AddPassParam("fileName", fileName)
         .AddPassParam("dirComp", Event().GetParam("dirComp"));

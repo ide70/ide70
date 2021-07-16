@@ -14,7 +14,7 @@ type CompRuntime struct {
 	Children []*CompRuntime
 	// on-the-fly generated sub-components
 	GenChildren map[string]*CompRuntime
-	Unit     *UnitRuntime
+	Unit        *UnitRuntime
 }
 
 func init() {
@@ -31,6 +31,13 @@ func (comp *CompRuntime) Render(writer io.Writer) {
 		comp.GenChildren = map[string]*CompRuntime{}
 	}
 	comp.CompDef.CompType.Body.Execute(writer, comp.State)
+}
+
+func (comp *CompRuntime) RenderSub(subCompName string, writer io.Writer) {
+	subTemplate := comp.CompDef.CompType.SubBodies[subCompName]
+	if subTemplate != nil {
+		subTemplate.Execute(writer, comp.State)
+	}
 }
 
 func InstantiateComp(compDef *CompDef, unit *UnitRuntime) *CompRuntime {

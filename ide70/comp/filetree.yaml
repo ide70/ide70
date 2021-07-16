@@ -39,6 +39,7 @@ injectToComp:
   - cr: fileEntry
     copy:
       - dblClickFunc
+      - dblClickEvent
       - attachedCompCr
       - fileClickCompCr
   - cr: subdir

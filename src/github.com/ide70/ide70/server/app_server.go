@@ -422,7 +422,8 @@ func (s *AppServer) handleEvent(sess *comp.Session, unit *comp.UnitRuntime, wr h
 }
 
 func (s *AppServer) renderComp(unit *comp.UnitRuntime, w http.ResponseWriter, r *http.Request) {
-	compId, err := strconv.ParseInt(r.FormValue(paramCompID), 10, 64)
+	compIdStrs := strings.Split(r.FormValue(paramCompID), "-")
+	compId, err := strconv.ParseInt(compIdStrs[0], 10, 64)
 	if err != nil {
 		logger.Error("Invalid component id")
 		http.Error(w, "Invalid component id!", http.StatusBadRequest)
@@ -439,7 +440,11 @@ func (s *AppServer) renderComp(unit *comp.UnitRuntime, w http.ResponseWriter, r 
 	logger.Info("event, component found:", c.ChildRefId())
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8") // We send it as text!
-	c.Render(w)
+	if len(compIdStrs) < 2 {
+		c.Render(w)
+	} else {
+		c.RenderSub("-"+compIdStrs[1], w)
+	}
 }
 
 func (s *AppServer) serveStatic(w http.ResponseWriter, r *http.Request) {

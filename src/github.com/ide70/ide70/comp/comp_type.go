@@ -8,15 +8,18 @@ import "text/template"
 import "strings"
 import "gopkg.in/yaml.v2"
 import "github.com/ide70/ide70/dataxform"
+import "regexp"
 
 const COMP_PATH = "ide70/comp/"
 
 var logger = log.Logger{"comp"}
+var reSubComp = regexp.MustCompile(`<(\w+)[^<>]+\{\{\.sid\}\}(-\w+)`)
 
 // An user defined component
 type CompType struct {
 	Name          string
 	Body          *template.Template
+	SubBodies     map[string]*template.Template
 	EventsHandler *CompDefEventsHandler
 	AccessibleDef map[string]interface{}
 }
@@ -69,6 +72,38 @@ func loadCompModule(name string) *CompModule {
 	return module
 }
 
+func extractSubcomponents(comp *CompType, body string, appParams *AppParams) {
+	subs := reSubComp.FindAllStringSubmatch(body, -1)
+	subIdxs := reSubComp.FindAllStringSubmatchIndex(body, -1)
+	for i, sub := range subs {
+		tagName := sub[1]
+		subCompName := sub[2]
+		subIdx := subIdxs[i]
+		matchIdx := subIdx[0]
+		subCompStr := cutToClosingTag(body[matchIdx:], tagName)
+		logger.Info("subcomp:", subCompName, subCompStr)
+		comp.SubBodies[subCompName] = createTemplate(subCompStr, comp.Name + subCompName, appParams, nil)
+	}
+}
+
+func cutToClosingTag(s, tagName string) string {
+	r := regexp.MustCompile(fmt.Sprintf(`<%s|<\/%s>`, tagName, tagName))
+	subs := r.FindAllStringSubmatch(s, -1)
+	subIdxs := r.FindAllStringSubmatchIndex(s, -1)
+	openTags := 0
+	for i, sub := range subs {
+		if strings.HasPrefix(sub[0], "</") {
+			openTags--;
+		} else {
+			openTags++;
+		}
+		if openTags == 0 {
+			return s[:subIdxs[i][0]+len(sub[0])]
+		}
+	}
+	return ""
+}
+
 func parseCompType(name string, appParams *AppParams) *CompType {
 	module := loadCompModule(name)
 	body := ""
@@ -103,8 +138,20 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 	comp.AccessibleDef["injectRootComp"] = module.Def["injectRootComp"]
 	comp.AccessibleDef["injectToComp"] = module.Def["injectToComp"]
 
-	var err error
-	comp.Body, err = template.New(name).Funcs(template.FuncMap{
+	comp.Body = createTemplate(body, name, appParams, bodyConsts)
+	if comp.Body == nil {
+		return nil
+	}
+	
+	comp.SubBodies = map[string]*template.Template{}
+	extractSubcomponents(comp, body, appParams)
+	
+	CompCache[name] = comp
+	return comp
+}
+
+func createTemplate(body, name string, appParams *AppParams, bodyConsts map[string]interface{}) *template.Template {
+	templ, err := template.New(name).Funcs(template.FuncMap{
 		"evalComp":            EvalComp,
 		"generateComp":        GenerateComp,
 		"eventHandler":        GenerateEventHandler,
@@ -120,8 +167,7 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 		logger.Error("Parse Component", err.Error())
 		return nil
 	}
-	CompCache[name] = comp
-	return comp
+	return templ
 }
 
 func GetCompType(name string, appParams *AppParams) *CompType {
@@ -172,13 +218,13 @@ func GenerateComp(parentComp *CompRuntime, sourceChildRef string, genRuntimeRefI
 		} else {
 			comp.State["rootCompSt"] = rootCompIf
 		}
-		
+
 		parentComp.GenChildren[genChildRefId] = comp
 	}
 
 	e := NewEventRuntime(nil, parentComp.Unit, comp, EvtBeforeCompRefresh, "")
-	ProcessCompEvent(e);
-		
+	ProcessCompEvent(e)
+
 	sb := &strings.Builder{}
 	comp.Render(sb)
 	return sb.String()

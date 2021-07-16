@@ -8,6 +8,8 @@
     title: Kutya nyilvántartás
   - link: ../ide/ide
     title: IDE
+  - link: ../ide/ide_uj
+    title: IDE Új
   - link: testunit
     title: Teszt Unit2
   - link: login

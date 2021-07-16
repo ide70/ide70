@@ -33,7 +33,7 @@ const loadUnitSelf = "."
 const PathUnitById = "ubi"
 
 const (
-	EvtUnitCreate = "onUnitCreate"
+	EvtUnitCreate        = "onUnitCreate"
 	EvtBeforeCompRefresh = "beforeCompRefresh"
 )
 
@@ -203,6 +203,11 @@ func (ra *ResponseAction) SetCompRefresh(comp *CompRuntime) {
 	ra.compsToRefresh = append(ra.compsToRefresh, strconv.FormatInt(comp.Sid(), 10))
 }
 
+func (ra *ResponseAction) SetSubCompRefresh(comp *CompRuntime, idPostfix string) {
+	id := strconv.FormatInt(comp.Sid(), 10) + idPostfix
+	ra.compsToRefresh = append(ra.compsToRefresh, id)
+}
+
 func (ra *ResponseAction) SetCompAttrRefresh(comp *CompRuntime, key, value string) {
 	id := strconv.FormatInt(comp.Sid(), 10)
 	ra.attrsToRefresh[id] = append(ra.attrsToRefresh[id], Attr{Key: key, Value: value})
@@ -218,14 +223,14 @@ func (ra *ResponseAction) SetForwardEvent(comp *CompRuntime, eventType string) {
 }
 
 func (ra *ResponseAction) AddForwardEventParam(key string, value interface{}) {
-	last := len(ra.forward) -1
+	last := len(ra.forward) - 1
 	if last >= 0 {
 		ra.forward[last].Params[key] = value
 	}
 }
 
 func (ra *ResponseAction) AddForwardEventParams(params map[string]interface{}) {
-	last := len(ra.forward) -1
+	last := len(ra.forward) - 1
 	if last >= 0 {
 		ra.forward[last].Params = params
 	}
@@ -378,6 +383,10 @@ func (cSW *CompRuntimeSW) Refresh() {
 	cSW.event.ResponseAction.SetCompRefresh(cSW.c)
 }
 
+func (cSW *CompRuntimeSW) RefreshSubComp(idPostfix string) {
+	cSW.event.ResponseAction.SetSubCompRefresh(cSW.c, idPostfix)
+}
+
 func (cSW *CompRuntimeSW) GetParentComp() *CompRuntimeSW {
 	return &CompRuntimeSW{c: cSW.c.State["parentComp"].(*CompRuntime), event: cSW.event}
 }
@@ -435,8 +444,8 @@ func (cSW *CompRuntimeSW) AddPassParam(key string, value interface{}) *CompRunti
 
 func (cSW *CompRuntimeSW) GeneratedChildren() []*CompRuntimeSW {
 	children := []*CompRuntimeSW{}
-	for _,child := range cSW.c.GenChildren {
-		children = append(children, &CompRuntimeSW{c:child,event: cSW.event})
+	for _, child := range cSW.c.GenChildren {
+		children = append(children, &CompRuntimeSW{c: child, event: cSW.event})
 	}
 	return children
 }
@@ -486,7 +495,7 @@ func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 	vm.Set("PassParams", unit.PassContext.Params)
 	vm.Set("common_log", func(call otto.FunctionCall) otto.Value {
 		right, _ := call.Argument(0).ToString()
-		eventLogger.Info("EXE: "+right)
+		eventLogger.Info("EXE: " + right)
 		result, _ := vm.ToValue(2)
 		return result
 	})

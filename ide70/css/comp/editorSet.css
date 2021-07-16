@@ -1,0 +1,17 @@
+.editorSet {
+	font-size: 14pt;
+	min-width: 1000px;
+}
+
+.editorSlot {
+    height: 500px; 
+    background-color: grey;
+}
+
+.hide {
+  display: none;
+}
+
+.hoverTrigger:hover + .hide, .hide:hover {
+  display: block;
+}

@@ -7,9 +7,15 @@ body: |
 eventHandlers:
   ondblclick:
     action: |
-        var attachedCr = Event().CompProps().attachedCompCr
-        CompByCr("codeEditor").FuncExecute(Event().CompProps().dblClickFunc, Event().CompProps().parentContext.path);
-        common_log("ondbllcick on subdir. element at "+Event().Comp.State.parentContext.path);
+        var attachedCr = Event().CompProps().attachedCompCr;
+        if(Event().CompProps().dblClickEvent) {
+            CompByCr(attachedCr)
+                .ForwardEvent(Event().CompProps().dblClickEvent)
+                .AddForwardParam("path", Event().Comp.State.parentContext.path);
+        } else {
+        	CompByCr(attachedCr).FuncExecute(Event().CompProps().dblClickFunc, Event().CompProps().parentContext.path);
+            common_log("ondbllcick on subdir. element at "+Event().Comp.State.parentContext.path);
+        }
   onclick:
     action: |
         fileNameCr = Event().CompProps().fileClickCompCr;

@@ -1,18 +1,23 @@
 ---
 body: |
   <div id="{{.sid}}" class="editorSet">
-    <div class="hoverTrigger">Hover over me.</div>
-    <div id="{{.sid}}-tabs" class="hide">
-      {{range $path, $v := .editors}}
-      <div class="titleSlot">
-      {{$path}}
+    <div id="{{.sid}}-trigger" class="hoverTrigger">Hover over me.</div>
+    <div id="{{.sid}}-tabs" class="hide tabs">
+      <div class="abs">
+        {{range $path, $v := .editors}}
+        <span class="titleSlot"{{eventHandlerWithKey $.This "onclick" "onclick_tab" $path}}>
+        {{$path}}
+        </span>
+        {{end}}
       </div>
-      {{end}}
     </div>
-    <div id="{{.sid}}-edblk"class="editorSlot">Editor<br>Text.</div>
+    <div id="{{.sid}}-edblk"class="editorSlot"></div>
   </div>
   <script>
-    var editor = new EditorBlock(document.getElementById("{{.sid}}_edblk"));
+    var editor = new EditorBlock(
+        document.getElementById("{{.sid}}-edblk"),
+        document.getElementById("{{.sid}}-trigger"),
+    );
   </script>
 eventHandlers:
   onUnitCreate:
@@ -22,12 +27,17 @@ eventHandlers:
     action: |
         CompByCr("").GetProp("editors")[Event().GetParam("path")] = true;
         CompByCr("").RefreshSubComp("-tabs");
+        CompByCr("").SubCompFuncExecute("edblk","select", Event().GetParam("path"));
         common_log("---file-select");
+  onclick_tab:
+    action: |
+        CompByCr("").RefreshSubComp("-tabs");
+        CompByCr("").SubCompFuncExecute("edblk","select", Event().ValueStr);
 injectRootComp:
   js:
     - name: ace.js
     - name: ext-language_tools.js
     - name: ext-searchbox.js
-    - name: comp/codeeditor.js
+    - name: comp/editorblock.js
   css:
     - name: comp/editorSet.css

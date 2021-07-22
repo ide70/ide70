@@ -2,7 +2,7 @@
 body: |
     <div id="{{.sid}}-content" {{eventHandler $.This "onclick" "onclick_cntr"}} class="absolute hidden">
     {{range .items}}
-      <div {{eventHandlerWithKey $.This "onclick" .key}} class="menu-item">
+      <div {{eventHandlerWithKey $.This "onclick" "onclick" .key}} class="menu-item">
         <div class="menu-item-icon-holder">
           {{if .icon}}
           <i class="{{.icon}}" aria-hidden="true"></i>

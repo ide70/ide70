@@ -192,8 +192,8 @@ func GenerateEventHandler(comp *CompRuntime, eventTypeCli string, eventTypeSvrOp
 	return fmt.Sprintf(" %s=\"se(event,'%s',%d,null)\"", eventTypeCli, eventTypeSvr, comp.Sid())
 }
 
-func GenerateEventHandlerWithKey(comp *CompRuntime, eventTypeCli, key string) string {
-	return fmt.Sprintf(" %s=\"se(event,'%s',%d,'%s')\"", eventTypeCli, eventTypeCli, comp.Sid(), key)
+func GenerateEventHandlerWithKey(comp *CompRuntime, eventTypeCli, eventTypeSvr, key string) string {
+	return fmt.Sprintf(" %s=\"se(event,'%s',%d,'%s')\"", eventTypeCli, eventTypeSvr, comp.Sid(), key)
 }
 
 func GenerateComp(parentComp *CompRuntime, sourceChildRef string, genRuntimeRefIf interface{}, context interface{}) string {

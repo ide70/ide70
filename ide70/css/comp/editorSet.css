@@ -3,13 +3,58 @@
 	min-width: 1000px;
 }
 
+.editorSlot .ace_editor {
+	font-size: 14pt;
+}
+
 .editorSlot {
-    height: 500px; 
-    background-color: grey;
+    min-height: 500px;
+}
+
+.editorSlot pre {
+	min-width: 1000px;
+	margin: 0px 0px 0px 0px;
+	height: 500px;
+	z-index: 1;
+}
+
+.editorSlot .title {
+	height: 1em;
+}
+
+.titleSlot {
+    display: inline-block;
+    padding: 1mm 3mm;
+    color: cornsilk;
+    cursor: pointer;
+}
+
+.titleSlot:hover {
+    color: white;
+    background-color: lightslategrey;
 }
 
 .hide {
   display: none;
+}
+
+.abs {
+  position: absolute;
+  top: -1em;
+  left: 0px;
+  padding: 1em 0em;
+  background-color: darkslategrey;
+  width: 100%;
+  z-index: 2;
+}
+
+.tabs {
+  position: relative;
+}
+
+.hoverTrigger {
+  background-color: black;
+  color: cornsilk;
 }
 
 .hoverTrigger:hover + .hide, .hide:hover {

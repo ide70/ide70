@@ -143,7 +143,7 @@ function procEresp(actions) {
 		case _eraDirtyComps:
 			for (var j = 1; j < n.length; j++)
 				rerenderComp(n[j]);
-			break;
+			continue;
 		case _eraFocusComp:
 			if (n.length > 1)
 				focusComp(parseInt(n[1]))

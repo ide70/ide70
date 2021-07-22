@@ -255,6 +255,11 @@ func (ra *ResponseAction) SetCompFuncExecute(comp *CompRuntime, funcName string,
 	ra.compFuncsToExecute = append(ra.compFuncsToExecute, JSFuncCall{Comp: id, FuncName: funcName, Args: args})
 }
 
+func (ra *ResponseAction) SetSubCompFuncExecute(comp *CompRuntime, idPostfix, funcName string, args ...string) {
+	id := strconv.FormatInt(comp.Sid(), 10) + "-" + idPostfix
+	ra.compFuncsToExecute = append(ra.compFuncsToExecute, JSFuncCall{Comp: id, FuncName: funcName, Args: args})
+}
+
 func (ra *ResponseAction) initLoadUnit() {
 	if ra.loadUnit == nil {
 		ra.loadUnit = &LoadUnit{passParams: map[string]interface{}{}}
@@ -376,6 +381,11 @@ func (cSW *CompRuntimeSW) ForwardToParentComp(parentComp *CompRuntime, eventType
 
 func (cSW *CompRuntimeSW) FuncExecute(funcName string, args ...string) *CompRuntimeSW {
 	cSW.event.ResponseAction.SetCompFuncExecute(cSW.c, funcName, args...)
+	return cSW
+}
+
+func (cSW *CompRuntimeSW) SubCompFuncExecute(idPrefix, funcName string, args ...string) *CompRuntimeSW {
+	cSW.event.ResponseAction.SetSubCompFuncExecute(cSW.c, idPrefix, funcName, args...)
 	return cSW
 }
 

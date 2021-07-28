@@ -22,6 +22,7 @@ const (
 	pathStatic     = "_static/"
 	pathFileSystem = "_fs/"
 	pathFileSave   = "_save/"
+	pathCodeComplete   = "_codeComplete/"
 	pathWebfonts   = "webfonts/"
 	pathSessCheck  = "_sess_ch"
 	pathUnitCreate = "uc" // path for unit create
@@ -96,6 +97,10 @@ func (s *AppServer) Start() error {
 
 	mux.HandleFunc(s.App.Path+pathFileSave, func(w http.ResponseWriter, r *http.Request) {
 		s.serveFileSave(w, r)
+	})
+	
+	mux.HandleFunc(s.App.Path+pathCodeComplete, func(w http.ResponseWriter, r *http.Request) {
+		s.serveCodeComplete(w, r)
 	})
 
 	mux.HandleFunc(s.App.Path+pathWebfonts, func(w http.ResponseWriter, r *http.Request) {

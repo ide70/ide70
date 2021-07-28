@@ -7,6 +7,26 @@ class EditorBlock {
     	this.activeEditors = new Map();
     	this.selectedEditorKey = "";
     	this.fileExtensionBindings = this.defaultFileExtensionBindings();
+		var editorBlock = this;
+    	this.designWordCompleter = {
+       	    getCompletions: function(editor, session, pos, prefix, callback) {
+       	     	var xhttp = new XMLHttpRequest();  		
+    	  		xhttp.open("POST", _pathApp+"_codeComplete/"+editorBlock.selectedEditorKey, true);
+    	  		xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");  
+    	  		
+    	  		xhttp.onreadystatechange = function() {
+    	    		if (this.readyState == 4 && this.status == 200) {
+    	    			var completions = JSON.parse(this.responseText);
+    	    			callback(null, completions);
+    	    		}
+    	  		};
+    	  		
+    	  		var edStr = editor.getValue();
+    	  		xhttp.send("row=" + pos.row + "&col=" + pos.column+ "&content=" + encodeURIComponent(edStr));
+    
+       	    },
+        	identifierRegexps: [ /[a-zA-Z_0-9\-\u00A2-\uFFFF]/ ]
+       	};
   	}
 	
 	defaultFileExtensionBindings() {
@@ -62,6 +82,7 @@ class EditorBlock {
 		editorNode.editorElement.id = editorNode.elementId;
 		editorNode.rootElement.appendChild(editorNode.editorElement);
 		this.parentElement.appendChild(editorNode.rootElement);
+		
 		editorNode.dataEditor = ace.edit(editorNode.elementId);
 		editorNode.dataEditor.setTheme("ace/theme/twilight");
 		var fileExtension = key.split('.').pop();
@@ -69,6 +90,11 @@ class EditorBlock {
 		if (mode) {
 			editorNode.dataEditor.session.setMode("ace/mode/" + mode);
 		}
+		editorNode.dataEditor.setOptions({
+            enableBasicAutocompletion: true
+        });
+        editorNode.dataEditor.completers = [this.designWordCompleter];
+		
 		this.activeEditors.set(key, editorNode);
 		return editorNode;
 	}
@@ -105,6 +131,12 @@ class EditorBlock {
 				        editorBlock.save(editorNode);
 				    }
 				});
+				var nrLines = editorNode.dataEditor.session.getLength();
+				if(nrLines > 80) {
+				    editorNode.dataEditor.setFontSize("12pt");
+				} else if(nrLines > 40) {
+				    editorNode.dataEditor.setFontSize("13pt");
+				}
     		}
   		};
   		xhttp.open("GET", "/app/_fs/" + editorNode.key + "?dummy="+Math.random(), true);
@@ -120,11 +152,9 @@ class EditorBlock {
     		}
   		};
   		  		
-  		xhttp.open("POST", "/app/_save/" + editorNode.key, true);
+  		xhttp.open("POST", _pathApp+"_save/" + editorNode.key, true);
   		xhttp.responseType = "blob";
   		xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
   		xhttp.send("content=" + encodeURIComponent(editorNode.dataEditor.getValue()));
     }
-
-	
 }

@@ -1,1 +1,16 @@
 ---
+comp:
+  body:
+    descr: Component HTML body
+  eventHandlers:
+    descr: Event handlers
+    children:
+      onclick:
+        descr: onclick event
+      onUnitCreate:
+        descr: Fired when unit instantiates
+      any:
+        descr: Custom event handler
+    grandChildren:
+      action:
+        descr: Code to run on server

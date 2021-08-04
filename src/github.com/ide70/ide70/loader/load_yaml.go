@@ -12,8 +12,23 @@ import (
 
 var logger = log.Logger{"loader"}
 
+var dynConfigCache = map[string]*TemplatedYaml{}
+
 type TemplatedYaml struct {
 	Def map[string]interface{}
+}
+
+func GetTemplatedYaml(name string) *TemplatedYaml {
+	yamlData := dynConfigCache[name]
+	if yamlData == nil {
+		yamlData = LoadTemplatedYaml(name)
+		dynConfigCache[name] = yamlData
+	}
+	return yamlData
+}
+
+func DropTemplatedYaml(name string) {
+	delete(dynConfigCache, name)
 }
 
 func LoadTemplatedYaml(name string) *TemplatedYaml {

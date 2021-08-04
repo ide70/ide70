@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"github.com/ide70/ide70/loader"
 	"net/http"
 	"strconv"
 	"strings"
@@ -20,7 +21,7 @@ type YamlPosition struct {
 	keyPrefix   string
 	valuePrefx  string
 	keyComplete bool
-	parent      *YamlPosition
+	child       *YamlPosition
 }
 
 func (s *AppServer) serveCodeComplete(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +44,7 @@ func (s *AppServer) serveCodeComplete(w http.ResponseWriter, r *http.Request) {
 	fileType := parts[1]
 	logger.Info("Code complete file name:", fileName, fileType, int(row), int(col))
 
-	completions := codeComplete(content, int(row), int(col))
+	completions := codeComplete(content, int(row), int(col), fileType)
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 	encoder.Encode(completions)
@@ -51,8 +52,8 @@ func (s *AppServer) serveCodeComplete(w http.ResponseWriter, r *http.Request) {
 
 func (yPos *YamlPosition) getKey() string {
 	key := yPos.keyPrefix
-	if yPos.parent != nil {
-		key = yPos.parent.getKey() + "." + key
+	if yPos.child != nil {
+		key = key + "." + yPos.child.getKey()
 	}
 	return key
 }
@@ -100,7 +101,9 @@ func getYamlPosition(lines []string, row, col int) *YamlPosition {
 		spaces := nrOfBeginningSpaces(line)
 		if spaces < curSpaces {
 			idxColon := strings.Index(line, ":")
-			yamlPos.parent = getYamlPosition(lines, row, idxColon)
+			yamlPosParent := getYamlPosition(lines, row, idxColon)
+			yamlPosParent.child = yamlPos
+			yamlPos = yamlPosParent
 			break
 		}
 	}
@@ -108,14 +111,46 @@ func getYamlPosition(lines []string, row, col int) *YamlPosition {
 	return yamlPos
 }
 
-func codeComplete(content string, row, col int) []map[string]string {
+func codeComplete(content string, row, col int, fileType string) []map[string]string {
 	lines := strings.Split(content, "\n")
 	compl := []map[string]string{}
 	yamlPos := getYamlPosition(lines, row, col)
 	logger.Info("yP:", yamlPos)
 	logger.Info("yPk:", yamlPos.getKey())
-	compl = append(compl, newCompletion("---\n", "---", "Start yaml document"))
+	//compl = append(compl, newCompletion("---\n", "---", "Start yaml document"))
+	complDescr := loader.GetTemplatedYaml("ide70/dcfg/codeComplete").Def
+	compDescrFt := complDescr[fileType]
+	if compDescrFt != nil {
+		for {
+			levelMap := compDescrFt.(map[string]interface{})
+			matchingKeys, perfectMatch := getMatchingKeys(levelMap, yamlPos.keyPrefix)
+			if perfectMatch && yamlPos.child != nil {
+				compDescrFt = levelMap[yamlPos.keyPrefix].(map[string]interface{})["children"]
+				yamlPos = yamlPos.child
+				continue
+			}
+			for _,matchingKey := range matchingKeys {
+				keyData := levelMap[matchingKey].(map[string]interface{})
+				compl = append(compl, newCompletion(matchingKey+": ", matchingKey, keyData["descr"].(string)))
+			}
+			break;
+		}
+	}
 	return compl
+}
+
+func getMatchingKeys(level map[string]interface{}, keyPrefix string) ([]string, bool) {
+	matching := []string{}
+	perfectMatch := false
+	for k, _ := range level {
+		if strings.HasPrefix(k, keyPrefix) {
+			matching = append(matching, k)
+			if k == keyPrefix {
+				perfectMatch = true
+			}
+		}
+	}
+	return matching, perfectMatch
 }
 
 func newCompletion(value, caption, meta string) map[string]string {

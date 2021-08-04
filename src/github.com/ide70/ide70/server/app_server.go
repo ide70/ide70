@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/ide70/ide70/app"
 	"github.com/ide70/ide70/comp"
+	"github.com/ide70/ide70/loader"
 	"github.com/ide70/ide70/util/log"
 	"io/ioutil"
 	"os"
@@ -550,6 +551,9 @@ func (s *AppServer) serveFileSave(w http.ResponseWriter, r *http.Request) {
 		}
 		if parts[1] == "unit" {
 			comp.RefreshUnitDef(strings.TrimSuffix(strings.Join(parts[2:], "/"), ".yaml"))
+		}
+		if parts[1] == "dcfg" {
+			loader.DropTemplatedYaml(strings.TrimSuffix(strings.Join(parts[2:], "/"), ".yaml"))
 		}
 	}
 

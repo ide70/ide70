@@ -7,10 +7,12 @@ comp:
     children:
       onclick:
         descr: onclick event
+        children: &event_children
+          action:
+            descr: JS code to execute
+            valueCompleter: jsCompleter
       onUnitCreate:
         descr: Fired when unit instantiates
+        children: *event_children
       any:
         descr: Custom event handler
-    grandChildren:
-      action:
-        descr: Code to run on server

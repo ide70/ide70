@@ -14,6 +14,8 @@ var logger = log.Logger{"loader"}
 
 var dynConfigCache = map[string]*TemplatedYaml{}
 
+const dcfgPath = "ide70/dcfg/"
+
 type TemplatedYaml struct {
 	Def map[string]interface{}
 }
@@ -28,13 +30,14 @@ func GetTemplatedYaml(name string) *TemplatedYaml {
 }
 
 func DropTemplatedYaml(name string) {
+	logger.Info("drop templatedYaml", name)
 	delete(dynConfigCache, name)
 }
 
 func LoadTemplatedYaml(name string) *TemplatedYaml {
 	module := &TemplatedYaml{}
 	logger.Info("loadTemplatedYaml", name)
-	contentB, err := ioutil.ReadFile(name + ".yaml")
+	contentB, err := ioutil.ReadFile(dcfgPath + name + ".yaml")
 	if err != nil {
 		logger.Error("Yaml module ", name, "not found")
 		return nil

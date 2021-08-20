@@ -26,7 +26,7 @@ type YamlPosition struct {
 	child       *YamlPosition
 }
 
-type ValueCompleter func(yamlPos *YamlPosition, compl []map[string]string) []map[string]string
+type ValueCompleter func(yamlPos *YamlPosition, configData map[string]interface{}, compl []map[string]string) []map[string]string
 
 var valueCompleters map[string]ValueCompleter = map[string]ValueCompleter{"jsCompleter": jsCompleter}
 
@@ -186,11 +186,16 @@ func codeComplete(content string, row, col int, fileType string) []map[string]st
 					continue
 				}
 				valueCompleterName := dataxform.SIMapGetByKeyAsString(keyData, "valueCompleter")
+				valueCompleterConfig := dataxform.SIMapGetByKeyAsString(keyData, "valueCompleterConfig")
+				var configData map[string]interface{} = nil
+				if valueCompleterConfig != "" {
+					configData = loader.GetTemplatedYaml(valueCompleterConfig).Def
+				}
 				if valueCompleterName != "" {
 					logger.Info("valCompleter:", valueCompleterName)
 					valueCompleter := valueCompleters[valueCompleterName]
 					if valueCompleter != nil {
-						compl = valueCompleter(yamlPos, compl)
+						compl = valueCompleter(yamlPos, configData, compl)
 						break
 					}
 				}
@@ -202,11 +207,6 @@ func codeComplete(content string, row, col int, fileType string) []map[string]st
 			break
 		}
 	}
-	return compl
-}
-
-func jsCompleter(yamlPos *YamlPosition, compl []map[string]string) []map[string]string {
-	compl = append(compl, newCompletion("js", "js", "js completer"))
 	return compl
 }
 

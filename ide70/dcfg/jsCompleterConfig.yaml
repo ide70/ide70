@@ -1,0 +1,12 @@
+---
+  functions:
+    "*comp.VmBase":
+      Event:
+        descr: Current event
+      CompByCr:
+        descr: Returns component by its reference
+        params: [ "compReference" ]
+    "*comp.EventRuntime":
+      ReloadUnit:
+        descr: Reloads current unit
+    

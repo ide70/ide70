@@ -43,6 +43,9 @@ type UnitRuntimeEventsHandler struct {
 	Unit    *UnitRuntime
 }
 
+type VmBase struct {
+}
+
 type CompDefEventsHandler struct {
 	Handlers map[string]*EventHandler
 }
@@ -496,6 +499,21 @@ func (e *EventRuntime) GetParam(key string) interface{} {
 	}
 	logger.Info("GetParam:", key, e.Params[key])
 	return e.Params[key]
+}
+
+func (vm *VmBase) Event() *EventRuntime {
+	return nil
+}
+
+func (vm *VmBase) CompByCr(compName string) *CompRuntimeSW {
+	return nil
+}
+
+func (vm *VmBase) common_log(text string) {
+}
+
+func (vm *VmBase) PassParams() map[string]interface{} {
+	return nil
 }
 
 func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {

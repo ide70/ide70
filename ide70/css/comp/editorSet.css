@@ -7,6 +7,10 @@
 	font-size: 14pt;
 }
 
+.ace_editor.ace_autocomplete {
+   width: 600px;
+}
+
 .editorSlot {
     min-height: 500px;
 }

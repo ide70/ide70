@@ -11,6 +11,7 @@ comp:
           action:
             descr: JS code to execute
             valueCompleter: jsCompleter
+            valueCompleterConfig: jsCompleterConfig
       onUnitCreate:
         descr: Fired when unit instantiates
         children: *event_children

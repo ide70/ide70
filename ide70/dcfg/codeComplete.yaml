@@ -17,3 +17,10 @@ comp:
         children: *event_children
       any:
         descr: Custom event handler
+unit:
+  compType:
+    descr: Component type
+    listHead: yes
+    valueCompleter: fileNameCompleter
+    valueCompleterParams:
+      folderPrefix: comp

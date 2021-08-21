@@ -12,7 +12,6 @@ import (
 var reIdentifierStart = regexp.MustCompile(`[+-/*.{;: ()]*\w*$`)
 
 func jsCompleter(yamlPos *YamlPosition, configData map[string]interface{}, compl []map[string]string) []map[string]string {
-	compl = append(compl, newCompletion("js", "js", "js completer"))
 	code := yamlPos.valuePrefx
 	if code == "" || strings.HasSuffix(code, "(") || strings.HasSuffix(code, ",") || strings.HasSuffix(code, ", ") {
 		compl = append(compl, completionsOfType(reflect.TypeOf(&comp.VmBase{}), "", configData)...)

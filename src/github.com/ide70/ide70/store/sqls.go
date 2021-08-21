@@ -10,7 +10,7 @@ import (
 var modSql *loader.TemplatedYaml
 
 func loadDefs() {
-	modSql = loader.LoadTemplatedYaml("ide70/db/postgresql/sqls")
+	modSql = loader.LoadTemplatedYaml("postgresql/sqls", "ide70/db/")
 }
 
 func (dbCtx *DatabaseContext) SqlOP(name string) {

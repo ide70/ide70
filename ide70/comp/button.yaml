@@ -1,4 +1,8 @@
 ---
+unitInterface:
+  descr: Push Button
+  properties:
+    text: Label on button
 include:
   - common
 body: |

@@ -20,11 +20,15 @@ type TemplatedYaml struct {
 	Def map[string]interface{}
 }
 
-func GetTemplatedYaml(name string) *TemplatedYaml {
-	yamlData := dynConfigCache[name]
+func GetTemplatedYaml(name string, basePath string) *TemplatedYaml {
+	if basePath == "" {
+		basePath = dcfgPath
+	}
+	yamlData := dynConfigCache[basePath +name]
 	if yamlData == nil {
-		yamlData = LoadTemplatedYaml(name)
-		dynConfigCache[name] = yamlData
+		logger.Info("NO CACHE:"+ basePath +name)
+		yamlData = LoadTemplatedYaml(name, basePath)
+		dynConfigCache[basePath + name] = yamlData
 	}
 	return yamlData
 }
@@ -34,10 +38,10 @@ func DropTemplatedYaml(name string) {
 	delete(dynConfigCache, name)
 }
 
-func LoadTemplatedYaml(name string) *TemplatedYaml {
+func LoadTemplatedYaml(name, basePath string) *TemplatedYaml {
 	module := &TemplatedYaml{}
 	logger.Info("loadTemplatedYaml", name)
-	contentB, err := ioutil.ReadFile(dcfgPath + name + ".yaml")
+	contentB, err := ioutil.ReadFile(basePath + name + ".yaml")
 	if err != nil {
 		logger.Error("Yaml module ", name, "not found")
 		return nil

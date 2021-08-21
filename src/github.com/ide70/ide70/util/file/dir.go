@@ -117,7 +117,7 @@ func (fc *FileContext) Copy(src, dst string) {
 	}
 }
 
-func FileList(basePath string, trimPrefix string) []string {
+func FileList(basePath string, trimPrefix string, trimSuffix string) []string {
 	list := []string{}
 	files, _ := ioutil.ReadDir(basePath)
 	for _, afile := range files {
@@ -131,11 +131,11 @@ func FileList(basePath string, trimPrefix string) []string {
 		}
 		isFolder := stat.IsDir()
 		if isFolder {
-			list = append(list, FileList(childPath, trimPrefix)...)
+			list = append(list, FileList(childPath, trimPrefix, trimSuffix)...)
 			continue
 		}
 
-		list = append(list, strings.TrimPrefix(childPath, trimPrefix))
+		list = append(list, strings.TrimSuffix(strings.TrimPrefix(childPath, trimPrefix), trimSuffix))
 	}
 	return list
 }

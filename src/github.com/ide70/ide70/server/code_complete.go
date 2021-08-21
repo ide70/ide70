@@ -28,7 +28,7 @@ type YamlPosition struct {
 
 type ValueCompleter func(yamlPos *YamlPosition, configData map[string]interface{}, compl []map[string]string) []map[string]string
 
-var valueCompleters map[string]ValueCompleter = map[string]ValueCompleter{"jsCompleter": jsCompleter}
+var valueCompleters map[string]ValueCompleter = map[string]ValueCompleter{"jsCompleter": jsCompleter, "fileNameCompleter": fileNameCompleter}
 
 func (s *AppServer) serveCodeComplete(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
@@ -172,7 +172,7 @@ func codeComplete(content string, row, col int, fileType string) []map[string]st
 	logger.Info("yP:", yamlPos)
 	logger.Info("yPk:", yamlPos.getKey())
 	//compl = append(compl, newCompletion("---\n", "---", "Start yaml document"))
-	complDescr := loader.GetTemplatedYaml("codeComplete").Def
+	complDescr := loader.GetTemplatedYaml("codeComplete", "").Def
 	compDescrFt := complDescr[fileType]
 	if compDescrFt != nil {
 		for {
@@ -187,9 +187,12 @@ func codeComplete(content string, row, col int, fileType string) []map[string]st
 				}
 				valueCompleterName := dataxform.SIMapGetByKeyAsString(keyData, "valueCompleter")
 				valueCompleterConfig := dataxform.SIMapGetByKeyAsString(keyData, "valueCompleterConfig")
+				valueCompleterParams := dataxform.SIMapGetByKeyAsMap(keyData, "valueCompleterParams")
 				var configData map[string]interface{} = nil
 				if valueCompleterConfig != "" {
-					configData = loader.GetTemplatedYaml(valueCompleterConfig).Def
+					configData = loader.GetTemplatedYaml(valueCompleterConfig, "").Def
+				} else {
+					configData = valueCompleterParams
 				}
 				if valueCompleterName != "" {
 					logger.Info("valCompleter:", valueCompleterName)
@@ -201,8 +204,14 @@ func codeComplete(content string, row, col int, fileType string) []map[string]st
 				}
 			}
 			for _, matchingKey := range matchingKeys {
-				keyData := levelMap[matchingKey].(map[string]interface{})
-				compl = append(compl, newCompletion(matchingKey+": ", matchingKey, keyData["descr"].(string)))
+				keyData := dataxform.SIMapGetByKeyAsMap(levelMap, matchingKey)
+				keyDescr := dataxform.SIMapGetByKeyAsString(keyData, "descr")
+				isListHead := dataxform.SIMapGetByKeyAsBoolean(keyData, "listHead")
+				keyPrefix := ""
+				if isListHead {
+					keyPrefix += "- "
+				}
+				compl = append(compl, newCompletion(keyPrefix+matchingKey+": ", matchingKey, keyDescr))
 			}
 			break
 		}

@@ -62,6 +62,14 @@ func SIMapGetByKeyAsString(m map[string]interface{}, k string) string {
 	return entry.(string)
 }
 
+func SIMapGetByKeyAsBoolean(m map[string]interface{}, k string) bool {
+	entry := m[k]
+	if entry == nil {
+		return false
+	}
+	return entry.(bool)
+}
+
 func IAsString(i interface{}) string {
 	if i == nil {
 		return ""

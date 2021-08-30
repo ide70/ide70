@@ -50,6 +50,14 @@ func SIMapGetByKeyAsMap(m map[string]interface{}, k string) map[string]interface
 	return entry.(map[string]interface{})
 }
 
+func SIMapGetByKeyChainAsMap(m map[string]interface{}, k string) map[string]interface{} {
+	keys := strings.Split(k, ".")
+	for _,key := range keys {
+		m = SIMapGetByKeyAsMap(m, key)
+	}
+	return m
+}
+
 func AsSIMap(i interface{}) map[string]interface{} {
 	return i.(map[string]interface{})
 }

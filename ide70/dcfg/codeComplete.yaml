@@ -2,11 +2,13 @@
 comp:
   body:
     descr: Component HTML body
-  eventHandlers:
+  eventHandlers: &comp_event_handlers
     descr: Event handlers
+    mapHead: yes
     children:
       onclick:
         descr: onclick event
+        mapHead: yes
         children: &event_children
           action:
             descr: JS code to execute
@@ -14,6 +16,7 @@ comp:
             valueCompleterConfig: jsCompleterConfig
       onUnitCreate:
         descr: Fired when unit instantiates
+        mapHead: yes
         children: *event_children
       any:
         descr: Custom event handler
@@ -24,3 +27,14 @@ unit:
     valueCompleter: fileNameCompleter
     valueCompleterParams:
       folderPrefix: comp
+    children:
+      any:
+        descr: Component properties
+        keyCompleter: yamlDataCompleter
+        keyCompleterParams:
+          folderPrefix: comp
+          fileNameSrc: yamlParentValue
+          rootKey: unitInterface.properties
+      cr:
+        descr: Component reference, identifies component in unit
+      eventHandlers: *comp_event_handlers

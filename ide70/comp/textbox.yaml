@@ -1,4 +1,10 @@
 ---
+unitInterface:
+  descr: Text box with input capability
+  properties:
+    value: Initial value
+    readonly: Read only mode
+    store: Persistence key
 include:
   - common
 body: |

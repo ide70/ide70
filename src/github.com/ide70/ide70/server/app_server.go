@@ -548,9 +548,11 @@ func (s *AppServer) serveFileSave(w http.ResponseWriter, r *http.Request) {
 	if parts[0] == "ide70" {
 		if parts[1] == "comp" {
 			comp.RefreshCompType(strings.TrimSuffix(strings.Join(parts[2:], "/"), ".yaml"))
+			loader.DropTemplatedYaml(strings.TrimSuffix(strings.Join(parts[2:], "/"), ".yaml"))
 		}
 		if parts[1] == "unit" {
 			comp.RefreshUnitDef(strings.TrimSuffix(strings.Join(parts[2:], "/"), ".yaml"))
+			loader.DropTemplatedYaml(strings.TrimSuffix(strings.Join(parts[2:], "/"), ".yaml"))
 		}
 		if parts[1] == "dcfg" {
 			loader.DropTemplatedYaml(strings.TrimSuffix(strings.Join(parts[2:], "/"), ".yaml"))

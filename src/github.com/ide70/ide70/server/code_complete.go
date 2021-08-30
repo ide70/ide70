@@ -24,11 +24,15 @@ type YamlPosition struct {
 	valuePrefx  string
 	keyComplete bool
 	child       *YamlPosition
+	parent      *YamlPosition
 }
 
 type ValueCompleter func(yamlPos *YamlPosition, configData map[string]interface{}, compl []map[string]string) []map[string]string
 
-var valueCompleters map[string]ValueCompleter = map[string]ValueCompleter{"jsCompleter": jsCompleter, "fileNameCompleter": fileNameCompleter}
+var completers map[string]ValueCompleter = map[string]ValueCompleter{
+	"jsCompleter":       jsCompleter,
+	"fileNameCompleter": fileNameCompleter,
+	"yamlDataCompleter": yamlDataCompleter}
 
 func (s *AppServer) serveCodeComplete(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
@@ -131,8 +135,11 @@ func getYamlPosition(lines []string, row, col int, findMultiline bool) *YamlPosi
 		if strings.HasSuffix(keyPrefix, ":") {
 			yamlPos.keyPrefix = strings.TrimSuffix(yamlPos.keyPrefix, ":")
 			yamlPos.keyComplete = true
-			if keyRow != -1 && len(tokens) > 1 {
+			logger.Info("tokens:", tokens, len(tokens))
+			logger.Info("keyRow:", keyRow)
+			if len(tokens) > 1 {
 				valuePrefix := tokens[1]
+				logger.Info("vp:", valuePrefix)
 				yamlPos.valuePrefx = valuePrefix
 			}
 		}
@@ -146,13 +153,15 @@ func getYamlPosition(lines []string, row, col int, findMultiline bool) *YamlPosi
 		line = lines[row]
 		spaces := nrOfBeginningSpaces(line)
 		if spaces < curSpaces {
-			idxColon := strings.Index(line, ":")
-			yamlPosParent := getYamlPosition(lines, row, idxColon, false)
+			//idxColon := strings.Index(line, ":")
+			yamlPosParent := getYamlPosition(lines, row, len(line), false)
+			//yamlPosParent := getYamlPosition(lines, row, idxColon, false)
 			yamlPosParentLastChild := yamlPosParent
 			for yamlPosParentLastChild.child != nil {
 				yamlPosParentLastChild = yamlPosParentLastChild.child
 			}
 			yamlPosParentLastChild.child = yamlPos
+			yamlPos.parent = yamlPosParentLastChild
 			yamlPos = yamlPosParent
 			break
 		}
@@ -177,7 +186,7 @@ func codeComplete(content string, row, col int, fileType string) []map[string]st
 	if compDescrFt != nil {
 		for {
 			levelMap := compDescrFt.(map[string]interface{})
-			matchingKeys, perfectMatch := getMatchingKeys(levelMap, yamlPos.keyPrefix)
+			matchingKeys, perfectMatch, anyMatch := getMatchingKeys(levelMap, yamlPos.keyPrefix)
 			if perfectMatch {
 				keyData := dataxform.IAsSIMap(levelMap[yamlPos.keyPrefix])
 				if yamlPos.child != nil {
@@ -185,33 +194,36 @@ func codeComplete(content string, row, col int, fileType string) []map[string]st
 					yamlPos = yamlPos.child
 					continue
 				}
-				valueCompleterName := dataxform.SIMapGetByKeyAsString(keyData, "valueCompleter")
-				valueCompleterConfig := dataxform.SIMapGetByKeyAsString(keyData, "valueCompleterConfig")
-				valueCompleterParams := dataxform.SIMapGetByKeyAsMap(keyData, "valueCompleterParams")
-				var configData map[string]interface{} = nil
-				if valueCompleterConfig != "" {
-					configData = loader.GetTemplatedYaml(valueCompleterConfig, "").Def
-				} else {
-					configData = valueCompleterParams
+
+				completer, configData := lookupCompleter("value", keyData)
+				if completer != nil {
+					compl = completer(yamlPos, configData, compl)
+					break
 				}
-				if valueCompleterName != "" {
-					logger.Info("valCompleter:", valueCompleterName)
-					valueCompleter := valueCompleters[valueCompleterName]
-					if valueCompleter != nil {
-						compl = valueCompleter(yamlPos, configData, compl)
-						break
-					}
+			}
+			if anyMatch {
+				keyData := dataxform.SIMapGetByKeyAsMap(levelMap, "any")
+				logger.Info("kD:", keyData)
+
+				completer, configData := lookupCompleter("key", keyData)
+				if completer != nil {
+					compl = completer(yamlPos, configData, compl)
 				}
 			}
 			for _, matchingKey := range matchingKeys {
 				keyData := dataxform.SIMapGetByKeyAsMap(levelMap, matchingKey)
 				keyDescr := dataxform.SIMapGetByKeyAsString(keyData, "descr")
 				isListHead := dataxform.SIMapGetByKeyAsBoolean(keyData, "listHead")
+				isMapHead := dataxform.SIMapGetByKeyAsBoolean(keyData, "mapHead")
 				keyPrefix := ""
+				keyPostfix := ": "
 				if isListHead {
 					keyPrefix += "- "
 				}
-				compl = append(compl, newCompletion(keyPrefix+matchingKey+": ", matchingKey, keyDescr))
+				if isMapHead {
+					keyPostfix = ":\n"+strings.Repeat(" ", col+2)
+				}
+				compl = append(compl, newCompletion(keyPrefix+matchingKey+keyPostfix, matchingKey, keyDescr))
 			}
 			break
 		}
@@ -219,10 +231,36 @@ func codeComplete(content string, row, col int, fileType string) []map[string]st
 	return compl
 }
 
-func getMatchingKeys(level map[string]interface{}, keyPrefix string) ([]string, bool) {
+func lookupCompleter(completerType string, keyData map[string]interface{}) (ValueCompleter, map[string]interface{}) {
+	completerName := dataxform.SIMapGetByKeyAsString(keyData, completerType+"Completer")
+	completerConfig := dataxform.SIMapGetByKeyAsString(keyData, completerType+"CompleterConfig")
+	completerParams := dataxform.SIMapGetByKeyAsMap(keyData, completerType+"CompleterParams")
+	var configData map[string]interface{} = nil
+	if completerConfig != "" {
+		configData = loader.GetTemplatedYaml(completerConfig, "").Def
+	} else {
+		configData = completerParams
+	}
+	if completerName != "" {
+		logger.Info(completerType+"Completer:", completerName)
+		completer := completers[completerName]
+		if completer != nil {
+			return completer, configData
+		}
+	}
+	return nil, nil
+}
+
+func getMatchingKeys(level map[string]interface{}, keyPrefix string) ([]string, bool, bool) {
 	matching := []string{}
 	perfectMatch := false
+	anyMatch := false
 	for k, _ := range level {
+		if k == "any" {
+			matching = append(matching, keyPrefix)
+			anyMatch = true
+			continue
+		}
 		if strings.HasPrefix(k, keyPrefix) {
 			matching = append(matching, k)
 			if k == keyPrefix {
@@ -230,7 +268,7 @@ func getMatchingKeys(level map[string]interface{}, keyPrefix string) ([]string, 
 			}
 		}
 	}
-	return matching, perfectMatch
+	return matching, perfectMatch, anyMatch
 }
 
 func newCompletion(value, caption, meta string) map[string]string {

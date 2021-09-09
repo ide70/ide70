@@ -1,0 +1,115 @@
+:root {
+	--menu-silver: #eee;
+	--menu-border: #dedede;
+	--menu-focused: #1e88e5;
+	--menu-separator: #ccc;
+	--menu-text-color: #333;
+	--menu-shortcut-color: #999;
+	--menu-focused-text-color: #fff;
+	--menu-text-color-disabled: #999;
+	--menu-border-width: 1px;
+	--menu-border-width-m: -1px;
+	--menu-shadow: 2px 2px 3px -3px var(--menu-text-color);
+	--menu-content-padding: 0.5rem 1rem 0.5rem 1.75rem;
+	--menu-top-padding: 0.25rem;
+}
+.navmenu ul {
+	 margin: 0;
+	 padding: 0;
+	 position: absolute;
+	 display: none;
+	 list-style-type: none;
+	 white-space: nowrap;
+	 background: var(--menu-silver);
+	 border: var(--menu-border-width) solid var(--menu-border);
+	 box-shadow: var(--menu-shadow);
+}
+.navmenu li {
+	 position: relative;
+	 display: block;
+}
+.navmenu li.separator {
+	 margin-bottom: var(--menu-top-padding);
+	 border-bottom: var(--menu-border-width) solid var(--menu-separator);
+	 padding-bottom: var(--menu-top-padding);
+}
+.navmenu li a {
+	 text-decoration: none;
+	 color: var(--menu-text-color);
+	 position: relative;
+	 display: table;
+	 width: 100%;
+}
+.navmenu li a .label, .navmenu li a .shortcut {
+	 display: table-cell;
+	 padding: var(--menu-content-padding);
+}
+.navmenu li a .shortcut {
+	 text-align: right;
+	 color: var(--menu-shortcut-color);
+}
+.navmenu li a label {
+	 cursor: pointer;
+}
+.navmenu li a input[type='checkbox'] {
+	 display: none;
+}
+.navmenu li a input[type='checkbox']:checked + .label:before {
+	 content: '✔️';
+	 position: absolute;
+	 top: 0;
+	 left: 0.25rem;
+	 padding: 0.25rem;
+}
+.navmenu li a:hover {
+	 background: var(--menu-focused);
+}
+.navmenu li a:hover .label, .navmenu li a:hover .shortcut {
+	 color: var(--menu-focused-text-color);
+}
+.navmenu li.has-children > a {
+	 margin-right: 2.5rem;
+}
+.navmenu li.has-children > a:after {
+	 content: '▶';
+	 text-align: right;
+	 position: absolute;
+	 right: 0;
+	 padding: var(--menu-content-padding);
+}
+.navmenu li.disabled {
+	 pointer-events: none;
+}
+.navmenu li.disabled .label, .navmenu li.disabled .shortcut {
+	 color: var(--menu-text-color-disabled);
+}
+.navmenu li:hover > ul {
+	 display: block;
+	 top: var(--menu-border-width-m);
+	 left: 100%;
+}
+.navmenu > ul {
+	 display: flex;
+	 flex-flow: row nowrap;
+	 justify-content: flex-start;
+	 align-items: stretch;
+	 width: 100%;
+	 border-bottom: var(--menu-border-width) solid var(--menu-border);
+	 box-shadow: var(--menu-shadow);
+	 padding: 0;
+}
+.navmenu > ul > li > a > .label {
+	 padding-left: 1rem;
+}
+.navmenu > ul > li:hover > ul {
+	 top: 100%;
+	 left: var(--menu-border-width-m);
+}
+div.navmenu {
+	float: right;
+	padding: var(--menu-content-padding);
+}
+
+.navmenu li.right {
+	margin-left: auto;
+}

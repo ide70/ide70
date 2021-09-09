@@ -20,6 +20,27 @@ comp:
         children: *event_children
       any:
         descr: Custom event handler
+  injectRootComp:
+    descr: Items to include with componet
+    children:
+      js:
+        descr: Javascript to include
+        children:
+          name:
+            descr: Name of file to include
+            listHead: yes
+            valueCompleter: fileNameCompleter
+            valueCompleterParams:
+              folderPrefix: js
+      css:
+        descr: CSS to include
+        children:
+          name:
+            descr: Name of file to include
+            listHead: yes
+            valueCompleter: fileNameCompleter
+            valueCompleterParams:
+              folderPrefix: css
 unit:
   compType:
     descr: Component type
@@ -27,6 +48,7 @@ unit:
     valueCompleter: fileNameCompleter
     valueCompleterParams:
       folderPrefix: comp
+      trimSuffix: .yaml
     children:
       any:
         descr: Component properties

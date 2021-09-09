@@ -1,4 +1,8 @@
 ---
+unitInterface:
+  descr: Top level container
+  properties:
+    tree: Component tree (use cr to refer a component)
 body: |
   <html>
   <head>

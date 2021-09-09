@@ -1,0 +1,58 @@
+---
+unitInterface:
+  descr: Navigation menu
+  properties:
+    structure:
+      descr: Structure of menu
+      mapHead: yes
+      children:
+        name:
+          descr: Menu item title
+          listHead: yes
+          reference: menuHeader
+          children:
+            submenu:
+              descr: Submenu entry
+              mapHead: yes
+              childrenRef: menuHeader
+body: |
+  {{define "subMenu"}}
+  {{if .submenu}}
+  <ul>
+  {{range .submenu}}
+    <li><a><label class="label">{{.name}}</label></a>
+    {{template "subMenu" .}}
+    </li>
+  {{end}}
+  </ul>
+  {{end}}
+  {{end}}
+  <div id="{{.sid}}" class="navmenu">
+  </div>
+  <nav class="navmenu">
+  <ul>
+  {{range .structure}}
+    <li><a><label class="label">{{.name}}</label></a>
+    {{template "subMenu" .}}
+    </li>
+  {{end}}
+  </ul>
+  </nav>
+original_body: |
+  <div id="{{.sid}}" class="navmenu">
+  </div>
+  <nav class="navmenu">
+  <ul>
+  <li>
+    <a><label class="label">Menu1</label></a>
+    <ul>
+      <li><a><label class="label">Point1</label></a></li>
+      <li><a><label class="label">Point2</label></a></li>
+    </ul>
+  </li>
+  <li><a><label class="label">Menu2</label></a></li>
+  </ul>
+  </nav>
+injectRootComp:
+  css:
+    - name: comp/navmenu.css

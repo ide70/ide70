@@ -1,17 +1,17 @@
-package server
+package codecomplete
 
 import (
 	//"fmt"
 	"github.com/ide70/ide70/comp"
 	"github.com/ide70/ide70/dataxform"
 	"reflect"
-	"strings"
 	"regexp"
+	"strings"
 )
 
 var reIdentifierStart = regexp.MustCompile(`[+-/*.{;: ()]*\w*$`)
 
-func jsCompleter(yamlPos *YamlPosition, configData map[string]interface{}, compl []map[string]string) []map[string]string {
+func jsCompleter(yamlPos *YamlPosition, col int, configData map[string]interface{}, compl []map[string]string) []map[string]string {
 	code := yamlPos.valuePrefx
 	if code == "" || strings.HasSuffix(code, "(") || strings.HasSuffix(code, ",") || strings.HasSuffix(code, ", ") {
 		compl = append(compl, completionsOfType(reflect.TypeOf(&comp.VmBase{}), "", configData)...)
@@ -32,7 +32,7 @@ func jsCompleter(yamlPos *YamlPosition, configData map[string]interface{}, compl
 
 func getReturnType(code string) (reflect.Type, string) {
 	funcNameChain := []string{}
-	
+
 	// trim func name fragment
 	nameStart := strings.LastIndexAny(code, "+-/*.{;: \n\t()") + 1
 	if nameStart < len(code) {
@@ -40,7 +40,7 @@ func getReturnType(code string) (reflect.Type, string) {
 		funcNameChain = append([]string{funcName}, funcNameChain...)
 		code = code[:nameStart]
 	}
-	
+
 	for strings.HasSuffix(code, ".") {
 		code = strings.TrimSuffix(code, ".")
 
@@ -111,7 +111,7 @@ func completionsOfType(tp reflect.Type, funcNameFilter string, configData map[st
 	numMethods := tp.NumMethod()
 	functionsData := dataxform.SIMapGetByKeyAsMap(configData, "functions")
 	typeBasedFunctionsData := dataxform.SIMapGetByKeyAsMap(functionsData, tp.String())
-	
+
 	for i := 0; i < numMethods; i++ {
 		method := tp.Method(i)
 		methodTp := method.Type

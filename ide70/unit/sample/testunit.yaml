@@ -1,6 +1,20 @@
 ---
 - compType: page
-  children: [tst, newline2, backButton]
+  children: [navmenu, tst, newline2, backButton]
+- compType: navmenu
+  cr: navmenu
+  structure:
+    - name: Main1
+      submenu:
+        - name: Sub1
+    - name: Main2
+      submenu:
+        - name: Sub2
+        - name: Sub3
+          submenu:
+            - name: Sub-Sub1
+            - name: Sub-Sub2
+        - name: Sub4
 - compType: testcomp
   cr: tst
   uzenet: true

@@ -1,12 +1,14 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"time"
 	//	"net/url"
 	"fmt"
 	"github.com/ide70/ide70/app"
+	"github.com/ide70/ide70/codecomplete"
 	"github.com/ide70/ide70/comp"
 	"github.com/ide70/ide70/loader"
 	"github.com/ide70/ide70/util/log"
@@ -20,16 +22,16 @@ import (
 
 // Internal path constants.
 const (
-	pathStatic     = "_static/"
-	pathFileSystem = "_fs/"
-	pathFileSave   = "_save/"
-	pathCodeComplete   = "_codeComplete/"
-	pathWebfonts   = "webfonts/"
-	pathSessCheck  = "_sess_ch"
-	pathUnitCreate = "uc" // path for unit create
-	pathEvent      = "e"  // Window-relative path for sending events
-	pathEventAsync = "ea" // Window-relative path for sending events
-	pathRenderComp = "rc" // Window-relative path for rendering a component
+	pathStatic       = "_static/"
+	pathFileSystem   = "_fs/"
+	pathFileSave     = "_save/"
+	pathCodeComplete = "_codeComplete/"
+	pathWebfonts     = "webfonts/"
+	pathSessCheck    = "_sess_ch"
+	pathUnitCreate   = "uc" // path for unit create
+	pathEvent        = "e"  // Window-relative path for sending events
+	pathEventAsync   = "ea" // Window-relative path for sending events
+	pathRenderComp   = "rc" // Window-relative path for rendering a component
 )
 
 // Parameters passed between the browser and the server.
@@ -99,7 +101,7 @@ func (s *AppServer) Start() error {
 	mux.HandleFunc(s.App.Path+pathFileSave, func(w http.ResponseWriter, r *http.Request) {
 		s.serveFileSave(w, r)
 	})
-	
+
 	mux.HandleFunc(s.App.Path+pathCodeComplete, func(w http.ResponseWriter, r *http.Request) {
 		s.serveCodeComplete(w, r)
 	})
@@ -548,11 +550,11 @@ func (s *AppServer) serveFileSave(w http.ResponseWriter, r *http.Request) {
 	if parts[0] == "ide70" {
 		if parts[1] == "comp" {
 			comp.RefreshCompType(strings.TrimSuffix(strings.Join(parts[2:], "/"), ".yaml"))
-			loader.DropTemplatedYaml(strings.TrimSuffix(strings.Join(parts[2:], "/"), ".yaml"))
+			loader.DropTemplatedYaml(strings.TrimSuffix(strings.Join(parts, "/"), ".yaml"))
 		}
 		if parts[1] == "unit" {
 			comp.RefreshUnitDef(strings.TrimSuffix(strings.Join(parts[2:], "/"), ".yaml"))
-			loader.DropTemplatedYaml(strings.TrimSuffix(strings.Join(parts[2:], "/"), ".yaml"))
+			loader.DropTemplatedYaml(strings.TrimSuffix(strings.Join(parts, "/"), ".yaml"))
 		}
 		if parts[1] == "dcfg" {
 			loader.DropTemplatedYaml(strings.TrimSuffix(strings.Join(parts[2:], "/"), ".yaml"))
@@ -576,6 +578,32 @@ func (s *AppServer) serveWebfonts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Expires", time.Now().UTC().Add(72*time.Hour).Format(http.TimeFormat)) // Set 72 hours caching
 	http.ServeFile(w, r, "ide70/webfonts/"+res)
 	return
+}
+
+func (s *AppServer) serveCodeComplete(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+
+	parts := strings.Split(r.URL.Path, "/")
+
+	if len(parts) < 3 {
+		// Missing app name from path
+		http.NotFound(w, r)
+		return
+	}
+	// Omit the first empty string, app name and pathStatic
+	parts = parts[3:]
+
+	content := r.FormValue("content")
+	row, _ := strconv.ParseInt(r.FormValue("row"), 10, 32)
+	col, _ := strconv.ParseInt(r.FormValue("col"), 10, 32)
+	fileName := strings.Join(parts, "/")
+	fileType := parts[1]
+	logger.Info("Code complete file name:", fileName, fileType, int(row), int(col))
+
+	completions := codecomplete.CodeComplete(content, int(row), int(col), fileType)
+	w.Header().Set("Content-Type", "application/json")
+	encoder := json.NewEncoder(w)
+	encoder.Encode(completions)
 }
 
 func (s *AppServer) sessCleaner(stop chan struct{}) {

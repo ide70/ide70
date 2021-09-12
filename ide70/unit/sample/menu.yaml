@@ -12,5 +12,7 @@
     title: IDE Új
   - link: testunit
     title: Teszt Unit2
+  - link: menu2
+    title: Menu 2
   - link: login
     title: Log out

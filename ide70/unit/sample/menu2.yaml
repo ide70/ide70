@@ -1,0 +1,26 @@
+---
+- compType: page
+  tree: 
+    - navmenu
+    - mainPanel
+- compType: navmenu
+  cr: navmenu
+  loadTarget: mainPanel
+  structure:
+    - name: Menu1
+      submenu:
+        - name: Dog database
+          loadUnit: dogs/dogs
+        - name: IDE
+          loadUnit: ide/ide_uj
+          submenu:
+            - name: SubSubM
+              loadUnit: ide/ide_uj
+    - name: Logout
+      fireEvent: logoutEvent
+  eventHandlers:
+    logoutEvent:
+      action: |
+        Event().CurrentComp().LoadUnit("sample/login");
+- compType: mainPanel
+  cr: mainPanel

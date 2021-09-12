@@ -15,13 +15,31 @@ unitInterface:
               descr: Submenu entry
               mapHead: yes
               childrenRef: menuHeader
+            loadUnit:
+              descr: Name of unit to load
+              valueCompleter: fileNameCompleter
+              valueCompleterParams:
+                folderPrefix: unit
+                trimSuffix: .yaml
+            fireEvent:
+              descr: Fire custom event when menu item selected
+    loadTarget:
+      descr: Target component to load unit when selected from menu
 body: |
+  {{define "actionLink"}}
+  {{if .c.loadUnit}}
+  {{eventHandlerWithKey .r.This "onclick" "loadUnit" .c.loadUnit}}
+  {{end}}
+  {{if .c.fireEvent}}
+  {{eventHandlerWithKey .r.This "onclick" .c.fireEvent ""}}
+  {{end}}
+  {{end}}
   {{define "subMenu"}}
-  {{if .submenu}}
+  {{if .c.submenu}}
   <ul>
-  {{range .submenu}}
-    <li><a><label class="label">{{.name}}</label></a>
-    {{template "subMenu" .}}
+  {{range .c.submenu}}
+    <li><a {{template "actionLink" passRoot . $.r}}><label class="label">{{.name}}</label></a>
+    {{template "subMenu" passRoot . $.r}}
     </li>
   {{end}}
   </ul>
@@ -32,13 +50,19 @@ body: |
   <nav class="navmenu">
   <ul>
   {{range .structure}}
-    <li><a><label class="label">{{.name}}</label></a>
-    {{template "subMenu" .}}
+    <li><a {{template "actionLink" passRoot . $}}><label class="label">{{.name}}</label></a>
+    {{template "subMenu" passRoot . $}}
     </li>
   {{end}}
   </ul>
   </nav>
+eventHandlers:
+  loadUnit:
+    action: |
+      var targetPanel = Event().CurrentComp().GetProp("loadTarget");
+      CompByCr(targetPanel).LoadUnitInto(Event().EventKey());
 original_body: |
+  {{eventHandlerWithKey $.This "onclick" "loadUnit" "x"}}
   <div id="{{.sid}}" class="navmenu">
   </div>
   <nav class="navmenu">

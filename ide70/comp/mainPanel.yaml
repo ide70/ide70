@@ -1,0 +1,11 @@
+---
+body: |
+  <iframe id="{{.sid}}" class="panel">
+  </iframe>
+eventHandlers:
+  onclick:
+    action: |
+      common_log("layer clicked");
+injectRootComp:
+  css:
+    - name: comp/mainPanel.css

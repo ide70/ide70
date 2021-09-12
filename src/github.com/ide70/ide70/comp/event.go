@@ -414,6 +414,10 @@ func (e *EventRuntime) CurrentComp() *CompRuntimeSW {
 	return &CompRuntimeSW{c: e.Comp, event: e}
 }
 
+func (e *EventRuntime) EventKey() string {
+	return e.ValueStr;
+}
+
 func (e *EventRuntime) ParentComp() *CompRuntimeSW {
 	return &CompRuntimeSW{c: e.Comp.State["parentComp"].(*CompRuntime), event: e}
 }

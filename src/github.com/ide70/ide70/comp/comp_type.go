@@ -9,6 +9,8 @@ import "strings"
 import "gopkg.in/yaml.v2"
 import "github.com/ide70/ide70/dataxform"
 import "regexp"
+import "reflect"
+import "errors"
 
 const COMP_PATH = "ide70/comp/"
 
@@ -82,7 +84,7 @@ func extractSubcomponents(comp *CompType, body string, appParams *AppParams) {
 		matchIdx := subIdx[0]
 		subCompStr := cutToClosingTag(body[matchIdx:], tagName)
 		logger.Info("subcomp:", subCompName, subCompStr)
-		comp.SubBodies[subCompName] = createTemplate(subCompStr, comp.Name + subCompName, appParams, nil)
+		comp.SubBodies[subCompName] = createTemplate(subCompStr, comp.Name+subCompName, appParams, nil)
 	}
 }
 
@@ -93,9 +95,9 @@ func cutToClosingTag(s, tagName string) string {
 	openTags := 0
 	for i, sub := range subs {
 		if strings.HasPrefix(sub[0], "</") {
-			openTags--;
+			openTags--
 		} else {
-			openTags++;
+			openTags++
 		}
 		if openTags == 0 {
 			return s[:subIdxs[i][0]+len(sub[0])]
@@ -142,16 +144,19 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 	if comp.Body == nil {
 		return nil
 	}
-	
+
 	comp.SubBodies = map[string]*template.Template{}
 	extractSubcomponents(comp, body, appParams)
-	
+
 	CompCache[name] = comp
 	return comp
 }
 
 func createTemplate(body, name string, appParams *AppParams, bodyConsts map[string]interface{}) *template.Template {
 	templ, err := template.New(name).Funcs(template.FuncMap{
+		"passRoot":            passRoot,
+		"printVar":            printVar,
+		"dict":                dict,
 		"evalComp":            EvalComp,
 		"generateComp":        GenerateComp,
 		"eventHandler":        GenerateEventHandler,
@@ -168,6 +173,31 @@ func createTemplate(body, name string, appParams *AppParams, bodyConsts map[stri
 		return nil
 	}
 	return templ
+}
+
+func dict(values ...interface{}) (map[string]interface{}, error) {
+	if len(values)%2 != 0 {
+		return nil, errors.New("invalid dict call")
+	}
+	dict := make(map[string]interface{}, len(values)/2)
+	for i := 0; i < len(values); i += 2 {
+		key, ok := values[i].(string)
+		if !ok {
+			return nil, errors.New("dict keys must be strings")
+		}
+		dict[key] = values[i+1]
+	}
+	return dict, nil
+}
+
+func passRoot(current, root interface{}) map[string]interface{} {
+	return map[string]interface{}{"c": current, "r": root}
+}
+
+func printVar(i interface{}) string {
+	fmt.Println("i:", reflect.TypeOf(i))
+	fmt.Println("iv:", i)
+	return ""
 }
 
 func GetCompType(name string, appParams *AppParams) *CompType {
@@ -193,6 +223,11 @@ func GenerateEventHandler(comp *CompRuntime, eventTypeCli string, eventTypeSvrOp
 }
 
 func GenerateEventHandlerWithKey(comp *CompRuntime, eventTypeCli, eventTypeSvr, key string) string {
+	logger.Info("GenerateEventHandlerWithKey")
+	logger.Info(comp)
+	logger.Info(eventTypeCli)
+	logger.Info(eventTypeSvr)
+	logger.Info(key)
 	return fmt.Sprintf(" %s=\"se(event,'%s',%d,'%s')\"", eventTypeCli, eventTypeSvr, comp.Sid(), key)
 }
 

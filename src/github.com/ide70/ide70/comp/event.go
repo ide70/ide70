@@ -488,6 +488,11 @@ func (e *EventRuntime) CloseLayer() {
 	e.Session.DeleteUnit(unit)
 }
 
+func (e *EventRuntime) ClearAuthentication() {
+	logger.Info("Logout")
+	e.Session.ClearAuthentication();
+}
+
 func (e *EventRuntime) ReloadUnit() {
 	reloadUnit(e, e.UnitRuntime)
 }

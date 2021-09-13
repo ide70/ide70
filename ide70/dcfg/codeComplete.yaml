@@ -20,6 +20,8 @@ comp:
         children: *event_children
       any:
         descr: Custom event handler
+        mapHead: yes
+        children: *event_children
   injectRootComp:
     descr: Items to include with componet
     children:

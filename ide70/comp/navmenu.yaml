@@ -23,6 +23,8 @@ unitInterface:
                 trimSuffix: .yaml
             fireEvent:
               descr: Fire custom event when menu item selected
+            alignRight:
+              descr: Align menu bar item to right
     loadTarget:
       descr: Target component to load unit when selected from menu
 body: |
@@ -38,8 +40,10 @@ body: |
   {{if .c.submenu}}
   <ul>
   {{range .c.submenu}}
-    <li><a {{template "actionLink" passRoot . $.r}}><label class="label">{{.name}}</label></a>
-    {{template "subMenu" passRoot . $.r}}
+    <li {{if .submenu}}class="has-children"{{end}}>
+      <a {{template "actionLink" passRoot . $.r}}><label class="label">{{.name}}</label>
+      </a>
+      {{template "subMenu" passRoot . $.r}}
     </li>
   {{end}}
   </ul>
@@ -50,7 +54,7 @@ body: |
   <nav class="navmenu">
   <ul>
   {{range .structure}}
-    <li><a {{template "actionLink" passRoot . $}}><label class="label">{{.name}}</label></a>
+    <li {{if .alignRight}}class="right"{{end}}><a {{template "actionLink" passRoot . $}}><label class="label">{{.name}}</label></a>
     {{template "subMenu" passRoot . $}}
     </li>
   {{end}}
@@ -61,22 +65,6 @@ eventHandlers:
     action: |
       var targetPanel = Event().CurrentComp().GetProp("loadTarget");
       CompByCr(targetPanel).LoadUnitInto(Event().EventKey());
-original_body: |
-  {{eventHandlerWithKey $.This "onclick" "loadUnit" "x"}}
-  <div id="{{.sid}}" class="navmenu">
-  </div>
-  <nav class="navmenu">
-  <ul>
-  <li>
-    <a><label class="label">Menu1</label></a>
-    <ul>
-      <li><a><label class="label">Point1</label></a></li>
-      <li><a><label class="label">Point2</label></a></li>
-    </ul>
-  </li>
-  <li><a><label class="label">Menu2</label></a></li>
-  </ul>
-  </nav>
 injectRootComp:
   css:
     - name: comp/navmenu.css

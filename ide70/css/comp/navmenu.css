@@ -10,9 +10,15 @@
 	--menu-border-width: 1px;
 	--menu-border-width-m: -1px;
 	--menu-shadow: 2px 2px 3px -3px var(--menu-text-color);
-	--menu-content-padding: 0.5rem 1rem 0.5rem 1.75rem;
+	--menu-content-padding: 0.5rem 1rem 0.5rem 1rem;
 	--menu-top-padding: 0.25rem;
 }
+
+nav.navmenu {
+    height: 2em;
+    font-size: 11pt;
+}
+
 .navmenu ul {
 	 margin: 0;
 	 padding: 0;

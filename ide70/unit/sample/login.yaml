@@ -32,7 +32,7 @@
           if( userName == "adam" && password == "apple") {
               Event().Session.SetAuthUser(userName);
               Event().Session.SetAuthRole("common");
-              Event().LoadUnit("sample/menu");
+              Event().LoadUnit("sample/menu2");
           }
     onmouseover:
       action: |

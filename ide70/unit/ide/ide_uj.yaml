@@ -2,8 +2,8 @@
 - compType: page
   tree:
     - vspacer:
-      - fileTree
-      - editorSet
+        - fileTree
+        - editorSet
     - dirMenu
     - fileMenu
     - firstLayer

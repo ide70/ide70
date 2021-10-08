@@ -11,7 +11,7 @@ import (
 
 var reIdentifierStart = regexp.MustCompile(`[+-/*.{;: ()]*\w*$`)
 
-func jsCompleter(yamlPos *YamlPosition, col int, configData map[string]interface{}, compl []map[string]string) []map[string]string {
+func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
 	code := yamlPos.valuePrefx
 	if code == "" || strings.HasSuffix(code, "(") || strings.HasSuffix(code, ",") || strings.HasSuffix(code, ", ") {
 		compl = append(compl, completionsOfType(reflect.TypeOf(&comp.VmBase{}), "", configData)...)

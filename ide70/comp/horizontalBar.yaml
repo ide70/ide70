@@ -1,4 +1,6 @@
 ---
+unitInterface:
+  descr: Container displaying children horizontally
 body: |
   <table class="horizontal-bar">
     <tr>

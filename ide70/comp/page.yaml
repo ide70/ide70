@@ -2,7 +2,21 @@
 unitInterface:
   descr: Top level container
   properties:
-    tree: Component tree (use cr to refer a component)
+    tree:
+      descr: Component tree
+      mapHead: yes
+      children:
+        any:
+          descr: Component reference
+          listHead: yes
+          singleKey: yes
+          childrenRef: self
+          keyCompleter: yamlPathCompleter
+          keyCompleterParams:
+            self: yes
+            pathExpr: "[%].cr:value"
+            filterExpr: "[0].tree[%]*|[0].tree[%]*:value"
+            convertMapDescr: Add children to this component
 body: |
   <html>
   <head>

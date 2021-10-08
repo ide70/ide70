@@ -5,6 +5,7 @@ unitInterface:
     value: Initial value
     readonly: Read only mode
     store: Persistence key
+    label: Label passed to container for display
 include:
   - common
 body: |

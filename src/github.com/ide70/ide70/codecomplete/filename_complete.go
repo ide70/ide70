@@ -7,7 +7,7 @@ import (
 	"github.com/ide70/ide70/util/file"
 )
 
-func fileNameCompleter(yamlPos *YamlPosition, col int, configData map[string]interface{}, compl []map[string]string) []map[string]string {
+func fileNameCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
 	folderPrefix := dataxform.SIMapGetByKeyAsString(configData, "folderPrefix")
 	trimSuffix := dataxform.SIMapGetByKeyAsString(configData, "trimSuffix")
 	fileNames := file.FileList("ide70/"+folderPrefix, "ide70/"+folderPrefix+"/", trimSuffix)

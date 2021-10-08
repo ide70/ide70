@@ -43,6 +43,31 @@ comp:
             valueCompleter: fileNameCompleter
             valueCompleterParams:
               folderPrefix: css
+  unitInterface:
+    descr: Component interface available for units
+    mapHead: yes
+    children:
+      descr: Description of component
+      properties:
+        descr: Available properties of the component
+        mapHead: yes
+        children:
+          any:
+            descr: Name of property
+            children:
+              descr: Description of property
+              mapHead: Boolean specifies that the property is not a single value but a map.
+              listHead: Boolean specifies that the property is head element of a list
+              children:
+                descr: Specifies sub properties of property
+              childrenRef: Assigns a reference not in parent structure as children
+              reference: Assingns reference vaule to current property node. See chidrenRef
+              singleKey: Specifies do not place colon after key name
+              singleToMap: Specifies possibility of extending single key to map head
+              keyCompleter:
+                descr: Name of completer mechanism producing possible key values
+              keyCompleterParams:
+                descr: Paramters of keyCompleter
 unit:
   compType:
     descr: Component type

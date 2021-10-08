@@ -23,11 +23,18 @@ type YamlPosition struct {
 	keyPrefix   string
 	valuePrefx  string
 	keyComplete bool
+	inNextLine  bool
 	child       *YamlPosition
 	parent      *YamlPosition
 }
 
-type ValueCompleter func(yamlPos *YamlPosition, col int, configData map[string]interface{}, compl []map[string]string) []map[string]string
+type EditorContext struct {
+	content string
+	row     int
+	col     int
+}
+
+type ValueCompleter func(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string
 
 var completers map[string]ValueCompleter
 
@@ -35,7 +42,8 @@ func init() {
 	completers = map[string]ValueCompleter{
 		"jsCompleter":       jsCompleter,
 		"fileNameCompleter": fileNameCompleter,
-		"yamlDataCompleter": yamlDataCompleter}
+		"yamlDataCompleter": yamlDataCompleter,
+		"yamlPathCompleter": yamlPathCompleter}
 }
 
 func (yPos *YamlPosition) getKey() string {
@@ -96,6 +104,9 @@ func getYamlPosition(lines []string, row, col int, findMultiline bool) *YamlPosi
 	}
 
 	if keyRow != -1 {
+		if row == keyRow+1 {
+			yamlPos.inNextLine = true
+		}
 		row = keyRow
 		col = strings.Index(lines[row], ":")
 	}
@@ -160,15 +171,16 @@ func CodeComplete(content string, row, col int, fileType string) []map[string]st
 	//compl = append(compl, newCompletion("---\n", "---", "Start yaml document"))
 	complDescr := loader.GetTemplatedYaml("codeComplete", "").Def
 	compDescrFt := dataxform.SIMapGetByKeyAsMap(complDescr, fileType)
+	edContext := &EditorContext{content: content, col: col, row: row}
 
 	if len(compDescrFt) > 0 {
-		compl = completerCore(yamlPos, col, compDescrFt, compl)
+		compl = completerCore(yamlPos, edContext, compDescrFt, compl)
 	}
 
 	return compl
 }
 
-func completerCore(yamlPos *YamlPosition, col int, levelMap map[string]interface{}, compl []map[string]string) []map[string]string {
+func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map[string]interface{}, compl []map[string]string) []map[string]string {
 	logger.Info("cc yPk:", yamlPos.getKey())
 	references := map[string]map[string]interface{}{}
 	for {
@@ -189,6 +201,8 @@ func completerCore(yamlPos *YamlPosition, col int, levelMap map[string]interface
 					childrenRef := dataxform.SIMapGetByKeyAsString(keyData, "childrenRef")
 					if childrenRef != "" {
 						levelMap = references[childrenRef]
+					} else {
+						logger.Info("-- no children")
 					}
 				}
 				yamlPos = yamlPos.child
@@ -197,7 +211,7 @@ func completerCore(yamlPos *YamlPosition, col int, levelMap map[string]interface
 
 			completer, configData := lookupCompleter("value", keyData)
 			if completer != nil {
-				compl = completer(yamlPos, col, configData, compl)
+				compl = completer(yamlPos, edContext, configData, compl)
 				break
 			}
 		}
@@ -206,8 +220,87 @@ func completerCore(yamlPos *YamlPosition, col int, levelMap map[string]interface
 			logger.Info("kD:", keyData)
 
 			completer, configData := lookupCompleter("key", keyData)
+
+			/*if yamlPos.child != nil {
+				children := dataxform.SIMapGetByKeyAsMap(keyData, "children")
+				if len(children) > 0 {
+					levelMap = children
+				} else {
+					childrenRef := dataxform.SIMapGetByKeyAsString(keyData, "childrenRef")
+					if childrenRef != "" {
+						levelMap = references[childrenRef]
+					} else {
+						logger.Info("-- no children")
+					}
+				}
+				yamlPos = yamlPos.child
+				continue
+			}
+
 			if completer != nil {
-				compl = completer(yamlPos, col, configData, compl)
+				compl = completer(yamlPos, edContext, configData, compl)
+			}*/
+
+			// context switching completer, no children evaluation
+			if completer != nil && dataxform.SIMapGetByKeyAsBoolean(configData, "handleChildren") {
+				compl = completer(yamlPos, edContext, configData, compl)
+			}
+
+			if yamlPos.child != nil {
+				children := dataxform.SIMapGetByKeyAsMap(keyData, "children")
+				if len(children) > 0 {
+					levelMap = children
+					yamlPos = yamlPos.child
+					continue
+				} else {
+					childrenRef := dataxform.SIMapGetByKeyAsString(keyData, "childrenRef")
+					if childrenRef == "self" {
+						logger.Info("childrenRef self")
+						yamlPos = yamlPos.child
+						continue
+					} else if childrenRef != "" {
+						logger.Info("childrenRef:", childrenRef)
+						levelMap = references[childrenRef]
+						yamlPos = yamlPos.child
+						continue
+					} else {
+						logger.Info("-- no children")
+						break
+					}
+				}
+			}
+			
+			if completer != nil {
+				compl = completer(yamlPos, edContext, configData, compl)
+			}
+
+			/*if completer != nil {
+
+				if yamlPos.child != nil {
+					if !dataxform.SIMapGetByKeyAsBoolean(configData, "handleChildren") {
+						logger.Info("completer not applicable")
+						break
+					}
+					children := dataxform.SIMapGetByKeyAsMap(keyData, "children")
+					if len(children) > 0 {
+						levelMap = children
+						yamlPos = yamlPos.child
+						continue
+					} else {
+						childrenRef := dataxform.SIMapGetByKeyAsString(keyData, "childrenRef")
+						if childrenRef == "self" {
+							logger.Info("childrenRef self")
+							yamlPos = yamlPos.child
+							continue
+						} else if childrenRef != "" {
+							levelMap = references[childrenRef]
+							yamlPos = yamlPos.child
+							continue
+						}
+					}
+				}
+
+				compl = completer(yamlPos, edContext, configData, compl)
 			} else {
 				if yamlPos.child != nil {
 					children := dataxform.SIMapGetByKeyAsMap(keyData, "children")
@@ -215,14 +308,18 @@ func completerCore(yamlPos *YamlPosition, col int, levelMap map[string]interface
 						levelMap = children
 					} else {
 						childrenRef := dataxform.SIMapGetByKeyAsString(keyData, "childrenRef")
-						if childrenRef != "" {
+						if childrenRef == "self" {
+							logger.Info("childrenRef self")
+						} else if childrenRef != "" {
 							levelMap = references[childrenRef]
+						} else {
+							logger.Info("-- no children")
 						}
 					}
 					yamlPos = yamlPos.child
 					continue
 				}
-			}
+			}*/
 		}
 		logger.Info("pmatch check mks:", matchingKeys)
 
@@ -245,7 +342,7 @@ func completerCore(yamlPos *YamlPosition, col int, levelMap map[string]interface
 				keyPrefix += "- "
 			}
 			if isMapHead {
-				keyPostfix = ":\n" + strings.Repeat(" ", col+2)
+				keyPostfix = ":\n" + strings.Repeat(" ", edContext.col+2)
 			}
 			compl = append(compl, newCompletion(keyPrefix+matchingKey+keyPostfix, matchingKey, keyDescr))
 		}
@@ -253,6 +350,38 @@ func completerCore(yamlPos *YamlPosition, col int, levelMap map[string]interface
 		break
 	}
 	return compl
+}
+
+func addCompletion(value string, edContext *EditorContext, keyData map[string]interface{}, compl []map[string]string) []map[string]string {
+	logger.Info("addCompletion:", value)
+	keyPrefix := ""
+	keyPostfix := ": "
+	captionPostfix := ""
+	keyDescr := dataxform.SIMapGetByKeyAsString(keyData, "descr")
+	isListHead := dataxform.SIMapGetByKeyAsBoolean(keyData, "listHead")
+	isMapHead := dataxform.SIMapGetByKeyAsBoolean(keyData, "mapHead")
+	isSingleKey := dataxform.SIMapGetByKeyAsBoolean(keyData, "singleKey")
+	singleToMap := dataxform.SIMapGetByKeyAsBoolean(keyData, "singleToMap")
+
+	if singleToMap {
+		captionPostfix = " :"
+	}
+
+	if isSingleKey {
+		keyPostfix = ""
+	}
+	if isListHead {
+		keyPrefix += "- "
+	}
+	if isMapHead {
+		newCol := edContext.col + 2
+		if singleToMap && len(value) < edContext.col+2 {
+			newCol = edContext.col + 2 - len(value)
+		}
+		keyPostfix = ":\n" + strings.Repeat(" ", newCol)
+	}
+	logger.Info("finish:")
+	return append(compl, newCompletion(keyPrefix+value+keyPostfix, value+captionPostfix, keyDescr))
 }
 
 func lookupCompleter(completerType string, keyData map[string]interface{}) (ValueCompleter, map[string]interface{}) {
@@ -265,6 +394,17 @@ func lookupCompleter(completerType string, keyData map[string]interface{}) (Valu
 	} else {
 		configData = completerParams
 	}
+
+	keyDescr := dataxform.SIMapGetByKeyAsString(keyData, "descr")
+	isListHead := dataxform.SIMapGetByKeyAsBoolean(keyData, "listHead")
+	isMapHead := dataxform.SIMapGetByKeyAsBoolean(keyData, "mapHead")
+	isSingleKey := dataxform.SIMapGetByKeyAsBoolean(keyData, "singleKey")
+	configData["descr"] = keyDescr
+	configData["listHead"] = isListHead
+	configData["mapHead"] = isMapHead
+	configData["singleKey"] = isSingleKey
+	configData["handleChildren"] = completerName == "yamlDataCompleter"
+
 	if completerName != "" {
 		logger.Info(completerType+"Completer:", completerName)
 		completer := completers[completerName]

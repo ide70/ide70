@@ -56,15 +56,15 @@ func SIMapGetByKeyIsString(m map[string]interface{}, k string) bool {
 	}
 	entry := m[k]
 	switch entry.(type) {
-		case string:
-		  return true
+	case string:
+		return true
 	}
 	return false
 }
 
 func SIMapGetByKeyChainAsMap(m map[string]interface{}, k string) map[string]interface{} {
 	keys := strings.Split(k, ".")
-	for _,key := range keys {
+	for _, key := range keys {
 		m = SIMapGetByKeyAsMap(m, key)
 	}
 	return m
@@ -268,12 +268,38 @@ func (entry *ArrayEntry) Parent() CollectionEntry {
 	return entry.parent
 }
 
+func IApplyFn(i interface{}, f func(entry CollectionEntry)) {
+	switch iT := i.(type) {
+	case map[string]interface{}:
+		SIMapApplyFn(iT, f)
+	case []interface{}:
+		IArrApplyFn(iT, f)
+	}
+}
+
+func IApplyFnToNodes(i interface{}, f func(entry CollectionEntry)) {
+	switch iT := i.(type) {
+	case map[string]interface{}:
+		SIMapApplyFnToNodes(iT, f)
+	case []interface{}:
+		IArrApplyFnToNodes(iT, f)
+	}
+}
+
 func IArrApplyFn(a []interface{}, f func(entry CollectionEntry)) {
 	iArrApplyFn(a, f, nil)
 }
 
 func SIMapApplyFn(m map[string]interface{}, f func(entry CollectionEntry)) {
 	sIMapApplyFn(m, f, nil)
+}
+
+func IArrApplyFnToNodes(a []interface{}, f func(entry CollectionEntry)) {
+	iArrApplyFnToNodes(a, f, nil)
+}
+
+func SIMapApplyFnToNodes(m map[string]interface{}, f func(entry CollectionEntry)) {
+	sIMapApplyFnToNodes(m, f, nil)
 }
 
 func iArrApplyFn(a []interface{}, f func(entry CollectionEntry), parentEntry CollectionEntry) {
@@ -290,6 +316,22 @@ func iArrApplyFn(a []interface{}, f func(entry CollectionEntry), parentEntry Col
 	}
 }
 
+func iArrApplyFnToNodes(a []interface{}, f func(entry CollectionEntry), parentEntry CollectionEntry) {
+	for i, v := range a {
+		entry := &ArrayEntry{parent: parentEntry, a: a, i: i, v: v}
+		switch vT := v.(type) {
+		case map[string]interface{}:
+			f(entry)
+			sIMapApplyFnToNodes(vT, f, entry)
+		case []interface{}:
+			f(entry)
+			iArrApplyFnToNodes(vT, f, entry)
+		default:
+			f(entry)
+		}
+	}
+}
+
 // apply func on map leafs
 func sIMapApplyFn(m map[string]interface{}, f func(entry CollectionEntry), parentEntry CollectionEntry) {
 	for k, v := range m {
@@ -299,6 +341,22 @@ func sIMapApplyFn(m map[string]interface{}, f func(entry CollectionEntry), paren
 			sIMapApplyFn(vT, f, entry)
 		case []interface{}:
 			iArrApplyFn(vT, f, entry)
+		default:
+			f(entry)
+		}
+	}
+}
+
+func sIMapApplyFnToNodes(m map[string]interface{}, f func(entry CollectionEntry), parentEntry CollectionEntry) {
+	for k, v := range m {
+		entry := &MapEntry{parent: parentEntry, m: m, k: k, v: v}
+		switch vT := v.(type) {
+		case map[string]interface{}:
+			f(entry)
+			sIMapApplyFnToNodes(vT, f, entry)
+		case []interface{}:
+		    f(entry)
+			iArrApplyFnToNodes(vT, f, entry)
 		default:
 			f(entry)
 		}

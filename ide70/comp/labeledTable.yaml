@@ -1,4 +1,6 @@
 ---
+unitInterface:
+  descr: Two-column table with labels and sub-components
 body: |
   <table class="labeled-table">
   {{range .Children}}

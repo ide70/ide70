@@ -557,7 +557,7 @@ func (s *AppServer) serveFileSave(w http.ResponseWriter, r *http.Request) {
 			loader.DropTemplatedYaml(strings.TrimSuffix(strings.Join(parts, "/"), ".yaml"))
 		}
 		if parts[1] == "dcfg" {
-			loader.DropTemplatedYaml(strings.TrimSuffix(strings.Join(parts[2:], "/"), ".yaml"))
+			loader.DropTemplatedYaml(strings.TrimSuffix(strings.Join(parts, "/"), ".yaml"))
 		}
 	}
 

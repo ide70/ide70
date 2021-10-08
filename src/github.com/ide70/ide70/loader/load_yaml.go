@@ -6,6 +6,7 @@ import (
 	"github.com/ide70/ide70/util/log"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"reflect"
 	"strings"
 	"text/template"
 )
@@ -17,18 +18,20 @@ var dynConfigCache = map[string]*TemplatedYaml{}
 const dcfgPath = "ide70/dcfg/"
 
 type TemplatedYaml struct {
-	Def map[string]interface{}
+	Def  map[string]interface{}
+	Defs []interface{}
+	IDef interface{}
 }
 
 func GetTemplatedYaml(name string, basePath string) *TemplatedYaml {
 	if basePath == "" {
 		basePath = dcfgPath
 	}
-	yamlData := dynConfigCache[basePath +name]
+	yamlData := dynConfigCache[basePath+name]
 	if yamlData == nil {
-		logger.Info("NO CACHE:"+ basePath +name)
+		logger.Info("NO CACHE:" + basePath + name)
 		yamlData = LoadTemplatedYaml(name, basePath)
-		dynConfigCache[basePath + name] = yamlData
+		dynConfigCache[basePath+name] = yamlData
 	}
 	return yamlData
 }
@@ -39,27 +42,35 @@ func DropTemplatedYaml(name string) {
 }
 
 func LoadTemplatedYaml(name, basePath string) *TemplatedYaml {
-	module := &TemplatedYaml{}
 	logger.Info("loadTemplatedYaml", name)
 	contentB, err := ioutil.ReadFile(basePath + name + ".yaml")
 	if err != nil {
 		logger.Error("Yaml module ", name, "not found")
 		return nil
 	}
+	return ConvertTemplatedYaml(contentB, name)
+}
 
+func ConvertTemplatedYaml(contentB []byte, name string) *TemplatedYaml {
+	module := &TemplatedYaml{}
 	decoder := yaml.NewDecoder(bytes.NewReader(contentB))
 
 	var compIf interface{}
-	err = decoder.Decode(&compIf)
+	err := decoder.Decode(&compIf)
 	if err != nil {
 		logger.Error("Yaml module ", name, "failed to decode:", err.Error())
+		return nil
 	}
 
 	switch compIfT := compIf.(type) {
 	case map[interface{}]interface{}:
 		module.Def = dataxform.InterfaceMapToStringMap(compIfT)
+		module.IDef = module.Def
+	case []interface{}:
+		module.Defs = dataxform.InterfaceListReplaceMapKeyToString(compIfT)
+		module.IDef = module.Defs
 	default:
-		logger.Error("Yaml module ", name, "yaml structure is not a map")
+		logger.Error("Yaml module ", name, "yaml structure is not a map, but:", reflect.TypeOf(compIf))
 		return nil
 	}
 	dataxform.SIMapApplyFn(module.Def, func(entry dataxform.CollectionEntry) {
@@ -76,7 +87,7 @@ func LoadTemplatedYaml(name, basePath string) *TemplatedYaml {
 			}
 		}
 	})
-	logger.Info("loaded: ", module.Def)
+	logger.Info("converted: ", module.Def)
 
 	return module
 }

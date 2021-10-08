@@ -7,6 +7,11 @@
   cr: navmenu
   loadTarget: mainPanel
   structure:
+    - name: Uj
+      loadUnit: sample/menu
+      submenu:
+        - name: al1
+        - name: al2
     - name: IDE
       loadUnit: ide/ide_uj
     - name: Test App
@@ -20,10 +25,15 @@
     - name: Logout
       fireEvent: logoutEvent
       alignRight: yes
+    - name: New login
+      fireEvent: newLoginEvent
   eventHandlers:
     logoutEvent:
       action: |
         Event().ClearAuthentication();
         Event().CurrentComp().LoadUnit("sample/login");
+    newLoginEvent:
+      action: |
+        Event().CurrentComp().LoadUnit("basic/login");
 - compType: mainPanel
   cr: mainPanel

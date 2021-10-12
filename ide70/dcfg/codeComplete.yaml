@@ -14,6 +14,7 @@ comp:
             descr: JS code to execute
             valueCompleter: jsCompleter
             valueCompleterConfig: jsCompleterConfig
+            multilineValue: yes
       onUnitCreate:
         descr: Fired when unit instantiates
         mapHead: yes
@@ -64,6 +65,7 @@ comp:
               reference: Assingns reference vaule to current property node. See chidrenRef
               singleKey: Specifies do not place colon after key name
               singleToMap: Specifies possibility of extending single key to map head
+              multilineValue: Creates multi-line content for key
               keyCompleter:
                 descr: Name of completer mechanism producing possible key values
               keyCompleterParams:

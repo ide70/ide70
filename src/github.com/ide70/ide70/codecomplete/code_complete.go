@@ -168,7 +168,6 @@ func CodeComplete(content string, row, col int, fileType string) []map[string]st
 	compl := []map[string]string{}
 	yamlPos := getYamlPosition(lines, row, col, true)
 	logger.Info("yP:", yamlPos)
-	//compl = append(compl, newCompletion("---\n", "---", "Start yaml document"))
 	complDescr := loader.GetTemplatedYaml("codeComplete", "").Def
 	compDescrFt := dataxform.SIMapGetByKeyAsMap(complDescr, fileType)
 	edContext := &EditorContext{content: content, col: col, row: row}
@@ -269,7 +268,7 @@ func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map
 					}
 				}
 			}
-			
+
 			if completer != nil {
 				compl = completer(yamlPos, edContext, configData, compl)
 			}
@@ -335,7 +334,7 @@ func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map
 			}
 			// complex form: key has spearate descr and other complementary fileds
 			keyData := dataxform.SIMapGetByKeyAsMap(levelMap, matchingKey)
-			keyDescr := dataxform.SIMapGetByKeyAsString(keyData, "descr")
+			/*keyDescr := dataxform.SIMapGetByKeyAsString(keyData, "descr")
 			isListHead := dataxform.SIMapGetByKeyAsBoolean(keyData, "listHead")
 			isMapHead := dataxform.SIMapGetByKeyAsBoolean(keyData, "mapHead")
 			if isListHead {
@@ -344,7 +343,8 @@ func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map
 			if isMapHead {
 				keyPostfix = ":\n" + strings.Repeat(" ", edContext.col+2)
 			}
-			compl = append(compl, newCompletion(keyPrefix+matchingKey+keyPostfix, matchingKey, keyDescr))
+			compl = append(compl, newCompletion(keyPrefix+matchingKey+keyPostfix, matchingKey, keyDescr))*/
+			compl = addCompletion(matchingKey, edContext, keyData, compl)
 		}
 
 		break
@@ -361,7 +361,9 @@ func addCompletion(value string, edContext *EditorContext, keyData map[string]in
 	isListHead := dataxform.SIMapGetByKeyAsBoolean(keyData, "listHead")
 	isMapHead := dataxform.SIMapGetByKeyAsBoolean(keyData, "mapHead")
 	isSingleKey := dataxform.SIMapGetByKeyAsBoolean(keyData, "singleKey")
+	isMultilineValue := dataxform.SIMapGetByKeyAsBoolean(keyData, "multilineValue")
 	singleToMap := dataxform.SIMapGetByKeyAsBoolean(keyData, "singleToMap")
+	quote := dataxform.SIMapGetByKeyAsString(keyData, "quote")
 
 	if singleToMap {
 		captionPostfix = " :"
@@ -380,6 +382,13 @@ func addCompletion(value string, edContext *EditorContext, keyData map[string]in
 		}
 		keyPostfix = ":\n" + strings.Repeat(" ", newCol)
 	}
+	if isMultilineValue {
+		keyPostfix = ": |\n" + strings.Repeat(" ", edContext.col+2)
+	}
+	if quote != "" {
+		keyPrefix = quote
+		keyPostfix = quote
+	}
 	logger.Info("finish:")
 	return append(compl, newCompletion(keyPrefix+value+keyPostfix, value+captionPostfix, keyDescr))
 }
@@ -395,14 +404,7 @@ func lookupCompleter(completerType string, keyData map[string]interface{}) (Valu
 		configData = completerParams
 	}
 
-	keyDescr := dataxform.SIMapGetByKeyAsString(keyData, "descr")
-	isListHead := dataxform.SIMapGetByKeyAsBoolean(keyData, "listHead")
-	isMapHead := dataxform.SIMapGetByKeyAsBoolean(keyData, "mapHead")
-	isSingleKey := dataxform.SIMapGetByKeyAsBoolean(keyData, "singleKey")
-	configData["descr"] = keyDescr
-	configData["listHead"] = isListHead
-	configData["mapHead"] = isMapHead
-	configData["singleKey"] = isSingleKey
+	dataxform.SIMapCopyKeys(keyData, configData, []string{"descr", "listHead", "mapHead", "singleKey", "multilineValue", "quote"})
 	configData["handleChildren"] = completerName == "yamlDataCompleter"
 
 	if completerName != "" {

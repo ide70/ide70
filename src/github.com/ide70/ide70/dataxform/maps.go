@@ -90,6 +90,14 @@ func SIMapGetByKeyAsBoolean(m map[string]interface{}, k string) bool {
 	return entry.(bool)
 }
 
+func SIMapCopyKeys(s, d map[string]interface{}, keys []string) {
+	for _, key := range keys {
+		if _, has := s[key]; has {
+			d[key] = s[key]
+		}
+	}
+}
+
 func IAsString(i interface{}) string {
 	if i == nil {
 		return ""
@@ -355,7 +363,7 @@ func sIMapApplyFnToNodes(m map[string]interface{}, f func(entry CollectionEntry)
 			f(entry)
 			sIMapApplyFnToNodes(vT, f, entry)
 		case []interface{}:
-		    f(entry)
+			f(entry)
 			iArrApplyFnToNodes(vT, f, entry)
 		default:
 			f(entry)
@@ -476,6 +484,14 @@ func SIMapCopy(collection interface{}) interface{} {
 	default:
 		return c
 	}
+}
+
+func SIMapLightCopy(sm map[string]interface{}) map[string]interface{} {
+	m := map[string]interface{}{}
+	for k, v := range sm {
+		m[k] = v
+	}
+	return m
 }
 
 func SIMapUpdateValue(keyExpr string, value interface{}, m map[string]interface{}, removeEmpty bool) {

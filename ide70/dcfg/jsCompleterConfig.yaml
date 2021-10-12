@@ -5,8 +5,22 @@
         descr: Current event
       CompByCr:
         descr: Returns component by its reference
-        params: [ "compReference" ]
+        params:
+          - name: compReference
+            quote: '"'
+            valueCompleter: yamlPathCompleter
+            valueCompleterParams:
+              self: yes
+              pathExpr: "[%].cr:value"
     "*comp.EventRuntime":
       ReloadUnit:
         descr: Reloads current unit
-    
+      LoadUnit:
+        descr: Loads an unit
+        params:
+          - name: "unit name"
+            quote: '"'
+            valueCompleter: fileNameCompleter
+            valueCompleterParams:
+              folderPrefix: unit
+              trimSuffix: .yaml

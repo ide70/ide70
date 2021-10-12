@@ -19,7 +19,11 @@ func fileNameCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 			fileInterface := dataxform.SIMapGetByKeyAsMap(fileData, "unitInterface")
 			componentDescr = dataxform.SIMapGetByKeyAsString(fileInterface, "descr")
 		}
-		compl = append(compl, newCompletion(fileName, fileName, componentDescr))
+		complConfigData := dataxform.SIMapLightCopy(configData)
+		complConfigData["descr"] = componentDescr
+		compl = addCompletion(fileName, edContext, complConfigData, compl)
+		//compl = append(compl, newCompletion(fileName, fileName, componentDescr))
+
 	}
 	return compl
 }

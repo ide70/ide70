@@ -103,6 +103,15 @@ type LoadUnit struct {
 	targetCr   string
 }
 
+type SessionWrapper interface {
+	SetAuthUser(userName string)
+	SetAuthRole(role string)
+    AuthUser() string
+    AuthRole() string
+    IsAuthenticated() bool
+    ClearAuthentication()
+}
+
 func NewEventRuntime(sess *Session, unit *UnitRuntime, comp *CompRuntime, typeCode string, valueStr string) *EventRuntime {
 	er := &EventRuntime{}
 	er.Session = sess
@@ -465,6 +474,10 @@ func (cSW *CompRuntimeSW) GeneratedChildren() []*CompRuntimeSW {
 		children = append(children, &CompRuntimeSW{c: child, event: cSW.event})
 	}
 	return children
+}
+
+func (e *EventRuntime) GetSession() SessionWrapper {
+	return e.Session
 }
 
 func (e *EventRuntime) LoadParent() {

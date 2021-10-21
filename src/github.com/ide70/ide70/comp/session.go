@@ -62,7 +62,7 @@ func (s *Session) Accessed() time.Time {
 	return s.accessed
 }
 
-func (s *Session) access() {
+func (s *Session) Access() {
 	s.rwMutex.Lock()
 	s.accessed = time.Now()
 	s.rwMutex.Unlock()

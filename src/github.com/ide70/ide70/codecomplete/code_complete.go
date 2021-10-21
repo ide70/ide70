@@ -159,12 +159,17 @@ func getYamlPosition(lines []string, row, col int, findMultiline bool) *YamlPosi
 	return yamlPos
 }
 
-func CodeComplete(content string, row, col int, fileType string) []map[string]string {
+func preProcessLines(content string) []string {
 	lines := strings.Split(content, "\n")
 	for i, _ := range lines {
 		// remove cr characters
 		lines[i] = strings.TrimSuffix(lines[i], "\r")
 	}
+	return lines
+}
+
+func CodeComplete(content string, row, col int, fileType string) []map[string]string {
+	lines := preProcessLines(content)
 	compl := []map[string]string{}
 	yamlPos := getYamlPosition(lines, row, col, true)
 	logger.Info("yP:", yamlPos)
@@ -361,6 +366,7 @@ func addCompletion(value string, edContext *EditorContext, keyData map[string]in
 	isListHead := dataxform.SIMapGetByKeyAsBoolean(keyData, "listHead")
 	isMapHead := dataxform.SIMapGetByKeyAsBoolean(keyData, "mapHead")
 	isSingleKey := dataxform.SIMapGetByKeyAsBoolean(keyData, "singleKey")
+	isValue := dataxform.SIMapGetByKeyAsBoolean(keyData, "value")
 	isMultilineValue := dataxform.SIMapGetByKeyAsBoolean(keyData, "multilineValue")
 	singleToMap := dataxform.SIMapGetByKeyAsBoolean(keyData, "singleToMap")
 	quote := dataxform.SIMapGetByKeyAsString(keyData, "quote")
@@ -369,7 +375,7 @@ func addCompletion(value string, edContext *EditorContext, keyData map[string]in
 		captionPostfix = " :"
 	}
 
-	if isSingleKey {
+	if isSingleKey || isValue {
 		keyPostfix = ""
 	}
 	if isListHead {
@@ -404,7 +410,11 @@ func lookupCompleter(completerType string, keyData map[string]interface{}) (Valu
 		configData = completerParams
 	}
 
-	dataxform.SIMapCopyKeys(keyData, configData, []string{"descr", "listHead", "mapHead", "singleKey", "multilineValue", "quote"})
+	if completerType == "key" {
+		dataxform.SIMapCopyKeys(keyData, configData, []string{"descr", "listHead", "mapHead", "singleKey", "multilineValue", "quote"})
+	} else {
+		configData["value"] = true
+	}
 	configData["handleChildren"] = completerName == "yamlDataCompleter"
 
 	if completerName != "" {

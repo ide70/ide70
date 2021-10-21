@@ -9,10 +9,11 @@ import (
 	"strings"
 )
 
-var reIdentifierStart = regexp.MustCompile(`[+-/*.{;: ()]*\w*$`)
+var reIdentifierStart = regexp.MustCompile(`[+-/*.{;: ()]*\w*\n*$`)
 
 func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
 	code := yamlPos.valuePrefx
+	logger.Info("code:",code+"|")
 	if code == "" || strings.HasSuffix(code, "(") || strings.HasSuffix(code, ",") || strings.HasSuffix(code, ", ") {
 		nrParam, codeWithoutParams := inspectParamBlock(code)
 		logger.Info("codeWithoutParams:", codeWithoutParams, "nrParam:", nrParam)

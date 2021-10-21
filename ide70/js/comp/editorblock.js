@@ -131,6 +131,13 @@ class EditorBlock {
 				        editorBlock.save(editorNode);
 				    }
 				});
+				editorNode.dataEditor.commands.addCommand({
+				    name: "jump",
+				    bindKey: {win: "F3", mac: "F3"},
+				    exec: function(editor) {
+				        editorBlock.jump(editorNode);
+				    }
+				});
 				var nrLines = editorNode.dataEditor.session.getLength();
 				if(nrLines > 80) {
 				    editorNode.dataEditor.setFontSize("12pt");
@@ -156,5 +163,37 @@ class EditorBlock {
   		xhttp.responseType = "blob";
   		xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
   		xhttp.send("content=" + encodeURIComponent(editorNode.dataEditor.getValue()));
+    }
+    
+    jump(editorNode) {
+		var editorBlock = this;
+		
+		var xhttp = new XMLHttpRequest();  		
+  		xhttp.open("POST", _pathApp+"_codeNavigate/"+editorBlock.selectedEditorKey, true);
+  		xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");  
+  		
+  		xhttp.onreadystatechange = function() {
+    		if (this.readyState == 4 && this.status == 200) {
+    			if(this.responseText) {
+    			    var navResult = JSON.parse(this.responseText);
+    			    console.log(navResult);
+    			    if(navResult.success) {
+    			        console.log(navResult.fileName);
+    			        if(navResult.fileName) {
+    			            editorBlock.select(navResult.fileName);
+    			        }
+    			        if(navResult.row) {
+    			            editorNode.dataEditor.moveCursorTo(navResult.row,navResult.col);
+    			            editorNode.dataEditor.selection.moveTo(navResult.row,navResult.col);
+    			            editorNode.dataEditor.renderer.scrollCursorIntoView({row: navResult.row, column: 1}, 0.5);
+    			        }
+    			    }
+    			}
+    		}
+  		};
+  		
+  		var edStr = editorNode.dataEditor.getValue();
+  		var pos = editorNode.dataEditor.getCursorPosition();
+  		xhttp.send("row=" + pos.row + "&col=" + pos.column+ "&content=" + encodeURIComponent(edStr));
     }
 }

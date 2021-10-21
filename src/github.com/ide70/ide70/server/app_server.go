@@ -26,6 +26,7 @@ const (
 	pathFileSystem   = "_fs/"
 	pathFileSave     = "_save/"
 	pathCodeComplete = "_codeComplete/"
+	pathCodeNavigate = "_codeNavigate/"
 	pathWebfonts     = "webfonts/"
 	pathSessCheck    = "_sess_ch"
 	pathUnitCreate   = "uc" // path for unit create
@@ -104,6 +105,10 @@ func (s *AppServer) Start() error {
 
 	mux.HandleFunc(s.App.Path+pathCodeComplete, func(w http.ResponseWriter, r *http.Request) {
 		s.serveCodeComplete(w, r)
+	})
+	
+	mux.HandleFunc(s.App.Path+pathCodeNavigate, func(w http.ResponseWriter, r *http.Request) {
+		s.serveCodeNavigate(w, r)
 	})
 
 	mux.HandleFunc(s.App.Path+pathWebfonts, func(w http.ResponseWriter, r *http.Request) {
@@ -184,6 +189,7 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
+		sess.Access()
 		rwMutex := sess.RwMutex()
 		rwMutex.Lock()
 		defer rwMutex.Unlock()
@@ -601,6 +607,32 @@ func (s *AppServer) serveCodeComplete(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Code complete file name:", fileName, fileType, int(row), int(col))
 
 	completions := codecomplete.CodeComplete(content, int(row), int(col), fileType)
+	w.Header().Set("Content-Type", "application/json")
+	encoder := json.NewEncoder(w)
+	encoder.Encode(completions)
+}
+
+func (s *AppServer) serveCodeNavigate(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+
+	parts := strings.Split(r.URL.Path, "/")
+
+	if len(parts) < 3 {
+		// Missing app name from path
+		http.NotFound(w, r)
+		return
+	}
+	// Omit the first empty string, app name and pathStatic
+	parts = parts[3:]
+
+	content := r.FormValue("content")
+	row, _ := strconv.ParseInt(r.FormValue("row"), 10, 32)
+	col, _ := strconv.ParseInt(r.FormValue("col"), 10, 32)
+	fileName := strings.Join(parts, "/")
+	fileType := parts[1]
+	logger.Info("Code complete file name:", fileName, fileType, int(row), int(col))
+
+	completions := codecomplete.CodeNavigate(content, int(row), int(col), fileType)
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 	encoder.Encode(completions)

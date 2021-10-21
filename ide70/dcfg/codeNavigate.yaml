@@ -1,0 +1,8 @@
+---
+comp:
+  - pathExpr: "injectRootComp.css.name"
+    fileName: value
+    addPrefix: "css/"
+unit:
+  - pathExpr: "compType.tree.*"
+    navigateTo: "[%].cr:value"

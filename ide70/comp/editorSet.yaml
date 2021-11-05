@@ -1,13 +1,16 @@
 ---
 body: |
   <div id="{{.sid}}" class="editorSet">
-    <div id="{{.sid}}-trigger" class="hoverTrigger">Hover over me.</div>
+    <div id="{{.sid}}-trigger" class="hoverTrigger"></div>
     <div id="{{.sid}}-tabs" class="hide tabs">
       <div class="abs">
         {{range $path, $v := .editors}}
         <span class="titleSlot"{{eventHandlerWithKey $.This "onclick" "onclick_tab" $path}}>
         {{$path}}
         </span>
+        {{if $.tabChild}}
+        {{generateComp $.This $.tabChild ( htmlId $path ) $path}}
+        {{end}}
         {{end}}
       </div>
     </div>
@@ -17,6 +20,7 @@ body: |
     var editor = new EditorBlock(
         document.getElementById("{{.sid}}-edblk"),
         document.getElementById("{{.sid}}-trigger"),
+        {{.sid}}
     );
   </script>
 eventHandlers:
@@ -29,6 +33,11 @@ eventHandlers:
         CompByCr("").RefreshSubComp("-tabs");
         CompByCr("").SubCompFuncExecute("edblk","select", Event().GetParam("path"));
         common_log("---file-select");
+  refresh_tabs:
+    action: |
+        CompByCr("").GetProp("editors")[Event().ValueStr] = true;
+        CompByCr("").RefreshSubComp("-tabs");
+        common_log("---refresh-tabs: " + Event().ValueStr);
   onclick_tab:
     action: |
         CompByCr("").RefreshSubComp("-tabs");

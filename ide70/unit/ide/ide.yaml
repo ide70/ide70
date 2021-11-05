@@ -2,8 +2,8 @@
 - compType: page
   tree:
     - vspacer:
-      - fileTree
-      - codeEditor
+        - fileTree
+        - editorSet
     - dirMenu
     - fileMenu
     - firstLayer
@@ -13,11 +13,24 @@
   cr: fileTree
   basePath: ide70
   dblClickFunc: select
-  attachedCompCr: codeEditor
+  dblClickEvent: file_select
+  attachedCompCr: editorSet
   dirClickCompCr: dirMenu
   fileClickCompCr: fileMenu
-- compType: codeeditor
-  cr: codeEditor
+- compType: editorSet
+  cr: editorSet
+  tabChild: tabHolder
+- compType: button
+  cr: tabHolder
+  text: x
+  eventHandlers:
+    onclick:
+      action: |
+        common_log("dropping: "+Event().ParentContext());
+        CompByCr("editorSet").Props().Get("editors").AsMap().Delete(Event().ParentContext());
+        common_log("done 1");
+        CompByCr("editorSet").RefreshSubComp("-tabs");
+        CompByCr("editorSet").SubCompFuncExecute("edblk", "drop", Event().ParentContext());
 - compType: contextMenu
   cr: dirMenu
   items:

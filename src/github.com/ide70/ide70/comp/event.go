@@ -315,6 +315,10 @@ func (cSW *CompRuntimeSW) GetProp(key string) interface{} {
 	return cSW.c.State[key]
 }
 
+func (cSW *CompRuntimeSW) Props() SIMap {
+	return cSW.c.State
+}
+
 func (c *CompRuntime) GetProp(key string) interface{} {
 	return c.State[key]
 }
@@ -429,6 +433,10 @@ func (e *EventRuntime) EventKey() string {
 
 func (e *EventRuntime) ParentComp() *CompRuntimeSW {
 	return &CompRuntimeSW{c: e.Comp.State["parentComp"].(*CompRuntime), event: e}
+}
+
+func (e *EventRuntime) ParentContext() interface{} {
+	return e.Comp.State["parentContext"]
 }
 
 func (e *EventRuntime) LoadUnit(unitName string) {

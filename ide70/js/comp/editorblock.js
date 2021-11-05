@@ -1,8 +1,9 @@
 class EditorBlock {
-	constructor(parent, titleElement) {
+	constructor(parent, titleElement, parentSID) {
     	this.parentElement = parent;
 		parent.jsObject = this;
 		this.titleElement = titleElement;
+		this.parentSID = parentSID;
     	ace.require('ace/ext/language_tools');
     	this.activeEditors = new Map();
     	this.selectedEditorKey = "";
@@ -54,6 +55,27 @@ class EditorBlock {
 		this.selectedEditorKey = key;
 		this.show(editorNode);
 		this.displayCleanStatus(editorNode);
+	}
+	
+	drop(key) {
+	    console.log("drop:"+key)
+		var editorNode = this.activeEditors.get(key);
+		if(editorNode) {
+		    var rootElement = editorNode.rootElement;
+		    rootElement.parentElement.removeChild(rootElement);
+		    this.activeEditors.delete(key);
+		    if (key == this.selectedEditorKey) {
+    		    if (this.activeEditors.size > 0) {
+    		        this.selectedEditorKey = this.activeEditors.keys().next().value;
+    		        var nextEditorNode = this.activeEditors.get(this.selectedEditorKey);
+            		this.show(nextEditorNode);
+            		this.displayCleanStatus(nextEditorNode);
+    		    } else {
+    			    this.selectedEditorKey = "";
+    			    this.titleElement.innerHTML = "";
+    		    }
+		    }
+		}
 	}
 	
 	show(editorNode) {
@@ -186,6 +208,9 @@ class EditorBlock {
     			            editorNode.dataEditor.moveCursorTo(navResult.row,navResult.col);
     			            editorNode.dataEditor.selection.moveTo(navResult.row,navResult.col);
     			            editorNode.dataEditor.renderer.scrollCursorIntoView({row: navResult.row, column: 1}, 0.5);
+    			        }
+    			        if(navResult.fileName) {
+    			            se(null,'refresh_tabs',5,navResult.fileName);
     			        }
     			    }
     			}

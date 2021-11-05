@@ -1,3 +1,7 @@
+table.vspacer {
+    width: 100%;
+}
+
 div.vspacer {
 	top: 0;
     right: -5px;

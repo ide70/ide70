@@ -13,7 +13,7 @@
         - name: al1
         - name: al2
     - name: IDE
-      loadUnit: ide/ide_uj
+      loadUnit: ide/ide
     - name: Test App
       submenu:
         - name: Dog database

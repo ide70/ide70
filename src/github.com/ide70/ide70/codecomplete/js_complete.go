@@ -13,7 +13,7 @@ var reIdentifierStart = regexp.MustCompile(`[+-/*.{;: ()]*\w*\n*$`)
 
 func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
 	code := yamlPos.valuePrefx
-	logger.Info("code:",code+"|")
+	logger.Info("code:", code+"|")
 	if code == "" || strings.HasSuffix(code, "(") || strings.HasSuffix(code, ",") || strings.HasSuffix(code, ", ") {
 		nrParam, codeWithoutParams := inspectParamBlock(code)
 		logger.Info("codeWithoutParams:", codeWithoutParams, "nrParam:", nrParam)
@@ -21,11 +21,12 @@ func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 			tp, funcName :=
 				getBaseTypeAndName(codeWithoutParams)
 			logger.Info("func:", funcName, "nrParam:", nrParam)
-			compl = append(compl,
-				completionsOfFuncParam(tp, funcName, nrParam, yamlPos, edContext, configData)...)
-
-			// kikapni tp alapján a paraméter súgót
-			// ha nincs VmBase típussal menni
+			compls := completionsOfFuncParam(tp, funcName, nrParam, yamlPos, edContext, configData)
+			if len(compls) > 0 {
+				compl = append(compl, compls...)
+			} else {
+				compl = append(compl, completionsOfType(reflect.TypeOf(&comp.VmBase{}), "", configData)...)
+			}
 		} else {
 			compl = append(compl, completionsOfType(reflect.TypeOf(&comp.VmBase{}), "", configData)...)
 		}
@@ -219,10 +220,14 @@ func completionsOfFuncParam(tp reflect.Type, methodName string, paramNo int, yam
 	compl := []map[string]string{}
 	logger.Info("completionsOfFuncParam")
 	functionsData := dataxform.SIMapGetByKeyAsMap(configData, "functions")
-	typeBasedFunctionsData := dataxform.SIMapGetByKeyAsMap(functionsData, tp.String())
 
+	typeBasedFunctionsData := dataxform.SIMapGetByKeyAsMap(functionsData, tp.String())
 	functionData := dataxform.SIMapGetByKeyAsMap(typeBasedFunctionsData, methodName)
 	functionParams := dataxform.SIMapGetByKeyAsList(functionData, "params")
+	if paramNo >= len(functionParams) {
+		return compl
+	} 
+
 	paramDescriptor := dataxform.AsSIMap(functionParams[paramNo])
 	logger.Info("paramDescriptor:", paramDescriptor)
 

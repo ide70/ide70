@@ -1,0 +1,28 @@
+---
+- compType: page
+  tree:
+    - loginContainer:
+        - loginTable:
+            - userName
+            - password
+        - buttonBar:
+            - loginButton
+- compType: dialogContainer
+  cr: loginContainer
+- compType: labeledTable
+  cr: loginTable
+- compType: textbox
+  cr: userName
+  label: User name
+- compType: passwordbox
+  cr: password
+  value: apple
+- compType: horizontalBar
+  cr: buttonBar
+- compType: button
+  cr: loginButton
+  text: Belépés
+  eventHandlers:
+    onclick:
+      action: |
+        Event().LoadUnit("sample/menu2")

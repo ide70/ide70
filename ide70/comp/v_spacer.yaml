@@ -1,6 +1,6 @@
 ---
 body: |
-  <table id="{{.sid}}">
+  <table id="{{.sid}}" class="vspacer">
   <tr>
   {{range .Children}}
   <td style="height: 200px;">

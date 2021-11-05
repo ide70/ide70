@@ -3,6 +3,13 @@ comp:
   - pathExpr: "injectRootComp.css.name"
     fileName: value
     addPrefix: "css/"
+  - pathExpr: "injectRootComp.js.name"
+    fileName: value
+    addPrefix: "js/"
 unit:
   - pathExpr: "compType.tree.*"
     navigateTo: "[%].cr:value"
+  - pathExpr: "compType"
+    fileName: value
+    addPrefix: "comp/"
+    addSuffix: ".yaml"

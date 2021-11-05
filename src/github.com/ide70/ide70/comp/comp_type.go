@@ -155,6 +155,7 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 func createTemplate(body, name string, appParams *AppParams, bodyConsts map[string]interface{}) *template.Template {
 	templ, err := template.New(name).Funcs(template.FuncMap{
 		"passRoot":            passRoot,
+		"htmlId":              htmlId,
 		"printVar":            printVar,
 		"dict":                dict,
 		"evalComp":            EvalComp,
@@ -192,6 +193,14 @@ func dict(values ...interface{}) (map[string]interface{}, error) {
 
 func passRoot(current, root interface{}) map[string]interface{} {
 	return map[string]interface{}{"c": current, "r": root}
+}
+
+func htmlId(sI interface{}) string {
+	logger.Info("htmlId")
+	s := dataxform.IAsString(sI)
+	logger.Info("htmlId", s)
+	s = strings.ReplaceAll(s, "/", "_")
+	return s
 }
 
 func printVar(i interface{}) string {
@@ -232,6 +241,7 @@ func GenerateEventHandlerWithKey(comp *CompRuntime, eventTypeCli, eventTypeSvr, 
 }
 
 func GenerateComp(parentComp *CompRuntime, sourceChildRef string, genRuntimeRefIf interface{}, context interface{}) string {
+	logger.Info("GenerateComp", sourceChildRef)
 	genRuntimeRef := dataxform.IAsString(genRuntimeRefIf)
 	genChildRefId := fmt.Sprintf("%s.%s_%s", parentComp.ChildRefId(), sourceChildRef, genRuntimeRef)
 	comp := parentComp.GenChildren[genChildRefId]

@@ -1,6 +1,7 @@
 .editorSet {
 	font-size: 14pt;
-	min-width: 1000px;
+	/* min-width: 1000px; */
+	width: 100%;
 }
 
 .editorSlot .ace_editor {
@@ -17,6 +18,7 @@
 
 .editorSlot pre {
 	min-width: 1000px;
+	width: 100%;
 	margin: 0px 0px 0px 0px;
 	height: 500px;
 	z-index: 1;

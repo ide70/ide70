@@ -4,13 +4,17 @@ body: |
     <div id="{{.sid}}-trigger" class="hoverTrigger"></div>
     <div id="{{.sid}}-tabs" class="hide tabs">
       <div class="abs">
-        {{range $path, $v := .editors}}
-        <span class="titleSlot"{{eventHandlerWithKey $.This "onclick" "onclick_tab" $path}}>
-        {{$path}}
-        </span>
-        {{if $.tabChild}}
-        {{generateComp $.This $.tabChild ( htmlId $path ) $path}}
-        {{end}}
+        {{range $i, $g := .edGroups}}
+            <span class="groupSlot">{{$g.group}}</span>
+            {{range $j, $ed := $g.list}}
+                <span class="titleSlot"{{eventHandlerWithKey $.This "onclick" "onclick_tab" $ed.key}}>
+                {{$ed.name}}
+                </span>
+                {{if $.tabChild}}
+                    {{generateComp $.This $.tabChild ( htmlId $ed.key ) $ed.key}}
+                {{end}}
+            {{end}}
+            <br>
         {{end}}
       </div>
     </div>
@@ -27,6 +31,15 @@ eventHandlers:
   onUnitCreate:
     action: |
         CompByCr("").CreateMapProp("editors");
+  beforeCompRefresh:
+    action: |
+      common_log("---component-refresh");
+      var edGroups = CompByCr("").Props().Get("editors").AsMap().KeyList().Sort().ToTable("key").
+      ProcessContext().
+      Get("key").AsStr().Token(1, "/").Set("group").
+      Get("key").AsStr().FromToken(2, "/").Set("name").Process().
+      GroupBy("group", "list");
+      CompByCr("").SetProp("edGroups", edGroups);
   file_select:
     action: |
         CompByCr("").GetProp("editors")[Event().GetParam("path")] = true;

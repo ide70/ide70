@@ -40,7 +40,6 @@
       action: |
           var data = Event().UnitRuntime.CollectStored();
           var tableName = CompByCr("transactionI").GetProp("database").table;
-          var ppid = PassParams ? PassParams.id : null;
           if(dbo) {
               dbo.UpdateData(data)
           } else {

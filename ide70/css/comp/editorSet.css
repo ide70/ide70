@@ -35,6 +35,12 @@
     cursor: pointer;
 }
 
+.groupSlot {
+    display: inline-block;
+    padding: 1mm 3mm;
+    color: lightskyblue;
+}
+
 .titleSlot:hover {
     color: white;
     background-color: lightslategrey;

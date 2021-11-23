@@ -233,7 +233,7 @@ func GenerateEventHandler(comp *CompRuntime, eventTypeCli string, eventTypeSvrOp
 
 func GenerateEventHandlerWithKey(comp *CompRuntime, eventTypeCli, eventTypeSvr, key string) string {
 	logger.Info("GenerateEventHandlerWithKey")
-	logger.Info(comp)
+	//logger.Info(comp)
 	logger.Info(eventTypeCli)
 	logger.Info(eventTypeSvr)
 	logger.Info(key)

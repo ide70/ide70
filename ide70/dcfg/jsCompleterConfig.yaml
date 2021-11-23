@@ -24,3 +24,9 @@
               folderPrefix: unit
               trimSuffix: .yaml
               quote: '"'
+    "comp.ITable":
+      GroupBy:
+        descr: Rearranges table rows grouping them by col
+        params:
+          - name: "group by column"
+          - name: "groups sublist column"

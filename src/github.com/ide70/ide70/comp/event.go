@@ -647,13 +647,22 @@ func (eh *EventHandler) processEvent(e *EventRuntime) {
 }
 
 func (eh *UnitRuntimeEventsHandler) runJs(e *EventRuntime, jsCode string) {
+	 defer func() {
+        r := recover()
+        if (r != nil) {
+            eventLogger.Info("Vm Run panic:", r)
+        }
+    }()
 	eh.exMutex.Lock()
 	defer eh.exMutex.Unlock()
 	eh.Vm.Set("currentEvent", e)
 	defer eh.Vm.Set("currentEvent", nil)
 	//eventLogger.Info("executing: ", jsCode)
 	//eventLogger.Info("event: ", e)
+	
+	eventLogger.Info("Vm.Run: ", jsCode)
 	_, err := eh.Vm.Run(jsCode)
+	eventLogger.Info("Vm.Run end")
 	if err != nil {
 		eventLogger.Error("error evaluating script:", jsCode, err.Error())
 	}

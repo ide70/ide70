@@ -67,9 +67,26 @@ func inspectParamBlock(code string) (int, string) {
 	return -1, code
 }
 
+func removeLeftWhiteSpace(code string) string {
+	lines := strings.Split(code, "\n")
+	for i,line := range lines {
+		lines[i] = strings.TrimLeft(line, " \t")
+	}
+	return strings.Join(lines, "")
+	/*currLineStartPos := strings.LastIndex(code, "\n") + 1
+	if currLineStartPos == -1 {
+		return code
+	}
+	prevLine := code[:currLineStartPos-1]
+	currLine := code[currLineStartPos:]
+	currLine = strings.TrimLeft(currLine, " \t")
+	return prevLine + currLine*/
+}
+
 func getFuncNameChain(code string) []string {
 	funcNameChain := []string{}
 
+	code = removeLeftWhiteSpace(code)
 	// trim func name fragment
 	nameStart := strings.LastIndexAny(code, "+-/*.{;: \n\t()") + 1
 	if nameStart < len(code) {
@@ -226,7 +243,7 @@ func completionsOfFuncParam(tp reflect.Type, methodName string, paramNo int, yam
 	functionParams := dataxform.SIMapGetByKeyAsList(functionData, "params")
 	if paramNo >= len(functionParams) {
 		return compl
-	} 
+	}
 
 	paramDescriptor := dataxform.AsSIMap(functionParams[paramNo])
 	logger.Info("paramDescriptor:", paramDescriptor)

@@ -452,7 +452,7 @@ func (s *AppServer) renderComp(unit *comp.UnitRuntime, w http.ResponseWriter, r 
 	}
 
 	logger.Info("event, component found:", c.ChildRefId())
-
+	
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8") // We send it as text!
 	if len(compIdStrs) < 2 {
 		c.Render(w)

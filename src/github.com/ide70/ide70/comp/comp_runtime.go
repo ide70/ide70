@@ -35,7 +35,17 @@ func (comp *CompRuntime) Render(writer io.Writer) {
 
 func (comp *CompRuntime) RenderSub(subCompName string, writer io.Writer) {
 	subTemplate := comp.CompDef.CompType.SubBodies[subCompName]
+	logger.Info("RenderSub")
 	if subTemplate != nil {
+		logger.Info("RenderSub has template")
+		if comp.IsEventDefined(EvtBeforeCompRefresh) {
+			logger.Info("event defined")
+			e := NewEventRuntime(nil, comp.Unit, comp, EvtBeforeCompRefresh, "")
+			ProcessCompEvent(e)
+		} else {
+			logger.Info("event not defined")
+		}
+		
 		subTemplate.Execute(writer, comp.State)
 	}
 }
@@ -75,6 +85,10 @@ func (comp *CompRuntime) Sid() int64 {
 
 func (comp *CompRuntime) ChildRefId() string {
 	return comp.State["cr"].(string)
+}
+
+func (comp *CompRuntime) IsEventDefined(eventType string) bool {
+	return comp.CompDef.EventsHandler.Handlers[eventType] != nil
 }
 
 func deepCopyMap(m map[string]interface{}) (map[string]interface{}, error) {

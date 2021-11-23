@@ -19,6 +19,10 @@ comp:
         descr: Fired when unit instantiates
         mapHead: yes
         children: *event_children
+      beforeCompRefresh:
+        descr: Fired before component refresh
+        mapHead: yes
+        children: *event_children
       any:
         descr: Custom event handler
         mapHead: yes

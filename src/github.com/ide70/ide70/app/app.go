@@ -28,7 +28,7 @@ type Application struct {
 }
 
 type Connectors struct {
-	MainDB *store.DatabaseContext
+	MainDB      *store.DatabaseContext
 	FileContext *file.FileContext
 }
 
@@ -61,7 +61,12 @@ func LoadApplication(configFileName string) *Application {
 		app.Config = dataxform.InterfaceMapToStringMap(tpUnitIf)
 		app.Name = dataxform.SIMapGetByKeyAsString(app.Config, "name")
 		app.Path = "/" + app.Name + "/"
-		app.Access.LoginUnit = dataxform.SIMapGetByKeyAsString(app.Config, "loginUnit")
+		loginUnitsArr := dataxform.SIMapGetByKeyAsList(app.Config, "loginUnits")
+		app.Access.LoginUnits = map[string]bool{}
+		for _, loginUnitIf := range loginUnitsArr {
+			loginUnitData := dataxform.IAsSIMap(loginUnitIf)
+			app.Access.LoginUnits[dataxform.IAsString(loginUnitData["path"])] = true
+		}
 		connectors := dataxform.SIMapGetByKeyAsMap(app.Config, "connectors")
 		mainDB := dataxform.SIMapGetByKeyAsMap(connectors, "mainDB")
 		if len(mainDB) > 0 {

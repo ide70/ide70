@@ -7,16 +7,21 @@
             - password
         - buttonBar:
             - loginButton
+  css:
+    - name: ide/login.css
 - compType: dialogContainer
+  title: Development Environment login
   cr: loginContainer
 - compType: labeledTable
   cr: loginTable
 - compType: textbox
   cr: userName
   label: User name
+  value: develop
 - compType: passwordbox
   cr: password
-  value: apple
+  label: Password
+  value: develop
 - compType: horizontalBar
   cr: buttonBar
 - compType: button
@@ -25,4 +30,10 @@
   eventHandlers:
     onclick:
       action: |
-        Event().LoadUnit("sample/menu2");
+        var userName = CompByCr("userName").GetProp("value");
+        var password = CompByCr("password").GetProp("value");
+        if( userName == "develop" && password == "develop") {
+            Event().Session.SetAuthUser(userName);
+            Event().Session.SetAuthRole("develop");
+            Event().LoadUnit("ide/menu")
+        }

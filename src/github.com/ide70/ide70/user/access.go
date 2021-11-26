@@ -2,7 +2,7 @@ package user
 
 type Access struct {
 	DefaultLevel string
-	LoginUnit    string
+	LoginUnits   map[string]bool
 	//UserDatabase    UserDatabase
 	AutoLogin *AutoLogin
 }

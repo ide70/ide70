@@ -9,7 +9,10 @@ comp:
 unit:
   - pathExpr: "compType.tree.*"
     navigateTo: "[%].cr:value"
-  - pathExpr: "compType"
+  - pathExpr: "compType$"
     fileName: value
     addPrefix: "comp/"
     addSuffix: ".yaml"
+  - pathExpr: "compType.css.name"
+    fileName: value
+    addPrefix: "css/"

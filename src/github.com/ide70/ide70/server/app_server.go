@@ -209,7 +209,7 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		unitName := strings.Join(parts, "/")
 
 		if sess == nil {
-			if unitName == s.App.Access.LoginUnit {
+			if s.App.Access.LoginUnits[unitName] {
 				sess = s.newSession(nil)
 				s.addSessCookie(sess, w)
 				logger.Info("session created:", sess.ID)
@@ -219,7 +219,7 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		if !sess.IsAuthenticated() && unitName != s.App.Access.LoginUnit {
+		if !sess.IsAuthenticated() && !s.App.Access.LoginUnits[unitName] {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -483,6 +483,18 @@ func (s *AppServer) serveStatic(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Expires", time.Now().UTC().Add(72*time.Hour).Format(http.TimeFormat)) // Set 72 hours caching
 		w.Header().Set("Content-Type", "text/css; charset=utf-8")
 		http.ServeFile(w, r, "ide70/css/"+res)
+		return
+	}
+	if strings.HasSuffix(res, ".png") {
+		w.Header().Set("Expires", time.Now().UTC().Add(72*time.Hour).Format(http.TimeFormat)) // Set 72 hours caching
+		w.Header().Set("Content-Type", "image/png")
+		http.ServeFile(w, r, "ide70/css/img/"+res)
+		return
+	}
+	if strings.HasSuffix(res, ".jpg") {
+		w.Header().Set("Expires", time.Now().UTC().Add(72*time.Hour).Format(http.TimeFormat)) // Set 72 hours caching
+		w.Header().Set("Content-Type", "image/jpeg")
+		http.ServeFile(w, r, "ide70/css/img/"+res)
 		return
 	}
 

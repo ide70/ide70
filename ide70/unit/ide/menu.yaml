@@ -1,0 +1,24 @@
+---
+- compType: page
+  handleOnloadEvent: yes
+  tree: 
+    - navmenu
+    - mainPanel
+  eventHandlers:
+    onload:
+      action: |
+        CompByCr("mainPanel").LoadUnitInto("ide/ide");        
+- compType: navmenu
+  cr: navmenu
+  loadTarget: mainPanel
+  structure:
+    - name: Logout
+      fireEvent: logoutEvent
+      alignRight: yes
+  eventHandlers:
+    logoutEvent:
+      action: |
+        Event().ClearAuthentication();
+        Event().CurrentComp().LoadUnit("ide/login");
+- compType: mainPanel
+  cr: mainPanel

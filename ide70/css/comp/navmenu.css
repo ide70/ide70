@@ -27,7 +27,12 @@ nav.navmenu {
 	 list-style-type: none;
 	 white-space: nowrap;
 	 background: var(--menu-silver);
-	 border: var(--menu-border-width) solid var(--menu-border);
+	 border-top: 1px;
+	 border-bottom: 1px;
+	 border-left: 0px;
+	 border-right: 0px;
+	 border-style: solid;
+	 border-color: var(--menu-border);
 	 box-shadow: var(--menu-shadow);
 }
 .navmenu li {

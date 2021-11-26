@@ -2,6 +2,8 @@
 unitInterface:
   descr: Top level container
   properties:
+    handleOnloadEvent:
+      descr: Handle onload, default is no
     tree:
       descr: Component tree
       mapHead: yes
@@ -17,6 +19,16 @@ unitInterface:
             pathExpr: "[%].cr:value"
             filterExpr: "[0].tree[%]*|[0].tree[%]*:value"
             convertMapDescr: Add children to this component
+    css:
+        descr: Extra CSSes to include
+        mapHead: yes
+        children:
+          name:
+            descr: Name of file to include
+            listHead: yes
+            valueCompleter: fileNameCompleter
+            valueCompleterParams:
+              folderPrefix: css
 body: |
   <html>
   <head>
@@ -35,7 +47,11 @@ body: |
   <link href="{{app.PathStatic}}{{.name}}" rel="stylesheet">
   {{end}}
   </head>
-  <body>
+  <body
+  {{if .handleOnloadEvent}}
+  {{eventHandler $.This "onload"}}
+  {{end}}
+  >
   <div id="subunit_holder"></div>
   {{range .Children}}
   {{evalComp .}}

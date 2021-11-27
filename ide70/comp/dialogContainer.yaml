@@ -3,9 +3,11 @@ unitInterface:
   descr: Centered dialog container
   properties:
     title: Label of the container
+    horizPos: horizontal position in percent, default is 50
+    vertPos: vertical position in percent, default is 50
 body: |
-    <div id="{{.sid}}" class="dialog-container-out">
-    <div class="dialog-container">
+    <div id="{{.sid}}" class="dialog-container-out" style="left: {{.horizPos}}%; top: {{.vertPos}}%;">
+    <div class="dialog-container" style="left: -{{.horizPos}}%; top: -{{.vertPos}}%;">
     <div class="dialog-header">
       <div class="dialog-text">{{.title}}</div>
     </div>
@@ -14,6 +16,8 @@ body: |
     {{end}}
     </div>
     </div>
+horizPos: 50
+vertPos: 50
 injectRootComp:
   css:
     - name: comp/dialogContainer.css

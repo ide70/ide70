@@ -1,13 +1,9 @@
 .dialog-container-out {
     position: absolute;
-    left: 50%;
-    top: 50%;
 }
 
 .dialog-container {
     position: relative;
-    left: -50%;
-    top: -50%;
     background-color: Linen;
     border: 1px solid Silver;
     box-shadow: 5px 5px 5px grey;

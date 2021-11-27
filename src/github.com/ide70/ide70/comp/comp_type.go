@@ -16,6 +16,7 @@ const COMP_PATH = "ide70/comp/"
 
 var logger = log.Logger{"comp"}
 var reSubComp = regexp.MustCompile(`<(\w+)[^<>]+\{\{\.sid\}\}(-\w+)`)
+var nonAccessibleDefinitions = map[string]bool{"unitInterface": true, "body": true}
 
 // An user defined component
 type CompType struct {
@@ -133,6 +134,11 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 	comp.EventsHandler = ParseEventHandlers(module.Def, nil, nil, nil)
 	comp.AccessibleDef = map[string]interface{}{}
 
+	for k, v := range module.Def {
+		if !nonAccessibleDefinitions[k] {
+			comp.AccessibleDef[k] = v
+		}
+	}
 	// TODO: list of non-accessible definitions
 	comp.AccessibleDef["eventHandlers"] = module.Def["eventHandlers"]
 	comp.AccessibleDef["autoInclude"] = module.Def["autoInclude"]

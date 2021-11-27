@@ -4,7 +4,7 @@ name: app
 port: 7080
 secure: false
 loginUnits:
-  - path: sample/login
+  - path: airplane/login
   - path: ide/login
 connectors:
   mainDB:

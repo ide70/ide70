@@ -1,0 +1,11 @@
+---
+- compType: page
+- compType: datalist
+  columns:
+    - header: Flight
+      key: flight_id
+    - header: Departure
+      key: departure
+    - header: Destination
+      key: destination
+  dbTableName: flight

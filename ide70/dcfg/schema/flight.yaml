@@ -1,0 +1,5 @@
+---
+  columns:
+    - name: flight_id
+    - name: destination
+    - name: departure

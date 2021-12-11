@@ -17,16 +17,20 @@ unitInterface:
               childrenRef: menuHeader
             loadUnit:
               descr: Name of unit to load
-              valueCompleter: fileNameCompleter
-              valueCompleterParams:
-                folderPrefix: unit
-                trimSuffix: .yaml
+              valueCompleter:
+                fileNameCompleter:
+                  folderPrefix: unit
+                  trimSuffix: .yaml
             fireEvent:
               descr: Fire custom event when menu item selected
             alignRight:
               descr: Align menu bar item to right
     loadTarget:
       descr: Target component to load unit when selected from menu
+      valueCompleter:
+        yamlPathCompleter:
+          self: yes
+          pathExpr: "[%].cr:value"
 body: |
   {{define "actionLink"}}
   {{if .c.loadUnit}}

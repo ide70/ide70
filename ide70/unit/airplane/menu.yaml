@@ -1,0 +1,20 @@
+---
+- compType: page
+  tree:
+    - navMenu
+    - mainPanel
+- compType: mainPanel
+  cr: mainPanel
+- compType: navmenu
+  cr: navMenu
+  loadTarget: mainPanel
+  structure:
+    - name: Flights
+    - name: Logout
+      fireEvent: logout
+      alignRight: true
+  eventHandlers:
+    logout:
+      action: |
+        Event().ClearAuthentication();
+        Event().LoadUnit("airplane/login");

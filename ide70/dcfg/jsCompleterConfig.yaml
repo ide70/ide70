@@ -7,21 +7,21 @@
         descr: Returns component by its reference
         params:
           - name: compReference
-            valueCompleter: yamlPathCompleter
-            valueCompleterParams:
-              self: yes
-              pathExpr: "[%].cr:value"
-              quote: '"'
+            valueCompleter:
+              yamlPathCompleter:
+                self: yes
+                pathExpr: "[%].cr:value"
+                quote: '"'
     "*comp.CompRuntimeSW":
       LoadUnit:
         descr: Loads an unit
         params:
           - name: "unit name"
-            valueCompleter: fileNameCompleter
-            valueCompleterParams:
-              folderPrefix: unit
-              trimSuffix: .yaml
-              quote: '"'
+            valueCompleter:
+              fileNameCompleter:
+                folderPrefix: unit
+                trimSuffix: .yaml
+                quote: '"'
     "*comp.EventRuntime":
       ReloadUnit:
         descr: Reloads current unit
@@ -29,11 +29,11 @@
         descr: Loads an unit
         params:
           - name: "unit name"
-            valueCompleter: fileNameCompleter
-            valueCompleterParams:
-              folderPrefix: unit
-              trimSuffix: .yaml
-              quote: '"'
+            valueCompleter:
+              fileNameCompleter:
+                folderPrefix: unit
+                trimSuffix: .yaml
+                quote: '"'
     "comp.ITable":
       GroupBy:
         descr: Rearranges table rows grouping them by col

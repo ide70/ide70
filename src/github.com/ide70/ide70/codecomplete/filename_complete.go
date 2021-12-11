@@ -10,7 +10,13 @@ import (
 func fileNameCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
 	folderPrefix := dataxform.SIMapGetByKeyAsString(configData, "folderPrefix")
 	trimSuffix := dataxform.SIMapGetByKeyAsString(configData, "trimSuffix")
-	fileNames := file.FileList("ide70/"+folderPrefix, "ide70/"+folderPrefix+"/", trimSuffix)
+	foldersOnly := dataxform.SIMapGetByKeyAsBoolean(configData, "foldersOnly")
+	fileNames := []string{}
+	if foldersOnly {
+		fileNames = file.DirList("ide70/"+folderPrefix, "ide70/"+folderPrefix+"/")
+	} else {
+		fileNames = file.FileList("ide70/"+folderPrefix, "ide70/"+folderPrefix+"/", trimSuffix)
+	}
 	for _, fileName := range fileNames {
 		fileAsTemplatedYaml := loader.GetTemplatedYaml(fileName, "ide70/"+folderPrefix+"/")
 		componentDescr := ""

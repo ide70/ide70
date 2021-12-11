@@ -1,4 +1,6 @@
 ---
+unitInterface:
+  descr: Panel to hold unit content
 body: |
   <iframe id="{{.sid}}" class="panel">
   </iframe>

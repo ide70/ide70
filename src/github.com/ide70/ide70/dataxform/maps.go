@@ -111,6 +111,21 @@ func IAsString(i interface{}) string {
 	return ""
 }
 
+func IAsBool(i interface{}) bool {
+	if i == nil {
+		return false
+	}
+	switch iT := i.(type) {
+	case int, int64:
+		return iT == 0
+	case bool:
+		return iT
+	case string:
+		return iT == "true" || iT == "yes"
+	}
+	return false
+}
+
 func IAsArr(i interface{}) []interface{} {
 	if i == nil {
 		return []interface{}{}
@@ -633,4 +648,11 @@ func setSliceAt(slice []interface{}, index int, value interface{}) []interface{}
 		slice = append(slice, value)
 	}
 	return slice
+}
+
+func GetOnlyEntry(m map[string]interface{}) (string, interface{}) {
+	for k,v := range m {
+		return k,v
+	}
+	return "", nil
 }

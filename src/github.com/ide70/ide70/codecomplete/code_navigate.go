@@ -26,7 +26,7 @@ func CodeNavigate(content string, row, col int, fileType string) *NavigationResu
 	for _, patternIf := range patternList {
 		pattern := dataxform.AsSIMap(patternIf)
 		pathExpr := dataxform.SIMapGetByKeyAsString(pattern, "pathExpr")
-		rePathExpr, _ := convertYamlpathToRegex(pathExpr)
+		rePathExpr, _ := convertYamlpathToRegex(pathExpr, yamlPos)
 		if !rePathExpr.MatchString(yamlPos.getKey()) {
 			continue
 		}
@@ -60,7 +60,7 @@ func CodeNavigate(content string, row, col int, fileType string) *NavigationResu
 			if fileAsTemplatedYaml != nil {
 				fileData := fileAsTemplatedYaml.IDef
 				logger.Info("pathExpr:", pathExpr)
-				rePath, isValue := convertYamlpathToRegex(navigateExpr)
+				rePath, isValue := convertYamlpathToRegex(navigateExpr, yamlPos)
 				if rePath != nil {
 					row := 0
 					col := 0

@@ -12,7 +12,8 @@ import (
 
 func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
 	folderPrefix := dataxform.SIMapGetByKeyAsString(configData, "folderPrefix")
-	fileNameSrc := dataxform.SIMapGetByKeyAsString(configData, "fileNameSrc")
+	fileNameExpr := dataxform.SIMapGetByKeyAsString(configData, "fileNameExpr")
+	fileName := dataxform.SIMapGetByKeyAsString(configData, "fileName")
 	pathExpr := dataxform.SIMapGetByKeyAsString(configData, "pathExpr")
 	filterExprList := dataxform.SIMapGetByKeyAsString(configData, "filterExpr")
 	self := dataxform.SIMapGetByKeyAsBoolean(configData, "self")
@@ -22,16 +23,26 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 	if self {
 		fileAsTemplatedYaml = loader.ConvertTemplatedYaml([]byte(edContext.content), "self")
 	} else {
-		fileName := ""
-		if fileNameSrc == "yamlParentValue" {
-			fileName = yamlPos.parent.valuePrefx
+		if fileNameExpr != "" {
+			selfAsTemplatedYaml := loader.ConvertTemplatedYaml([]byte(edContext.content), "self")
+			selfData := selfAsTemplatedYaml.IDef
+			logger.Info("fileNameExpr:", fileNameExpr)
+			rePath, _ := convertYamlpathToRegex(fileNameExpr, yamlPos)
+			dataxform.IApplyFn(selfData, func(entry dataxform.CollectionEntry) {
+				logger.Info("sleaf:", entry.LinearKey())
+				if rePath.MatchString(entry.LinearKey()) {
+					logger.Info("match")
+					fileName = dataxform.IAsString(entry.Value())
+					logger.Info("fileName:"+ fileName)
+				}
+			})
 		}
 		fileAsTemplatedYaml = loader.GetTemplatedYaml(fileName, "ide70/"+folderPrefix+"/")
 	}
 	if fileAsTemplatedYaml != nil {
 		fileData := fileAsTemplatedYaml.IDef
 		logger.Info("pathExpr:", pathExpr)
-		rePath, isValue := convertYamlpathToRegex(pathExpr)
+		rePath, isValue := convertYamlpathToRegex(pathExpr, yamlPos)
 		if rePath != nil {
 			dataxform.IApplyFn(fileData, func(entry dataxform.CollectionEntry) {
 				logger.Info("leaf:", entry.LinearKey())
@@ -44,7 +55,7 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 						logger.Info("filterExpr:", filterExprList)
 						filterExprArr := strings.Split(filterExprList, "|")
 						for _, filterExpr := range filterExprArr {
-							reFilterExpr, isFilterValue := convertYamlpathToRegex(filterExpr)
+							reFilterExpr, isFilterValue := convertYamlpathToRegex(filterExpr, yamlPos)
 							if reFilterExpr != nil {
 								dataxform.IApplyFnToNodes(fileData, func(entry dataxform.CollectionEntry) {
 									if reFilterExpr.MatchString(entry.LinearKey()) {
@@ -87,7 +98,24 @@ func leafVal(entry dataxform.CollectionEntry, isValue bool) string {
 	}
 }
 
-func convertYamlpathToRegex(path string) (*regexp.Regexp, bool) {
+func convertYamlpathToRegex(path string, ypos *YamlPosition) (*regexp.Regexp, bool) {
+	levelBack := 0
+	for strings.HasPrefix(path, "../") {
+		path = strings.TrimPrefix(path, "../")
+		levelBack++
+	}
+	if strings.HasPrefix(path, ".") {
+		path = ypos.getIndexedKey() + path
+	}
+	if levelBack > 0 {
+		logger.Info("indexed key:" + ypos.getIndexedKey())
+		absPathTokens := strings.Split(ypos.getIndexedKey(), ".")
+		if len(absPathTokens) < levelBack {
+			logger.Error("relative expr failed")
+			return nil, false
+		}
+		path = strings.Join(absPathTokens[:len(absPathTokens)-levelBack], ".") + "." + path
+	}
 	isValue := strings.HasSuffix(path, ":value")
 	if isValue {
 		path = strings.TrimSuffix(path, ":value")

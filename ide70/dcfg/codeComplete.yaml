@@ -12,9 +12,10 @@ comp:
         children: &event_children
           action:
             descr: JS code to execute
-            valueCompleter: jsCompleter
-            valueCompleterConfig: jsCompleterConfig
-            multilineValue: yes
+            valueCompleter:
+              jsCompleter:
+                configFile: jsCompleterConfig
+                multilineValue: yes
       onUnitCreate:
         descr: Fired when unit instantiates
         mapHead: yes
@@ -36,17 +37,17 @@ comp:
           name:
             descr: Name of file to include
             listHead: yes
-            valueCompleter: fileNameCompleter
-            valueCompleterParams:
-              folderPrefix: js
+            valueCompleter:
+              fileNameCompleter:
+                folderPrefix: js
       css:
         descr: CSS to include
         children:
           name:
             descr: Name of file to include
             listHead: yes
-            valueCompleter: fileNameCompleter
-            valueCompleterParams:
+            valueCompleter:
+              fileNameCompleter:
               folderPrefix: css
   unitInterface:
     descr: Component interface available for units
@@ -64,7 +65,13 @@ comp:
               mapHead: Boolean specifies that the property is not a single value but a map.
               listHead: Boolean specifies that the property is head element of a list
               children:
-                descr: Specifies sub properties of property
+                descr: Sub properties of property
+                mapHead: yes
+                reference: uiPropertyAttrs
+                children:
+                  any:
+                    descr: Name of sub property
+                    childrenRef: uiPropertyAttrs
               childrenRef: Assigns a reference not in parent structure as children
               reference: Assingns reference vaule to current property node. See chidrenRef
               singleKey: Specifies do not place colon after key name
@@ -72,24 +79,81 @@ comp:
               multilineValue: Creates multi-line content for key
               keyCompleter:
                 descr: Name of completer mechanism producing possible key values
-              keyCompleterParams:
-                descr: Paramters of keyCompleter
+                mapHead: yes
+                children: &completerNames
+                  yamlDataCompleter:
+                    descr: Redirect completer to specified key of another yaml file
+                    mapHead: yes
+                    children:
+                      folderPrefix:
+                        descr: Root folder of fileNameSrc parameter
+                        valueCompleter:
+                          fileNameCompleter:
+                            foldersOnly: yes
+                      fileNameSrc:
+                        descr: name of the file to suggest from
+                      rootKey:
+                        descr: key of yaml file to start suggest
+                      quote:
+                        descr: character to quote suggested value
+                  yamlPathCompleter:
+                    descr: Completes from yaml file by regular expression
+                    mapHead: yes
+                    children:
+                      folderPrefix:
+                        descr: Root folder of fileNameSrc parameter
+                        valueCompleter:
+                          fileNameCompleter:
+                            foldersOnly: yes
+                      fileNameExpr:
+                        descr: absolute or relative yaml path for suggest file name
+                      fileName:
+                        descr: name of the file to suggest from
+                      self:
+                        descr: suggest from the edited file
+                      pathExpr:
+                        descr: expression selecting items to suggest
+                      filterExpr:
+                        descr: "expressions removing unnecessary items by contents of edited file, separated by | char"
+                      convertMapDescr:
+                        descr: optional description for converting key to map head
+                      quote:
+                        descr: character to quote suggested value
+                  fileNameCompleter:
+                    descr: Completes from available file names of given path
+                    mapHead: yes
+                    children:
+                      folderPrefix:
+                        descr: Root folder of file search
+                        valueCompleter:
+                          fileNameCompleter:
+                            foldersOnly: yes
+                      trimSuffix:
+                        descr: Filename suffix to remove from suggested value
+                      foldersOnly:
+                        descr: Suggest folders instead of file names
+                      quote:
+                        descr: character to quote suggested value
+              valueCompleter:
+                descr: Name of completer mechanism producing possible values
+                mapHead: yes
+                children: *completerNames
 unit:
   compType:
     descr: Component type
     listHead: yes
-    valueCompleter: fileNameCompleter
-    valueCompleterParams:
-      folderPrefix: comp
-      trimSuffix: .yaml
+    valueCompleter:
+      fileNameCompleter:
+        folderPrefix: comp
+        trimSuffix: .yaml
     children:
       any:
         descr: Component properties
-        keyCompleter: yamlDataCompleter
-        keyCompleterParams:
-          folderPrefix: comp
-          fileNameSrc: yamlParentValue
-          rootKey: unitInterface.properties
+        keyCompleter:
+          yamlDataCompleter:
+            folderPrefix: comp
+            fileNameSrc: yamlParentValue
+            rootKey: unitInterface.properties
       cr:
         descr: Component reference, identifies component in unit
       eventHandlers: *comp_event_handlers

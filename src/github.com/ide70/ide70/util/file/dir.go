@@ -140,6 +140,29 @@ func FileList(basePath string, trimPrefix string, trimSuffix string) []string {
 	return list
 }
 
+func DirList(basePath string, trimPrefix string) []string {
+	list := []string{}
+	files, _ := ioutil.ReadDir(basePath)
+	for _, afile := range files {
+		childPath := basePath + "/" + afile.Name()
+
+		stat, err := os.Stat(childPath)
+
+		if err != nil {
+			logger.Error("stat failed:", childPath)
+			continue
+		}
+		isFolder := stat.IsDir()
+		if isFolder {
+			list = append(list, strings.TrimPrefix(childPath, trimPrefix))
+			list = append(list, DirList(childPath, trimPrefix)...)
+			continue
+		}
+
+	}
+	return list
+}
+
 func CompactFileList(basePath string) string {
 	builder := strings.Builder{}
 	compactFileList(basePath, "", &builder)

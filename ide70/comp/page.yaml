@@ -13,12 +13,12 @@ unitInterface:
           listHead: yes
           singleKey: yes
           childrenRef: self
-          keyCompleter: yamlPathCompleter
-          keyCompleterParams:
-            self: yes
-            pathExpr: "[%].cr:value"
-            filterExpr: "[0].tree[%]*|[0].tree[%]*:value"
-            convertMapDescr: Add children to this component
+          keyCompleter:
+            yamlPathCompleter:
+              self: yes
+              pathExpr: "[%].cr:value"
+              filterExpr: "[0].tree[%]*|[0].tree[%]*:value"
+              convertMapDescr: Add children to this component
     css:
         descr: Extra CSSes to include
         mapHead: yes

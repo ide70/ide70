@@ -614,11 +614,11 @@ func (s *AppServer) serveCodeComplete(w http.ResponseWriter, r *http.Request) {
 	content := r.FormValue("content")
 	row, _ := strconv.ParseInt(r.FormValue("row"), 10, 32)
 	col, _ := strconv.ParseInt(r.FormValue("col"), 10, 32)
-	fileName := strings.Join(parts, "/")
-	fileType := parts[1]
-	logger.Info("Code complete file name:", fileName, fileType, int(row), int(col))
+	//fileName := strings.Join(parts, "/")
+	pureFileName := strings.Join(parts[1:], "/")
+	logger.Info("Code complete file name:", pureFileName, int(row), int(col))
 
-	completions := codecomplete.CodeComplete(content, int(row), int(col), fileType)
+	completions := codecomplete.CodeComplete(content, int(row), int(col), pureFileName)
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 	encoder.Encode(completions)

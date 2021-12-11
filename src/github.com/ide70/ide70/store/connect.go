@@ -15,6 +15,7 @@ type DatabaseContext struct {
 	User     string
 	Password string
 	DBName   string
+	SchemaInfo *SchemaInfo
 }
 
 func (dbCtx *DatabaseContext) getConnection() *sql.DB {

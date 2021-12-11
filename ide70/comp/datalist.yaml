@@ -1,4 +1,40 @@
 ---
+unitInterface:
+  descr: CRUD data list
+  properties:
+    columns:
+      descr: Columns of data list
+      mapHead: yes
+      children:
+        header:
+          descr: Column header title
+          listHead: yes
+          children:
+            key:
+              descr: Name of data key to display in columns cells
+              valueCompleter:
+                yamlPathCompleter:
+                  folderPrefix: dcfg/schema
+                  fileNameExpr: ../../dbTableName
+                  pathExpr: "columns[%].name:value"
+                  filterExpr: "compType[%].columns[%].key:value"
+            items:
+              descr: Sub components to display in columns cells
+              mapHead: yes
+              children:
+                cr:
+                  descr: Component reference to display
+                  listHead: yes
+                  valueCompleter:
+                    yamlPathCompleter:
+                      self: yes
+                      pathExpr: "[%].cr:value"
+    dbTableName:
+      descr: Name of db table to query
+      valueCompleter:
+        fileNameCompleter:
+          folderPrefix: dcfg/schema
+          trimSuffix: .yaml
 body: |
   <table class="datatable">
   <tr>
@@ -10,8 +46,8 @@ body: |
   <tr>
     {{range $column := $.columns}}
     <td>
-    {{if $column.value}}{{index $dataRow $column.value}}{{end}}
-    {{range $child := $column.children}}
+    {{if $column.key}}{{index $dataRow $column.key}}{{end}}
+    {{range $child := $column.items}}
     {{generateComp $.This $child.cr $i $dataRow}}
     {{end}}
     </td>
@@ -22,8 +58,9 @@ body: |
 eventHandlers:
   onUnitCreate:
     action: |
-        Event().Comp.State["DataSet"] = Event().DBCtx().WorksheetFindItemsPage("dogs", 0, 25);
-        common_log("dataSet initialized"+ Event().Comp.State["DataSet"]);
+        var dbTableName = CompByCr("").GetProp("dbTableName");
+        var data = Event().DBCtx().WorksheetFindItemsPage(dbTableName , 0, 25);
+        CompByCr("").SetProp("DataSet", data);
 injectRootComp:
   css:
     - name: comp/dataTable.css

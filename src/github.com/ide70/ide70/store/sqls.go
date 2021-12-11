@@ -17,7 +17,35 @@ func (dbCtx *DatabaseContext) SqlOP(name string) {
 
 }
 
+func (dbCtx *DatabaseContext) SQLGetValue(sql string, sqlParams ...interface{}) interface{} {
+	db := dbCtx.getConnection()
+	defer db.Close()
+
+	rows, err := db.Query(sql, sqlParams...)
+
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+
+	if rows.Next() {
+		var data interface{}
+
+		err := rows.Scan(&data)
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+
+		return data
+	}
+	logger.Warning("value not found")
+
+	return nil
+}
+
 func (dbCtx *DatabaseContext) CRUDGenInsert(tableName string, data string) int64 {
+	ensureTable(dbCtx, tableName)
 	db := dbCtx.getConnection()
 	defer db.Close()
 
@@ -33,6 +61,7 @@ func (dbCtx *DatabaseContext) CRUDGenInsert(tableName string, data string) int64
 }
 
 func (dbCtx *DatabaseContext) CRUDGenFind(tableName string, id int64) map[string]interface{} {
+	ensureTable(dbCtx, tableName)
 	db := dbCtx.getConnection()
 	defer db.Close()
 
@@ -67,10 +96,11 @@ func (dbCtx *DatabaseContext) CRUDGenFind(tableName string, id int64) map[string
 }
 
 func (dbCtx *DatabaseContext) CRUDGenUpdate(tableName string, id int64, data string) error {
+	ensureTable(dbCtx, tableName)
 	db := dbCtx.getConnection()
 	defer db.Close()
 
-	sql := "update "+tableName+" set data = $2 where id = $1;"
+	sql := "update " + tableName + " set data = $2 where id = $1;"
 
 	_, err := db.Exec(sql, id, data)
 	if err != nil {
@@ -79,11 +109,23 @@ func (dbCtx *DatabaseContext) CRUDGenUpdate(tableName string, id int64, data str
 	return err
 }
 
-func (dbCtx *DatabaseContext) CRUDGenDelete(tableName string, id int64) error {
+func (dbCtx *DatabaseContext) SQLExec(sql string, sqlParams ...interface{}) error {
 	db := dbCtx.getConnection()
 	defer db.Close()
 
-	sql := "delete from "+tableName+" where id = $1;"
+	_, err := db.Exec(sql, sqlParams)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
+func (dbCtx *DatabaseContext) CRUDGenDelete(tableName string, id int64) error {
+	ensureTable(dbCtx, tableName)
+	db := dbCtx.getConnection()
+	defer db.Close()
+
+	sql := "delete from " + tableName + " where id = $1;"
 
 	_, err := db.Exec(sql, id)
 	if err != nil {
@@ -140,6 +182,7 @@ type ColumnOrder struct {
 
 //func (dbCtx *DatabaseContext) WorksheetFindItemsPage(tableName string, allFilters map[string]*FilterTag, offset, pageSize int, orders []*ColumnOrder) []interface{} {
 func (dbCtx *DatabaseContext) WorksheetFindItemsPage(tableName string, offset, pageSize int) []interface{} {
+	ensureTable(dbCtx, tableName)
 	//	filters := getFilterGroups(allFilters)
 	db := dbCtx.getConnection()
 	defer db.Close()

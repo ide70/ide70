@@ -2,7 +2,9 @@
 unitInterface:
   descr: Push Button
   properties:
-    text: Label on button
+    text:
+      descr: Label on button
+      mandatory: yes
 include:
   - common
 body: |

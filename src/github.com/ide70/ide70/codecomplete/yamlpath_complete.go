@@ -15,6 +15,7 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 	fileNameExpr := dataxform.SIMapGetByKeyAsString(configData, "fileNameExpr")
 	fileName := dataxform.SIMapGetByKeyAsString(configData, "fileName")
 	pathExpr := dataxform.SIMapGetByKeyAsString(configData, "pathExpr")
+	pathNodes := dataxform.SIMapGetByKeyAsBoolean(configData, "pathNodes")
 	filterExprList := dataxform.SIMapGetByKeyAsString(configData, "filterExpr")
 	self := dataxform.SIMapGetByKeyAsBoolean(configData, "self")
 	convertMapDescr := dataxform.SIMapGetByKeyAsString(configData, "convertMapDescr")
@@ -44,7 +45,11 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 		logger.Info("pathExpr:", pathExpr)
 		rePath, isValue := convertYamlpathToRegex(pathExpr, yamlPos)
 		if rePath != nil {
-			dataxform.IApplyFn(fileData, func(entry dataxform.CollectionEntry) {
+			treeIterationFn := dataxform.IApplyFn
+			if pathNodes {
+				treeIterationFn = dataxform.IApplyFnToNodes
+			}
+			treeIterationFn(fileData, func(entry dataxform.CollectionEntry) {
 				logger.Info("leaf:", entry.LinearKey())
 				if rePath.MatchString(entry.LinearKey()) {
 					logger.Info("match")

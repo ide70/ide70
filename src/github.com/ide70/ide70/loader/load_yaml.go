@@ -24,6 +24,14 @@ type TemplatedYaml struct {
 }
 
 func GetTemplatedYaml(name string, basePath string) *TemplatedYaml {
+	defer func() {
+        rc := recover()
+        if (rc != nil) {
+            logger.Error("GetTemplatedYaml panic:", rc)
+            return
+        }
+    }()
+	
 	if basePath == "" {
 		basePath = dcfgPath
 	}
@@ -45,7 +53,7 @@ func LoadTemplatedYaml(name, basePath string) *TemplatedYaml {
 	logger.Info("loadTemplatedYaml", name)
 	contentB, err := ioutil.ReadFile(basePath + name + ".yaml")
 	if err != nil {
-		logger.Error("Yaml module ", name, "not found")
+		logger.Error("Yaml module ", name, "at", basePath, "not found")
 		return nil
 	}
 	return ConvertTemplatedYaml(contentB, name)

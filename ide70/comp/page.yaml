@@ -7,6 +7,7 @@ unitInterface:
     tree:
       descr: Component tree
       mapHead: yes
+      mandatory: yes
       children:
         any:
           descr: Component reference

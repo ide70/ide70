@@ -16,3 +16,16 @@ unit:
   - pathExpr: "compType.css.name"
     fileName: value
     addPrefix: "css/"
+  - pathExpr: "compType.structure.name.loadUnit"
+    fileName: value
+    addPrefix: "unit/"
+    addSuffix: ".yaml"
+  - pathExpr: "compType.eventHandlers.%.action"
+    fileName: value
+    addPrefix: "unit/"
+    addSuffix: ".yaml"
+    preceedingRE: 'LoadUnit\($'
+  - pathExpr: "compType.dictionary"
+    fileName: value
+    addPrefix: "dcfg/dict/"
+    addSuffix: ".yaml"

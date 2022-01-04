@@ -1,5 +1,15 @@
 ---
 - compType: page
+  tree:
+    - buttonNewFlight
+    - flightsData
+- compType: button
+  text: "New flight..."
+  eventHandlers:
+    onclick:
+      action: |
+        Event().LoadUnit("airplane/flightEdit");
+  cr: buttonNewFlight
 - compType: datalist
   columns:
     - header: Flight
@@ -9,3 +19,4 @@
     - header: Destination
       key: destination
   dbTableName: flight
+  cr: flightsData

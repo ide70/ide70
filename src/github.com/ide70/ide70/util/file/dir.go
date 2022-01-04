@@ -65,6 +65,28 @@ func (fc *FileContext) CreateFolder(path string) {
 	}
 }
 
+func (fc *FileContext) CreateFolderAll(path string) {
+	err := os.MkdirAll(path, 0755)
+	if err != nil {
+		logger.Error(err.Error())
+	}
+}
+
+func (fc *FileContext) CreateFileWithPath(path string) {
+	dirPath := fc.TrimLastPathTag(path)
+	fc.CreateFolderAll(dirPath)
+	fc.CreateFile(path)
+}
+
+func (fc *FileContext) IsRegularFile(path string) bool {
+	sourceFileStat, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+
+	return sourceFileStat.Mode().IsRegular()
+}
+
 func (fc *FileContext) RemoveAll(path string) {
 	err := os.RemoveAll(path)
 	if err != nil {

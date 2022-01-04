@@ -1,0 +1,17 @@
+---
+descr: Airports
+items:
+  - code: LHR
+    descr: London Heathrow
+  - code: BUD
+    descr: Budapest Ferihegy
+  - code: CDG
+    descr: Paris, Charles de Gaulle
+  - code: HND
+    descr: Tokyo Haneda
+  - code: SVO
+    descr: Moscow Sheremetyevo
+  - code: ARN
+    descr: Stockholm Arlanda
+  - code: JFK
+    descr: New York City, John F. Kennedy

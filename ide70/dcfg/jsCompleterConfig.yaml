@@ -22,6 +22,26 @@
                 folderPrefix: unit
                 trimSuffix: .yaml
                 quote: '"'
+      GetProp:
+        descr: Get component property
+        params:
+          - name: "property name"
+            valueCompleter:
+              yamlPathCompleter:
+                self: yes
+                pathExpr: "unitInterface.properties.%$"
+                pathNodes: yes
+                quote: '"'
+      HasProp:
+        descr: returns true if property defined
+        params:
+          - name: "property name"
+            valueCompleter:
+              yamlPathCompleter:
+                self: yes
+                pathExpr: "unitInterface.properties.%$"
+                pathNodes: yes
+                quote: '"'
     "*comp.EventRuntime":
       ReloadUnit:
         descr: Reloads current unit
@@ -40,3 +60,14 @@
         params:
           - name: "group by column"
           - name: "groups sublist column"
+    "*store.DatabaseContext":
+      CreateDBO:
+        descr: Creates database object
+        params:
+          - name: "data"
+          - name: "tableName"
+            valueCompleter:
+              fileNameCompleter:
+                folderPrefix: dcfg/schema
+                trimSuffix: .yaml
+                quote: '"'

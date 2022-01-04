@@ -2,6 +2,9 @@
 comp:
   body:
     descr: Component HTML body
+    multilineValue: yes
+    valueCompleter:
+      htmlCompleter:
   eventHandlers: &comp_event_handlers
     descr: Event handlers
     mapHead: yes
@@ -12,10 +15,15 @@ comp:
         children: &event_children
           action:
             descr: JS code to execute
+            multilineValue: yes
             valueCompleter:
               jsCompleter:
                 configFile: jsCompleterConfig
                 multilineValue: yes
+      onchange:
+        descr: onchange event
+        mapHead: yes
+        children: *event_children
       onUnitCreate:
         descr: Fired when unit instantiates
         mapHead: yes
@@ -76,6 +84,7 @@ comp:
               reference: Assingns reference vaule to current property node. See chidrenRef
               singleKey: Specifies do not place colon after key name
               singleToMap: Specifies possibility of extending single key to map head
+              mandatory: Display property also on selecting perent
               multilineValue: Creates multi-line content for key
               keyCompleter:
                 descr: Name of completer mechanism producing possible key values
@@ -134,6 +143,17 @@ comp:
                         descr: Suggest folders instead of file names
                       quote:
                         descr: character to quote suggested value
+                  idCompleter:
+                    descr: Completes id from another yaml nodes
+                    mapHead: yes
+                    children:
+                      srcExpr1:
+                        descr: expression selecting first node
+                      srcExpr2:
+                        descr: expression selecting second node
+                  htmlCompleter:
+                    descr: Completes html code
+                    mapHead: yes
               valueCompleter:
                 descr: Name of completer mechanism producing possible values
                 mapHead: yes
@@ -156,4 +176,22 @@ unit:
             rootKey: unitInterface.properties
       cr:
         descr: Component reference, identifies component in unit
+        mandatory: yes
+        valueCompleter:
+          idCompleter:
+            srcExpr1: ../compType:value
+            srcExpr2: ../(label|text|title):value
       eventHandlers: *comp_event_handlers
+dcfg/dict:
+  descr:
+    descr: Dictionary description
+  items:
+    descr: Dictionary items
+    mapHead: yes
+    children:
+      code:
+        descr: Dictionary item code
+        listHead: yes
+        children:
+          descr:
+            descr: Dictionary item description

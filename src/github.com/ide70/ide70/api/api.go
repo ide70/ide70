@@ -1,12 +1,16 @@
-package comp
+package api
 
 import (
+	"github.com/ide70/ide70/util/log"
 	"github.com/ide70/ide70/dataxform"
+	"github.com/ide70/ide70/loader"
 	"sort"
 	"strings"
 	"reflect"
 	"runtime"
 )
+
+var logger = log.Logger{"api"}
 
 type SIMap map[string]interface{}
 
@@ -20,6 +24,10 @@ type Interface struct {
 
 func (i Interface) AsMap() SIMap {
 	return dataxform.IAsSIMap(i.I)
+}
+
+func (i Interface) AsArray() IArray {
+	return dataxform.IAsArr(i.I)
 }
 
 func (i Interface) AsString() string {
@@ -301,4 +309,16 @@ func (t ITable) GroupBy(col, groupCol string) ITable {
 		dt = append(dt, dRow)
 	}
 	return dt
+}
+
+
+type LoadContext struct {
+}
+
+func (loadCtx *LoadContext) LoadYamlAsMap(fileName, folderPrefix string) SIMap {
+	ty := loader.GetTemplatedYaml(fileName, "ide70/"+folderPrefix+"/")
+	if ty == nil || ty.Def == nil {
+		return nil
+	}
+	return ty.Def
 }

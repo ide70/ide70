@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ide70/ide70/dataxform"
 	"github.com/ide70/ide70/loader"
+	"github.com/ide70/ide70/util/file"
 	"regexp"
 	"strings"
 )
@@ -21,7 +22,11 @@ func CodeNavigate(content string, row, col int, fileType string) *NavigationResu
 	yamlPos := getYamlPosition(lines, row, col, true)
 	logger.Info("n.pos:", yamlPos.getKey())
 
-	complDescr := loader.GetTemplatedYaml("codeNavigate", "").Def
+	complDescrTY := loader.GetTemplatedYaml("codeNavigate", "")
+	if complDescrTY == nil {
+		return &NavigationResult{Success: false}
+	}
+	complDescr := complDescrTY.Def
 	patternList := dataxform.SIMapGetByKeyAsList(complDescr, fileType)
 	for _, patternIf := range patternList {
 		pattern := dataxform.AsSIMap(patternIf)
@@ -30,12 +35,30 @@ func CodeNavigate(content string, row, col int, fileType string) *NavigationResu
 		if !rePathExpr.MatchString(yamlPos.getKey()) {
 			continue
 		}
-		logger.Info("navigation pathExpr metches:", pathExpr)
+		logger.Info("navigation pathExpr matches:", pathExpr)
 		fileNameSrc := dataxform.SIMapGetByKeyAsString(pattern, "fileName")
 		fileName := ""
-		targetValue := findTargetValue(lines[row], col)
+		createFile := false
+		targetValue, preceeding := findTargetValue(lines[row], col)
+		preceedingRE := dataxform.SIMapGetByKeyAsString(pattern, "preceedingRE")
+		if preceedingRE != "" {
+			rePreceeding ,err := regexp.Compile(preceedingRE)
+			if err != nil {
+				logger.Warning("skipping invalid RE:", preceedingRE)
+				continue
+			}
+			if !rePreceeding.MatchString(preceeding) {
+				logger.Warning("preceeding not match:", preceeding)
+				continue
+			}
+		}
+		logger.Info("targetValue:", targetValue)
 		if fileNameSrc == "value" {
 			fileName = targetValue
+			if strings.HasSuffix(fileName, "+") {
+				createFile = true
+				fileName = strings.TrimSuffix(fileName, "+")
+			}
 			logger.Info("navigation target value:", fileName)
 		}
 		addPrefix := dataxform.SIMapGetByKeyAsString(pattern, "addPrefix")
@@ -44,6 +67,15 @@ func CodeNavigate(content string, row, col int, fileType string) *NavigationResu
 			fileName = "ide70/" + addPrefix + fileName + addSuffix
 		}
 		logger.Info("result file name:", fileName)
+		
+		if fileName != "" && !createFile {
+			logger.Info("checking target file: ", fileName)
+			fc := &file.FileContext{}
+			if !fc.IsRegularFile(fileName) {
+				logger.Info("missing target file: ", fileName)
+				return &NavigationResult{Success: false}
+			}
+		}
 
 		navigateExpr := dataxform.SIMapGetByKeyAsString(pattern, "navigateTo")
 		if navigateExpr != "" {
@@ -84,6 +116,14 @@ func CodeNavigate(content string, row, col int, fileType string) *NavigationResu
 
 			}
 		}
+		if fileName != "" && createFile {
+			logger.Info("checking create new file: ", fileName)
+			fc := &file.FileContext{}
+			if !fc.IsRegularFile(fileName) {
+				fc.CreateFileWithPath(fileName)
+				logger.Info("create new file: ", fileName)
+			}
+		}
 		return &NavigationResult{FileName: fileName, Success: true}
 	}
 
@@ -92,14 +132,19 @@ func CodeNavigate(content string, row, col int, fileType string) *NavigationResu
 	return &NavigationResult{Success: false}
 }
 
-var rePath = regexp.MustCompile(`[/.\w]+`)
+var rePath = regexp.MustCompile(`[/.\w+]+`)
 
-func findTargetValue(line string, col int) string {
-	startIdx := strings.LastIndexAny(line[:col], " ")
+func findTargetValue(line string, col int) (value, preceeding string) {
+	startIdx := strings.LastIndexAny(line[:col], " (\"")
 	if startIdx == -1 {
 		startIdx = 0
 	}
-	return rePath.FindString(line[startIdx:])
+	value = rePath.FindString(line[startIdx:])
+	preceeding = line[:startIdx]
+	if strings.HasSuffix(preceeding, "\"") {
+		preceeding = strings.TrimSuffix(preceeding, "\"")
+	}
+	return
 }
 
 func leafPos(path string, lines []string) (row, col int) {

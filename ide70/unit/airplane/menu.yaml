@@ -10,6 +10,9 @@
   loadTarget: mainPanel
   structure:
     - name: Flights
+      loadUnit: airplane/flights
+    - name: Bookings
+      loadUnit: airplane/bookings
     - name: Logout
       fireEvent: logout
       alignRight: true

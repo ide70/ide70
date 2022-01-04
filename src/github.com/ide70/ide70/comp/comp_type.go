@@ -167,6 +167,7 @@ func createTemplate(body, name string, appParams *AppParams, bodyConsts map[stri
 		"evalComp":            EvalComp,
 		"generateComp":        GenerateComp,
 		"eventHandler":        GenerateEventHandler,
+		"eventHandlerJs":      GenerateEventHandlerJs,
 		"eventHandlerWithKey": GenerateEventHandlerWithKey,
 		"app": func() *AppParams {
 			return appParams
@@ -235,6 +236,10 @@ func GenerateEventHandler(comp *CompRuntime, eventTypeCli string, eventTypeSvrOp
 		eventTypeSvr = eventTypeSvrOpt[0]
 	}
 	return fmt.Sprintf(" %s=\"se(event,'%s',%d,null)\"", eventTypeCli, eventTypeSvr, comp.Sid())
+}
+
+func GenerateEventHandlerJs(comp *CompRuntime, eventType, valueJs string) string {
+	return fmt.Sprintf(" %s=\"se(event,'%s',%d,%s)\"", eventType, eventType, comp.Sid(), valueJs)
 }
 
 func GenerateEventHandlerWithKey(comp *CompRuntime, eventTypeCli, eventTypeSvr, key string) string {

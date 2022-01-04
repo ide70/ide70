@@ -47,7 +47,9 @@ func init() {
 		"jsCompleter":       jsCompleter,
 		"fileNameCompleter": fileNameCompleter,
 		"yamlDataCompleter": yamlDataCompleter,
-		"yamlPathCompleter": yamlPathCompleter}
+		"yamlPathCompleter": yamlPathCompleter,
+		"idCompleter":       idCompleter,
+		"htmlCompleter":     htmlCompleter}
 }
 
 func (yPos *YamlPosition) getKey() string {
@@ -384,6 +386,7 @@ func addCompletion(value string, edContext *EditorContext, keyData map[string]in
 	isMultilineValue := dataxform.SIMapGetByKeyAsBoolean(keyData, "multilineValue")
 	singleToMap := dataxform.SIMapGetByKeyAsBoolean(keyData, "singleToMap")
 	quote := dataxform.SIMapGetByKeyAsString(keyData, "quote")
+	subProperties := dataxform.SIMapGetByKeyAsList(keyData, "subProperties")
 
 	if singleToMap {
 		captionPostfix = " :"
@@ -404,6 +407,12 @@ func addCompletion(value string, edContext *EditorContext, keyData map[string]in
 	}
 	if isMultilineValue {
 		keyPostfix = ": |\n" + strings.Repeat(" ", edContext.col+2)
+	}
+	for _, subPropertyIf := range subProperties {
+		subProperty := dataxform.IAsString(subPropertyIf)
+		if subProperty != "" {
+			keyPostfix += "\n" + strings.Repeat(" ", edContext.keyStartCol+2) + subProperty + ": "
+		}
 	}
 	if quote != "" {
 		keyPrefix = quote

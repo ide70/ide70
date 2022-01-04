@@ -1,0 +1,22 @@
+---
+- compType: page
+  tree:
+    - labeledTable:
+        - textboxFlightID
+        - inSelectionDestination
+- compType: labeledTable
+  cr: labeledTable
+- compType: textbox
+  label: Flight ID
+  cr: textboxFlightID
+- compType: in/selection
+  dictionaryFile: airport
+  label: Destination
+  cr: inSelectionDestination
+- compType: button
+  text: Save
+  eventHandlers:
+    onclick:
+      action: |
+        Event().GetUnit().CollectStored();
+  cr: buttonSave

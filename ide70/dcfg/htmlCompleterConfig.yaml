@@ -1,0 +1,647 @@
+---
+  tags:
+  - name: a
+    descr: Anchor
+  - name: "!DOCTYPE"
+    descr: the document type	
+  - name: abbr
+    descr: abbreviation	
+  - name: acronym
+    descr: acronym	
+  - name: address
+    descr: address element	
+  - name: area
+    descr: area inside an image map	
+  - name: article
+    descr: article HTML-5
+  - name: aside
+    descr: some content loosely related to the page content. If it is removed, the remaining content still makes sense	HTML-5
+  - name: audio
+    descr: sound content HTML-5
+  - name: b
+    descr: bold text	
+  - name: base
+    descr: base URL for all the links in a page	
+  - name: bdo
+    descr: the direction of text display	
+  - name: bdi
+    descr: Represents text that must be isolated from its surrounding for bidirectional text formatting. It allows embedding a span of text with a different, or unknown, directionality HTML-5
+  - name: bgsound
+    descr: background music	
+  - name: big
+    descr: big text	
+  - name: blink
+    descr: text which blinks	
+  - name: blockquote
+    descr: long quotation	
+  - name: body
+    descr: the body element	
+  - name: br
+    descr: Inserts a single line break	
+  - name: button
+    descr: push button	
+  - name: canvas
+    descr: For making graphics with a script	HTML-5
+  - name: caption
+    descr: table caption	
+  - name: cite
+    descr: citation	
+  - name: code
+    descr: computer code text	
+  - name: col
+    descr: attributes for table columns	
+  - name: colgroup
+    descr: groups of table columns	
+  - name: comment
+    descr: Puts a comment in the document	
+  - name: datalist
+    descr: A list of options for input values	HTML-5
+  - name: dd
+    descr: definition description	
+  - name: del
+    descr: deleted text	
+  - name: dfn
+    descr: Specifiesa definition term	
+  - name: dialog
+    descr: Specifiesa dialog box or window	HTML-5
+  - name: div
+    descr: section in a document	
+  - name: dl
+    descr: definition list	
+  - name: dt
+    descr: definition term	
+  - name: em
+    descr: emphasized text	
+  - name: embed
+    descr: Specifiesa container for an external (non-HTML) application	HTML-5
+  - name: fieldset
+    descr: fieldset	
+  - name: figcaption
+    descr: Specifiesa caption for a figure element	HTML-5
+  - name: figure
+    descr: "Represents self-contained content corresponding with a <figcaption> element"
+  - name: footer
+    descr: footer for a document or section	HTML-5
+  - name: form
+    descr: form	
+  - name: frame
+    descr: sub window (a frame)	
+  - name: frameset
+    descr: set of frames	
+  - name: h1
+    descr: header 1
+  - name: h2
+    descr: header 2
+  - name: h3
+    descr: header 3
+  - name: h4
+    descr: header 4
+  - name: h5
+    descr: header 5
+  - name: h6
+    descr: header 6
+  - name: head
+    descr: information about the document	
+  - name: header
+    descr: header for a document or section	HTML-5
+  - name: hr
+    descr: horizontal rule	
+  - name: html
+    descr: html document	
+  - name: i
+    descr: italic text	
+  - name: iframe
+    descr: inline sub window (frame)	
+  - name: ilayer
+    descr: inline layer	
+  - name: img
+    descr: image	
+  - name: input
+    descr: input field	
+  - name: ins
+    descr: inserted text	
+  - name: kbd
+    descr: keyboard text	
+  - name: keygen
+    descr: Generate key information in a form	HTML-5
+  - name: label
+    descr: label for a form control	
+  - name: layer
+    descr: layer	
+  - name: legend
+    descr: title in a fieldset	
+  - name: li
+    descr: list item	
+  - name: link
+    descr: resource reference	
+  - name: main
+    descr: the main or important content in the document. HTML-5
+  - name: map
+    descr: image map	
+  - name: mark
+    descr: text highlighted for reference purposes, that is for its relevance in another context	HTML-5
+  - name: marquee
+    descr: Creates a scrolling-text marquee	
+  - name: menuitem
+    descr: command/menu item that the user can invoke from a popup menu	HTML-5
+  - name: meta
+    descr: meta data of an html document which is not displayed on the page	
+  - name: meter
+    descr: scalar measurement within a known range (a gauge)	
+  - name: multicol
+    descr: multicolumn text flow	
+  - name: nav
+    descr: section that contains only navigation links	HTML-5
+  - name: nobr
+    descr: No breaks allowed in the enclosed text	
+  - name: noembed
+    descr: content to be presented by browsers that do not support the embed tag	
+  - name: noframes
+    descr: noframe section	
+  - name: noscript
+    descr: noscript section	
+  - name: object
+    descr: embedded object	
+  - name: ol
+    descr: ordered list	
+  - name: optgroup
+    descr: option group	
+  - name: option
+    descr: option in a drop-down list	
+  - name: output
+    descr: the result of a calculation	HTML-5
+  - name: p
+    descr: paragraph	
+  - name: param
+    descr: parameter for an object	
+  - name: pre
+    descr: preformatted text	
+  - name: progress
+    descr: completion progress of a task	HTML-5
+  - name: q
+    descr: short quotation	
+  - name: rp
+    descr: to show browsers that do not support the ruby element	HTML-5
+  - name: rt
+    descr: text ruby annotation	HTML-5
+  - name: ruby
+    descr: ruby annotation	HTML-5
+  - name: samp
+    descr: sample computer code	
+  - name: script
+    descr: script	
+  - name: section
+    descr: section in a document	HTML-5
+  - name: select
+    descr: selectable list	
+  - name: spacer
+    descr: white space	
+  - name: small
+    descr: small text	
+  - name: source
+    descr: media resources for media elements, defined inside video or audio elements	HTML-5
+  - name: span
+    descr: section in a document	
+  - name: strong
+    descr: strong text	
+  - name: style
+    descr: style definition	
+  - name: sub
+    descr: subscripted text	
+  - name: summary
+    descr: "summary, caption, or legend for a given <details> HTML-5"
+  - name: sup
+    descr: superscripted text
+  - name: table
+    descr: table	
+  - name: tbody
+    descr: table body	
+  - name: td
+    descr: table cell	
+  - name: textarea
+    descr: text area	
+  - name: tfoot
+    descr: table footer	
+  - name: th
+    descr: table heading	
+  - name: thead
+    descr: table header	
+  - name: time
+    descr: "date and time <details>"
+  - name: title
+    descr: the document title	
+  - name: tr
+    descr: table row	
+  - name: track
+    descr: text tracks used in mediaplayers	HTML-5
+  - name: tt
+    descr: teletype text	
+  - name: ul
+    descr: unordered list	
+  - name: var
+    descr: variable	
+  - name: video
+    descr: text tracks used in media players	HTML-5
+  - name: wbr
+    descr: "Indicates a potential word break point within a <nobr> section"
+  attrs:
+  - name: accept
+    scope: [form, input]
+    descr: List of types the server accepts, typically a file type.
+  - name: accept-charset
+    scope: [form]
+    descr: List of supported charsets.
+  - name: accesskey
+    scope: all
+    descr: Keyboard shortcut to activate or add focus to the element.
+  - name: action
+    scope: [form]
+    descr: The URI of a program that processes the information submitted via the form.
+  - name: align
+    scope: [applet, caption, col, colgroup, hr, iframe, img, table, tbody, td, tfoot, th, thead, tr]
+    descr: Specifies the horizontal alignment of the element.
+  - name: allow
+    scope: [iframe]
+    descr: Specifies a feature-policy for the iframe.
+  - name: alt
+    scope: [applet, area, img, input]
+    descr: Alternative text in case an image can't be displayed.
+  - name: async
+    scope: [script]
+    type: boolean
+    descr: Executes the script asynchronously.
+  - name: autocapitalize
+    scope: all
+    descr: Sets whether input is automatically capitalized when entered by user
+  - name: autocomplete
+    scope: [form, input, select, textarea]
+    descr: Indicates whether controls in this form can by default have their values automatically completed by the browser.
+  - name: autofocus
+    scope: [button, input, keygen, select, textarea]
+    type: boolean
+    descr: The element should be automatically focused after the page loaded.
+  - name: autoplay
+    scope: [audio, video]
+    type: boolean
+    descr: The audio or video should play as soon as possible.
+  - name: buffered
+    scope: [audio, video]
+    descr: Contains the time range of already buffered media.
+  - name: capture
+    scope: [input]
+    descr: From the Media Capture specification, specifies a new file can be captured.
+  - name: challenge
+    scope: [keygen]
+    descr: A challenge string that is submitted along with the public key.
+  - name: charset
+    scope: [meta, script]
+    descr: Declares the character encoding of the page or script.
+  - name: checked
+    scope: [command, input]
+    type: boolean
+    descr: Indicates whether the element should be checked on page load.
+  - name: cite
+    scope: [blockquote, del, ins, q]
+    descr: Contains a URI which points to the source of the quote or change.
+  - name: class
+    scope: all
+    descr: Often used with CSS to style elements with common properties.
+  - name: code
+    scope: [applet]
+    descr: Specifies the URL of the applet's class file to be loaded and executed.
+  - name: codebase
+    scope: [applet]
+    descr: This attribute gives the absolute or relative URL of the directory where applets' .class files referenced by the code attribute are stored.
+  - name: cols
+    scope: [textarea]
+    descr: Defines the number of columns in a textarea.
+  - name: colspan
+    scope: [td, th]
+    descr: The colspan attribute defines the number of columns a cell should span.
+  - name: content
+    scope: [meta]
+    descr: A value associated with http-equiv or name depending on the context.
+  - name: contenteditable
+    scope: all
+    descr: Indicates whether the element's content is editable.
+  - name: contextmenu
+    scope: all
+    descr: Defines the ID of a <menu> element which will serve as the element's context menu.
+  - name: controls
+    scope: [audio, video]
+    type: boolean
+    descr: Indicates whether the browser should show playback controls to the user.
+  - name: coords
+    scope: [area]
+    descr: A set of values specifying the coordinates of the hot-spot region.
+  - name: crossorigin
+    scope: [audio, img, link, script, video]
+    descr: How the element handles cross-origin requests
+  - name: csp 
+    scope: [iframe]
+    descr: Specifies the Content Security Policy that an embedded document must agree to enforce upon itself.
+  - name: data
+    scope: [object]
+    descr: Specifies the URL of the resource.
+  - name: data-*
+    scope: all
+    descr: Lets you attach custom attributes to an HTML element.
+  - name: datetime
+    scope: [del, ins, time]
+    descr: Indicates the date and time associated with the element.
+  - name: decoding
+    scope: [img]
+    descr: Indicates the preferred method to decode the image.
+  - name: default
+    scope: [track]
+    type: boolean
+    descr: Indicates that the track should be enabled unless the user's preferences indicate something different.
+  - name: defer
+    scope: [script]
+    type: boolean
+    descr: Indicates that the script should be executed after the page has been parsed.
+  - name: dir
+    scope: all
+    descr: Defines the text direction. Allowed values are ltr (Left-To-Right) or rtl (Right-To-Left)
+  - name: dirname
+    scope: [input, textarea]
+    descr: 
+  - name: disabled
+    scope: [button, command, fieldset, input, keygen, optgroup, option, select, textarea]
+    type: boolean
+    descr: Indicates whether the user can interact with the element.
+  - name: download
+    scope: [a, area]
+    descr: Indicates that the hyperlink is to be used for downloading a resource.
+  - name: draggable
+    scope: all
+    descr: Defines whether the element can be dragged.
+  - name: enctype
+    scope: [form]
+    descr: Defines the content type of the form data when the method is POST.
+  - name: enterkeyhint 
+    scope: [textarea]
+    withAttr: contenteditable
+    descr: The enterkeyhint specifies what action label (or icon) to present for the enter key on virtual keyboards. The attribute can be used with form controls (such as the value of textarea elements), or in elements in an editing host (e.g., using contenteditable attribute).
+  - name: for
+    scope: [label, output]
+    descr: Describes elements which belongs to this one.
+  - name: form
+    scope: [button, fieldset, input, keygen, label, meter, object, output, progress, select, textarea]
+    descr: Indicates the form that is the owner of the element.
+  - name: formaction
+    scope: [input, button]
+    descr: Indicates the action of the element, overriding the action defined in the <form>.
+  - name: formenctype
+    scope: [button, input]
+    descr: If the button/input is a submit button, this attribute sets the encoding type to use during form submission. If this attribute is specified, it overrides the enctype attribute of the button's form owner.
+  - name: formmethod
+    scope: [button, input]
+    descr: If the button/input is a submit button, this attribute sets the submission method to use during form submission (GET, POST, etc.). If this attribute is specified, it overrides the method attribute of the button's form owner.
+  - name: formnovalidate
+    scope: [button, input]
+    type: boolean
+    descr: If the button/input is a submit button, this boolean attribute specifies that the form is not to be validated when it is submitted. If this attribute is specified, it overrides the novalidate attribute of the button's form owner.
+  - name: formtarget
+    scope: [button, input]
+    descr: If the button/input is a submit button, this attribute specifies the browsing context (for example, tab, window, or inline frame) in which to display the response that is received after submitting the form. If this attribute is specified, it overrides the target attribute of the button's form owner.
+  - name: headers
+    scope: [td, th]
+    descr: IDs of the <th> elements which applies to this element.
+  - name: height
+    scope: [canvas, embed, iframe, img, input, object, video]
+    descr: Specifies the height of elements listed here. For all other elements, use the CSS height property.
+  - name: hidden
+    scope: all
+    type: boolean
+    descr: Prevents rendering of given element, while keeping child elements, e.g. script elements, active.
+  - name: high
+    scope: [meter]
+    descr: Indicates the lower bound of the upper range.
+  - name: href
+    scope: [a, area, base, link]
+    descr: The URL of a linked resource.
+  - name: hreflang
+    scope: [a, area, link]
+    descr: Specifies the language of the linked resource.
+  - name: http-equiv
+    scope: [meta]
+    descr: Defines a pragma directive.
+  - name: icon
+    scope: [command]
+    descr: Specifies a picture which represents the command.
+  - name: id
+    scope: all
+    descr: Often used with CSS to style a specific element. The value of this attribute must be unique.
+  - name: importance 
+    scope: [iframe, img, link, script]
+    descr: Indicates the relative fetch priority for the resource.
+  - name: integrity
+    scope: [link, script]
+    descr: Specifies a Subresource Integrity value that allows browsers to verify what they fetch.
+  - name: intrinsicsize 
+    scope: [img]
+    descr: This attribute tells the browser to ignore the actual intrinsic size of the image and pretend it's the size specified in the attribute.
+  - name: inputmode
+    scope: [textarea]
+    withAttr: contenteditable
+    descr: Provides a hint as to the type of data that might be entered by the user while editing the element or its contents. The attribute can be used with form controls (such as the value of textarea elements), or in elements in an editing host (e.g., using contenteditable attribute).
+  - name: ismap
+    scope: [img]
+    type: boolean
+    descr: Indicates that the image is part of a server-side image map.
+  - name: itemprop
+    scope: all
+    descr: 
+  - name: keytype
+    scope: [keygen]
+    descr: Specifies the type of key generated.
+  - name: kind
+    scope: [track]
+    descr: Specifies the kind of text track.
+  - name: label
+    scope: [optgroup, option, track]
+    descr: Specifies a user-readable title of the element.
+  - name: lang
+    scope: all
+    descr: Defines the language used in the element.
+  - name: language 
+    scope: [script]
+    descr: Defines the script language used in the element.
+  - name: loading 
+    scope: [img, iframe]
+    descr: Indicates if the element should be loaded lazily or loaded immediately.
+  - name: list
+    scope: [input]
+    descr: Identifies a list of pre-defined options to suggest to the user.
+  - name: loop
+    scope: [audio, bgsound, marquee, video]
+    type: boolean
+    descr: Indicates whether the media should start playing from the start when it's finished.
+  - name: low
+    scope: [meter]
+    descr: Indicates the upper bound of the lower range.
+  - name: max
+    scope: [input, meter, progress]
+    descr: Indicates the maximum value allowed.
+  - name: maxlength
+    scope: [input, textarea]
+    descr: Defines the maximum number of characters allowed in the element.
+  - name: minlength
+    scope: [input, textarea]
+    descr: Defines the minimum number of characters allowed in the element.
+  - name: media
+    scope: [a, area, link, source, style]
+    descr: Specifies a hint of the media for which the linked resource was designed.
+  - name: method
+    scope: [form]
+    descr: Defines which HTTP method to use when submitting the form. Can be GET (default) or POST.
+  - name: min
+    scope: [input, meter]
+    descr: Indicates the minimum value allowed.
+  - name: multiple
+    scope: [input, select]
+    type: boolean
+    descr: Indicates whether multiple values can be entered in an input of the type email or file.
+  - name: muted
+    scope: [audio, video]
+    type: boolean
+    descr: Indicates whether the audio will be initially silenced on page load.
+  - name: name
+    scope: [button, form, fieldset, iframe, input, keygen, object, output, select, textarea, map, meta, param]
+    descr: Name of the element. For example used by the server to identify the fields in form submits.
+  - name: novalidate
+    scope: [form]
+    type: boolean
+    descr: This attribute indicates that the form shouldn't be validated when submitted.
+  - name: open
+    scope: [details, dialog]
+    type: boolean
+    descr: Indicates whether the the contents are currently visible (in the case of a <details> element) or whether the dialog is active and can be interacted with (in the case of a <dialog> element).
+  - name: optimum
+    scope: [meter]
+    descr: Indicates the optimal numeric value.
+  - name: pattern
+    scope: [input]
+    descr: Defines a regular expression which the element's value will be validated against.
+  - name: ping
+    scope: [a, area]
+    descr: The ping attribute specifies a space-separated list of URLs to be notified if a user follows the hyperlink.
+  - name: placeholder
+    scope: [input, textarea]
+    descr: Provides a hint to the user of what can be entered in the field.
+  - name: poster
+    scope: [video]
+    descr: A URL indicating a poster frame to show until the user plays or seeks.
+  - name: preload
+    scope: [audio, video]
+    descr: Indicates whether the whole resource, parts of it or nothing should be preloaded.
+  - name: radiogroup
+    scope: [command]
+    descr: 
+  - name: readonly
+    scope: [input, textarea]
+    type: boolean
+    descr: Indicates whether the element can be edited.
+  - name: referrerpolicy
+    scope: [a, area, iframe, img, link, script]
+    descr: Specifies which referrer is sent when fetching the resource.
+  - name: rel
+    scope: [a, area, link]
+    descr: Specifies the relationship of the target object to the link object.
+  - name: required
+    scope: [input, select, textarea]
+    type: boolean
+    descr: Indicates whether this element is required to fill out or not.
+  - name: reversed
+    scope: [ol]
+    type: boolean
+    descr: Indicates whether the list should be displayed in a descending order instead of a ascending.
+  - name: rows
+    scope: [textarea]
+    descr: Defines the number of rows in a text area.
+  - name: rowspan
+    scope: [td, th]
+    descr: Defines the number of rows a table cell should span over.
+  - name: sandbox
+    scope: [iframe]
+    descr: Stops a document loaded in an iframe from using certain features (such as submitting forms or opening new windows).
+  - name: scope
+    scope: [th]
+    descr: Defines the cells that the header test (defined in the th element) relates to.
+  - name: scoped 
+    scope: [style]
+    descr: 
+  - name: selected
+    scope: [option]
+    type: boolean
+    descr: Defines a value which will be selected on page load.
+  - name: shape
+    scope: [a, area]
+    descr: 
+  - name: size
+    scope: [input, select]
+    descr: Defines the width of the element (in pixels). If the element's type attribute is text or password then it's the number of characters.
+  - name: sizes
+    scope: [link, img, source]
+    descr: 
+  - name: slot
+    scope: all
+    descr: Assigns a slot in a shadow DOM shadow tree to an element.
+  - name: span
+    scope: [col, colgroup]
+    descr: 
+  - name: spellcheck
+    scope: all
+    descr: Indicates whether spell checking is allowed for the element.
+  - name: src
+    scope: [audio, embed, iframe, img, input, script, source, track, video]
+    descr: The URL of the embeddable content.
+  - name: srcdoc
+    scope: [iframe]
+    descr: 
+  - name: srclang
+    scope: [track]
+    descr: 
+  - name: srcset
+    scope: [img, source]
+    descr: One or more responsive image candidates.
+  - name: start
+    scope: [ol]
+    descr: Defines the first number if other than 1.
+  - name: step
+    scope: [input]
+    descr: 
+  - name: style
+    scope: all
+    descr: Defines CSS styles which will override styles previously set.
+  - name: summary 
+    scope: [table]
+    descr: 
+  - name: tabindex
+    scope: all
+    descr: Overrides the browser's default tab order and follows the one specified instead.
+  - name: target
+    scope: [a, area, base, form]
+    descr: Specifies where to open the linked document (in the case of an <a> element) or where to display the response received (in the case of a <form> element)
+  - name: title
+    scope: all
+    descr: Text to be displayed in a tooltip when hovering over the element.
+  - name: translate
+    scope: all
+    descr: Specify whether an element’s attribute values and the values of its Text node children are to be translated when the page is localized, or whether to leave them unchanged.
+  - name: type
+    scope: [button, input, command, embed, object, script, source, style, menu, link]
+    descr: Defines the type of the element.
+  - name: usemap
+    scope: [img, input, object]
+    descr: 
+  - name: value
+    scope: [button, data, input, li, meter, option, progress, param]
+    descr: Defines a default value which will be displayed in the element on page load.
+  - name: width
+    scope: [canvas, embed, iframe, img, input, object, video]
+    descr: For the elements listed here, this establishes the element's width.
+  - name: wrap
+    scope: [textarea]
+    descr: Indicates whether the text should be wrapped.

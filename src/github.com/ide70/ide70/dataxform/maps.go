@@ -207,6 +207,7 @@ type MapEntry struct {
 	m      map[string]interface{}
 	k      string
 	v      interface{}
+	stop   bool
 }
 
 type ArrayEntry struct {
@@ -214,6 +215,7 @@ type ArrayEntry struct {
 	a      []interface{}
 	i      int
 	v      interface{}
+	stop bool
 }
 
 type CollectionEntry interface {
@@ -224,10 +226,18 @@ type CollectionEntry interface {
 	Update(v interface{})
 	LinearKey() string
 	Parent() CollectionEntry
+	Stop()
 }
 
 func (entry *MapEntry) Delete() {
 	delete(entry.m, entry.k)
+}
+
+func (entry *MapEntry) Stop() {
+	entry.stop = true
+	if entry.parent != nil {
+		entry.parent.Stop()
+	}
 }
 
 func (entry *MapEntry) Update(v interface{}) {
@@ -291,6 +301,13 @@ func (entry *ArrayEntry) Parent() CollectionEntry {
 	return entry.parent
 }
 
+func (entry *ArrayEntry) Stop() {
+	entry.stop = true
+	if entry.parent != nil {
+		entry.parent.Stop()
+	}
+}
+
 func IApplyFn(i interface{}, f func(entry CollectionEntry)) {
 	switch iT := i.(type) {
 	case map[string]interface{}:
@@ -331,10 +348,19 @@ func iArrApplyFn(a []interface{}, f func(entry CollectionEntry), parentEntry Col
 		switch vT := v.(type) {
 		case map[string]interface{}:
 			sIMapApplyFn(vT, f, entry)
+			if entry.stop {
+				return
+			}
 		case []interface{}:
 			iArrApplyFn(vT, f, entry)
+			if entry.stop {
+				return
+			}
 		default:
 			f(entry)
+			if entry.stop {
+				return
+			}
 		}
 	}
 }
@@ -345,12 +371,21 @@ func iArrApplyFnToNodes(a []interface{}, f func(entry CollectionEntry), parentEn
 		switch vT := v.(type) {
 		case map[string]interface{}:
 			f(entry)
+			if entry.stop {
+				return
+			}
 			sIMapApplyFnToNodes(vT, f, entry)
 		case []interface{}:
 			f(entry)
+			if entry.stop {
+				return
+			}
 			iArrApplyFnToNodes(vT, f, entry)
 		default:
 			f(entry)
+			if entry.stop {
+				return
+			}
 		}
 	}
 }
@@ -362,10 +397,19 @@ func sIMapApplyFn(m map[string]interface{}, f func(entry CollectionEntry), paren
 		switch vT := v.(type) {
 		case map[string]interface{}:
 			sIMapApplyFn(vT, f, entry)
+			if entry.stop {
+				return
+			}
 		case []interface{}:
 			iArrApplyFn(vT, f, entry)
+			if entry.stop {
+				return
+			}
 		default:
 			f(entry)
+			if entry.stop {
+				return
+			}
 		}
 	}
 }
@@ -376,12 +420,21 @@ func sIMapApplyFnToNodes(m map[string]interface{}, f func(entry CollectionEntry)
 		switch vT := v.(type) {
 		case map[string]interface{}:
 			f(entry)
+			if entry.stop {
+				return
+			}
 			sIMapApplyFnToNodes(vT, f, entry)
 		case []interface{}:
 			f(entry)
+			if entry.stop {
+				return
+			}
 			iArrApplyFnToNodes(vT, f, entry)
 		default:
 			f(entry)
+			if entry.stop {
+				return
+			}
 		}
 	}
 }

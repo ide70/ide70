@@ -7,6 +7,7 @@ import (
 	"github.com/ide70/ide70/user"
 	"github.com/ide70/ide70/util/file"
 	"github.com/ide70/ide70/util/log"
+	"github.com/ide70/ide70/api"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/url"
@@ -30,6 +31,7 @@ type Application struct {
 type Connectors struct {
 	MainDB      *store.DatabaseContext
 	FileContext *file.FileContext
+	LoadContext *api.LoadContext
 }
 
 func NewApplication(appName string) *Application {
@@ -78,6 +80,7 @@ func LoadApplication(configFileName string) *Application {
 			app.Connectors.MainDB.Password = dataxform.SIMapGetByKeyAsString(mainDB, "password")
 		}
 		app.Connectors.FileContext = &file.FileContext{}
+		app.Connectors.LoadContext = &api.LoadContext{}
 
 		return app
 	}

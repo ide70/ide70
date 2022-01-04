@@ -20,16 +20,29 @@ func fileNameCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 	for _, fileName := range fileNames {
 		fileAsTemplatedYaml := loader.GetTemplatedYaml(fileName, "ide70/"+folderPrefix+"/")
 		componentDescr := ""
+		complConfigData := dataxform.SIMapLightCopy(configData)
 		if fileAsTemplatedYaml != nil {
 			fileData := fileAsTemplatedYaml.Def
 			fileInterface := dataxform.SIMapGetByKeyAsMap(fileData, "unitInterface")
 			componentDescr = dataxform.SIMapGetByKeyAsString(fileInterface, "descr")
+			complConfigData["subProperties"] = getMandatoryProperties(fileInterface)
 		}
-		complConfigData := dataxform.SIMapLightCopy(configData)
 		complConfigData["descr"] = componentDescr
 		compl = addCompletion(fileName, edContext, complConfigData, compl)
-		//compl = append(compl, newCompletion(fileName, fileName, componentDescr))
-
 	}
 	return compl
+}
+
+func getMandatoryProperties(fileInterface map[string]interface{}) []interface{} {
+	keys := []interface{}{}
+	properties := dataxform.SIMapGetByKeyAsMap(fileInterface, "properties")
+	for propKey, propAttrsIf := range properties {
+		switch propAttrs := propAttrsIf.(type) {
+			case  map[string]interface{}:
+			if dataxform.SIMapGetByKeyAsBoolean(propAttrs, "mandatory") {
+				keys = append(keys, propKey)
+			}
+		}
+	}
+	return keys
 }

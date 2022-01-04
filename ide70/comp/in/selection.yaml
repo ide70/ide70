@@ -1,0 +1,32 @@
+---
+unitInterface:
+  descr: Combo box
+  properties:
+    dictionaryFile:
+      descr: Dictionary contatinig the selectable options
+      valueCompleter:
+        fileNameCompleter:
+          folderPrefix: dcfg/dict
+          trimSuffix: .yaml
+    value:
+      descr: Initial code of the dictionary
+    label: Label passed to container for display
+body: |
+  <select id="{{.sid}}" {{eventHandlerJs $.This "onchange" "this.value"}}>
+  {{range .dictionary}}
+  <option value="{{.code}}"{{if eq .code $.value}} selected{{end}}>{{.descr}}</option>
+  {{end}}
+  </select>
+eventHandlers:
+  onUnitCreate:
+    action: |
+      var dictionaryFile = Event().CurrentComp().GetProp("dictionaryFile");
+      var items = Event().LoadCtx().LoadYamlAsMap(dictionaryFile, "dcfg/dict").Get("items").AsArray();
+      Event().CurrentComp().SetProp("dictionary", items);
+      if(!Event().CurrentComp().HasProp("value")) {
+            Event().CurrentComp().SetProp("value", "");
+      }
+  onchange:
+    action: |
+      Event().CurrentComp().SetProp("value", Event().ValueStr);
+      Logger().Info("----val:", Event().ValueStr)

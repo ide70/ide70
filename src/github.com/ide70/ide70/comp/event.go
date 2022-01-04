@@ -2,6 +2,7 @@ package comp
 
 import (
 	"fmt"
+	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/store"
 	"github.com/ide70/ide70/util/file"
 	"github.com/ide70/ide70/util/log"
@@ -106,10 +107,10 @@ type LoadUnit struct {
 type SessionWrapper interface {
 	SetAuthUser(userName string)
 	SetAuthRole(role string)
-    AuthUser() string
-    AuthRole() string
-    IsAuthenticated() bool
-    ClearAuthentication()
+	AuthUser() string
+	AuthRole() string
+	IsAuthenticated() bool
+	ClearAuthentication()
 }
 
 func NewEventRuntime(sess *Session, unit *UnitRuntime, comp *CompRuntime, typeCode string, valueStr string) *EventRuntime {
@@ -315,7 +316,11 @@ func (cSW *CompRuntimeSW) GetProp(key string) interface{} {
 	return cSW.c.State[key]
 }
 
-func (cSW *CompRuntimeSW) Props() SIMap {
+func (cSW *CompRuntimeSW) HasProp(key string) bool {
+	return cSW.c.State[key] != nil
+}
+
+func (cSW *CompRuntimeSW) Props() api.SIMap {
 	return cSW.c.State
 }
 
@@ -428,7 +433,7 @@ func (e *EventRuntime) CurrentComp() *CompRuntimeSW {
 }
 
 func (e *EventRuntime) EventKey() string {
-	return e.ValueStr;
+	return e.ValueStr
 }
 
 func (e *EventRuntime) ParentComp() *CompRuntimeSW {
@@ -511,7 +516,7 @@ func (e *EventRuntime) CloseLayer() {
 
 func (e *EventRuntime) ClearAuthentication() {
 	logger.Info("Logout")
-	e.Session.ClearAuthentication();
+	e.Session.ClearAuthentication()
 }
 
 func (e *EventRuntime) ReloadUnit() {
@@ -531,7 +536,15 @@ func (e *EventRuntime) GetParam(key string) interface{} {
 	return e.Params[key]
 }
 
+func (e *EventRuntime) GetUnit() *UnitCtx {
+	return &UnitCtx{e.UnitRuntime}
+}
+
 func (vm *VmBase) Event() *EventRuntime {
+	return nil
+}
+
+func (vm *VmBase) Logger() *log.Logger {
 	return nil
 }
 
@@ -585,6 +598,10 @@ func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 	vm.Set("Event", func(call otto.FunctionCall) otto.Value {
 		eventVal, _ := vm.Get("currentEvent")
 		return eventVal
+	})
+	vm.Set("Logger", func(call otto.FunctionCall) otto.Value {
+		result, _ := vm.ToValue(api.ApiLogger())
+		return result
 	})
 	eventsHandler.exMutex = &sync.RWMutex{}
 	eventsHandler.Vm = vm
@@ -647,19 +664,19 @@ func (eh *EventHandler) processEvent(e *EventRuntime) {
 }
 
 func (eh *UnitRuntimeEventsHandler) runJs(e *EventRuntime, jsCode string) {
-	 defer func() {
-        r := recover()
-        if (r != nil) {
-            eventLogger.Info("Vm Run panic:", r)
-        }
-    }()
+	defer func() {
+		r := recover()
+		if r != nil {
+			eventLogger.Info("Vm Run panic:", r)
+		}
+	}()
 	eh.exMutex.Lock()
 	defer eh.exMutex.Unlock()
 	eh.Vm.Set("currentEvent", e)
 	defer eh.Vm.Set("currentEvent", nil)
 	//eventLogger.Info("executing: ", jsCode)
 	//eventLogger.Info("event: ", e)
-	
+
 	eventLogger.Info("Vm.Run: ", jsCode)
 	_, err := eh.Vm.Run(jsCode)
 	eventLogger.Info("Vm.Run end")
@@ -674,4 +691,20 @@ func (er *EventRuntime) DBCtx() *store.DatabaseContext {
 
 func (er *EventRuntime) FileCtx() *file.FileContext {
 	return er.UnitRuntime.Application.Connectors.FileContext
+}
+
+func (er *EventRuntime) LoadCtx() *api.LoadContext {
+	return er.UnitRuntime.Application.Connectors.LoadContext
+}
+
+type UnitCtx struct {
+	unit *UnitRuntime
+}
+
+func (unit *UnitCtx) CollectStored() api.SIMap {
+	return unit.unit.CollectStored()
+}
+
+func (unit *UnitCtx) InitializeStored(data api.SIMap)  {
+	unit.unit.InitializeStored(data)
 }

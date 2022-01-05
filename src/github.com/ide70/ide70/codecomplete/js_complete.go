@@ -26,9 +26,11 @@ func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 				compl = append(compl, compls...)
 			} else {
 				compl = append(compl, completionsOfType(reflect.TypeOf(&comp.VmBase{}), "", configData)...)
+				compl = append(compl, collectVarDefs(code)...)
 			}
 		} else {
 			compl = append(compl, completionsOfType(reflect.TypeOf(&comp.VmBase{}), "", configData)...)
+			compl = append(compl, collectVarDefs(code)...)
 		}
 		return compl
 	}
@@ -41,6 +43,46 @@ func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 		compl = append(compl, completionsOfType(tp, funcNamePrefix, configData)...)
 	}
 	if strings.HasSuffix(code, ")") {
+	}
+	return compl
+}
+
+var reVariableDefinition = regexp.MustCompile(`var (\w+)\s*=\s*`)
+
+func filterNonvisibleScope(code string) string {
+	res := ""
+	depth := 0
+	for {
+		braceIdx := strings.LastIndexAny(code, "{}")
+		if braceIdx == -1 {
+			if depth <= 0 {
+				res = code + res
+				return res
+			}
+		} else {
+			if depth <= 0 {
+				res = code[braceIdx:] + res
+			} else {
+				res = string(code[braceIdx]) + res
+			}
+			brace := code[braceIdx]
+			if brace == '{' {
+				depth--
+			} else {
+				depth++
+			}
+		}
+		code = code[:braceIdx]
+	}
+}
+
+func collectVarDefs(code string) []map[string]string {
+	compl := []map[string]string{}
+	code = filterNonvisibleScope(code)
+	logger.Info("vScope:", code+"|")
+	varDefs := reVariableDefinition.FindAllStringSubmatch(code, -1)
+	for _,varDefMatch := range varDefs {
+		compl = append(compl, newCompletion(varDefMatch[1], varDefMatch[1], "local variable"))
 	}
 	return compl
 }
@@ -88,7 +130,7 @@ func getFuncNameChain(code string) []string {
 
 	code = removeLeftWhiteSpace(code)
 	// trim func name fragment
-	nameStart := strings.LastIndexAny(code, "+-/*.{;: \n\t()") + 1
+	nameStart := strings.LastIndexAny(code, "+-/*.{}=;: \n\t()") + 1
 	if nameStart < len(code) {
 		funcName := code[nameStart:]
 		logger.Info("getReturnType funcName:", funcName)
@@ -102,7 +144,7 @@ func getFuncNameChain(code string) []string {
 		if strings.HasSuffix(code, ")") {
 			openBracketPos := findOpeningBracket(code, len(code)-1)
 			if openBracketPos != -1 {
-				nameStart := strings.LastIndexAny(code[:openBracketPos], "+-/*.{;: \n\t") + 1
+				nameStart := strings.LastIndexAny(code[:openBracketPos], "+-/*.{}=;: \n\t") + 1
 				funcName := code[nameStart:openBracketPos]
 				funcNameChain = append([]string{funcName}, funcNameChain...)
 				logger.Info("func name resolved:", funcName)

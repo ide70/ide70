@@ -4,6 +4,7 @@
     - labeledTable:
         - textboxFlightID
         - inSelectionDestination
+        - buttonSave
 - compType: labeledTable
   cr: labeledTable
 - compType: textbox
@@ -18,5 +19,7 @@
   eventHandlers:
     onclick:
       action: |
-        Event().GetUnit().CollectStored();
+        var formData = Event().GetUnit().CollectStored();
+        Event().DBCtx().CreateDBO(formData, "flight");
+        Event().LoadParent();
   cr: buttonSave

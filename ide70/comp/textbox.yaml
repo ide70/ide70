@@ -4,7 +4,10 @@ unitInterface:
   properties:
     value: Initial value
     readonly: Read only mode
-    store: Persistence key
+    store:
+      descr: Persistence key
+      valueCompleter:
+        completerRef: dbFieldCompleter
     label: Label passed to container for display
 include:
   - common

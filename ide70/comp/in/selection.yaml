@@ -11,6 +11,12 @@ unitInterface:
     value:
       descr: Initial code of the dictionary
     label: Label passed to container for display
+    store:
+      descr: Persistence key
+      valueCompleter:
+        completerRef: dbFieldCompleter
+privateProperties:
+  dictionary: List representation of selectable options
 body: |
   <select id="{{.sid}}" {{eventHandlerJs $.This "onchange" "this.value"}}>
   {{range .dictionary}}

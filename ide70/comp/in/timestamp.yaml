@@ -1,0 +1,7 @@
+---
+unitInterface:
+  descr: Date and time selector
+  properties:
+body: |
+  <input id="{{.sid}}" type="text"></input>
+  <div></div>

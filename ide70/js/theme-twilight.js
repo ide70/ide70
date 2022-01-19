@@ -55,6 +55,12 @@ color: #CDA869\
 .ace-twilight .ace_support.ace_constant {\
 color: #CF6A4C\
 }\
+.ace-twilight .ace_template.ace_var {\
+color: #99ff66;\
+}\
+.ace-twilight .ace_template.ace_function {\
+color: #66ccff;\
+}\
 .ace-twilight .ace_invalid.ace_illegal {\
 color: #F8F8F8;\
 background-color: rgba(86, 45, 86, 0.75)\

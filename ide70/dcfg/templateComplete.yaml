@@ -1,0 +1,16 @@
+---
+methods:
+  - name: eventHandlerJs
+    descr: Attach event handler to HTML element
+    params:
+      - descr: Current component
+        value: "$.This"
+      - descr: JS event name
+        value: '"onchange"'
+      - descr: JS value object
+        value: '"this.value"'
+  - name: range
+    closeTag: end
+    descr: loop over array
+    params:
+      - descr: array to loop over

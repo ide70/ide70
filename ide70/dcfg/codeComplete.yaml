@@ -57,6 +57,14 @@ comp:
             valueCompleter:
               fileNameCompleter:
               folderPrefix: css
+  privateProperties:
+    descr: Private properties of the component
+    mapHead: yes
+    children:
+      any:
+        descr: Name of property
+        children:
+          descr: Description of property
   unitInterface:
     descr: Component interface available for units
     mapHead: yes

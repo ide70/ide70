@@ -11,6 +11,10 @@ var YamlHighlightRules = function() {
                 token : "comment",
                 regex : "#.*$"
             }, {
+                token : "support.function",
+                regex : /\{\{[^}]*\}\}/
+            },
+            {
                 token : "list.markup",
                 regex : /^(?:-{3}|\.{3})\s*(?=#|$)/
             },  {
@@ -36,7 +40,7 @@ var YamlHighlightRules = function() {
                 regex : "-\\s*(?=[{])"
             }, {
                 token : "string", // single line
-                regex : '["](?:(?:\\\\.)|(?:[^"\\\\]))*?["]'
+                regex : '["](?!{)(?:(?:\\\\.)|(?:[^"\\\\]))*?["]'
             }, {
                 token : "string", // multi line string start
                 regex : /[|>][-+\d]*(?:$|\s+(?:$|#))/,
@@ -107,7 +111,8 @@ var YamlHighlightRules = function() {
                     return this.token;
                 },
                 next : "mlString"
-            }, {
+            },
+            {
                 defaultToken : "string"
             }
         ],
@@ -131,11 +136,43 @@ var YamlHighlightRules = function() {
                     return this.token;
                 },
                 next : "mlString"
-            }, {
+            },
+            {
+                token : "template.var",
+                regex : /\{\{\./,
+                next : "templateVar"
+            },
+            {
+                token : "template.function",
+                regex : /\{\{\w/,
+                next : "templateFunc"
+            },
+            {
                 token : "string",
-                regex : '.+'
+                regex : /[^{]+/
             }
-        ]};
+        ],
+        "templateVar" : [
+            {
+                token : "template.var",
+                regex : /\}\}/,
+                next: "mlString"
+            },
+            {
+                defaultToken : "template.var"
+            }
+        ],
+        "templateFunc" : [
+            {
+                token : "template.function",
+                regex : /\}\}/,
+                next: "mlString"
+            },
+            {
+                defaultToken : "template.function"
+            }
+        ]
+    };
     this.normalizeRules();
 
 };

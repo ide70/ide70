@@ -117,7 +117,7 @@ func IAsBool(i interface{}) bool {
 	}
 	switch iT := i.(type) {
 	case int, int64:
-		return iT == 0
+		return iT == 1
 	case bool:
 		return iT
 	case string:

@@ -21,6 +21,7 @@ func (dbCtx *DatabaseContext) SQLGetValue(sql string, sqlParams ...interface{}) 
 	db := dbCtx.getConnection()
 	defer db.Close()
 
+	logger.Info("sql: ", sql)
 	rows, err := db.Query(sql, sqlParams...)
 
 	if err != nil {
@@ -113,7 +114,7 @@ func (dbCtx *DatabaseContext) SQLExec(sql string, sqlParams ...interface{}) erro
 	db := dbCtx.getConnection()
 	defer db.Close()
 
-	_, err := db.Exec(sql, sqlParams)
+	_, err := db.Exec(sql, sqlParams...)
 	if err != nil {
 		fmt.Println(err)
 	}

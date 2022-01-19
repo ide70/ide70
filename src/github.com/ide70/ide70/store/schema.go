@@ -21,16 +21,20 @@ func initSchemaInfo(dbCtx *DatabaseContext) {
 
 func ensureTable(dbCtx *DatabaseContext, tableName string) {
 	if dbCtx.SchemaInfo == nil {
+		logger.Info("initSchemaInfo")
 		initSchemaInfo(dbCtx)
 	}
 	if dbCtx.SchemaInfo.Tables[tableName] == nil {
+		logger.Info("no table", tableName, "exists in schemaInfo")
 		tableExists := dataxform.IAsBool(dbCtx.SQLGetValue(
 			`SELECT EXISTS (
    SELECT FROM information_schema.tables 
    WHERE  table_schema = $1
    AND    table_name   = $2
    );`, dbCtx.SchemaInfo.currentSchema, tableName))
+		
 		if !tableExists {
+			logger.Info("Creating table:", tableName)
 			// read configuration
 			// related tables, etc.
 			createTable(dbCtx, tableName)

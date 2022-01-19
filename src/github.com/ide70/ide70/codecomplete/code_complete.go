@@ -430,6 +430,19 @@ func lookupCompleter(completerType string, keyData map[string]interface{}) (Valu
 		return nil, nil
 	}
 	completerName, completerParamsIf := dataxform.GetOnlyEntry(completerMap)
+	
+	if completerName == "completerRef" {
+		refValue := dataxform.IAsString(completerParamsIf)
+		fileAsTemplatedYaml := loader.GetTemplatedYaml("namedCompleters", "ide70/dcfg/")
+		namedCompleters := fileAsTemplatedYaml.Def
+		completerData := dataxform.SIMapGetByKeyAsMap(namedCompleters, refValue)
+		if len(completerData) == 0 {
+			return nil, nil
+		}
+		completerDef := dataxform.SIMapGetByKeyAsMap(completerData, "definition")
+		completerName, completerParamsIf = dataxform.GetOnlyEntry(completerDef)
+	}
+	
 	completerParams := dataxform.IAsSIMap(completerParamsIf)
 	//completerName := dataxform.SIMapGetByKeyAsString(keyData, completerType+"Completer")
 

@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/ide70/ide70/config"
 	"github.com/ide70/ide70/util/log"
-	//"github.com/ide70/ide70/dataxform"
 	"os"
 	//"fmt"
 )

@@ -36,6 +36,7 @@ type EditorContext struct {
 	row         int
 	col         int
 	keyStartCol int
+	contextType string
 }
 
 type ValueCompleter func(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string
@@ -49,7 +50,8 @@ func init() {
 		"yamlDataCompleter": yamlDataCompleter,
 		"yamlPathCompleter": yamlPathCompleter,
 		"idCompleter":       idCompleter,
-		"htmlCompleter":     htmlCompleter}
+		"htmlCompleter":     htmlCompleter,
+		"dictCompleter":     dictCompleter}
 }
 
 func (yPos *YamlPosition) getKey() string {
@@ -365,7 +367,10 @@ func addValueCompletion(value, descr string, edContext *EditorContext, keyData m
 	keyPrefix := ""
 	captionPostfix := ""
 	quote := dataxform.SIMapGetByKeyAsString(keyData, "quote")
-	keyPostfix := "\n" + strings.Repeat(" ", edContext.keyStartCol)
+	keyPostfix := ""
+	if edContext.contextType != "template" {
+		keyPostfix = "\n" + strings.Repeat(" ", edContext.keyStartCol)
+	}
 	if quote != "" {
 		keyPrefix = quote
 		keyPostfix = quote + keyPostfix
@@ -430,7 +435,7 @@ func lookupCompleter(completerType string, keyData map[string]interface{}) (Valu
 		return nil, nil
 	}
 	completerName, completerParamsIf := dataxform.GetOnlyEntry(completerMap)
-	
+
 	if completerName == "completerRef" {
 		refValue := dataxform.IAsString(completerParamsIf)
 		fileAsTemplatedYaml := loader.GetTemplatedYaml("namedCompleters", "ide70/dcfg/")
@@ -442,12 +447,8 @@ func lookupCompleter(completerType string, keyData map[string]interface{}) (Valu
 		completerDef := dataxform.SIMapGetByKeyAsMap(completerData, "definition")
 		completerName, completerParamsIf = dataxform.GetOnlyEntry(completerDef)
 	}
-	
-	completerParams := dataxform.IAsSIMap(completerParamsIf)
-	//completerName := dataxform.SIMapGetByKeyAsString(keyData, completerType+"Completer")
 
-	//completerConfig := dataxform.SIMapGetByKeyAsString(keyData, completerType+"CompleterConfig")
-	//completerParams := dataxform.SIMapGetByKeyAsMap(keyData, completerType+"CompleterParams")
+	completerParams := dataxform.IAsSIMap(completerParamsIf)
 	configFile := dataxform.SIMapGetByKeyAsString(completerParams, "configFile")
 	var configData map[string]interface{} = nil
 	if configFile != "" {

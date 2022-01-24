@@ -53,13 +53,50 @@ func htmlCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData m
 	templEndIdx := strings.LastIndex(code, "}}")
 	
 	if templStartIdx > templEndIdx {
+		edContext.contextType = "template"
 		methodCode := code[templStartIdx+2:]
 		methodTokens := strings.Split(methodCode, " ")
 		if len(methodTokens) < 1 {
 			return compl
 		}
 		methodName := methodTokens[0]
+		paramNo := len(methodTokens)-2
 		logger.Info("meth:", methodName)
+		logger.Info("paramNo:", paramNo)
+		
+		fileAsTemplatedYaml := loader.GetTemplatedYaml("templateComplete", "ide70/dcfg/")
+		if fileAsTemplatedYaml == nil {
+			return compl
+		}
+		templateConfig := fileAsTemplatedYaml.Def
+		methodsList := dataxform.SIMapGetByKeyAsList(templateConfig, "methods")
+		logger.Info("meth listed")
+		for _, methodDataIf := range methodsList {
+			methodData := dataxform.IAsSIMap(methodDataIf)
+			actMethodName := dataxform.SIMapGetByKeyAsString(methodData, "name")
+			if actMethodName != methodName {
+				continue
+			}
+			logger.Info("meth found:", methodName)
+			methodParams := dataxform.SIMapGetByKeyAsList(methodData, "params")
+			if paramNo >= len(methodParams) {
+				return compl
+			}
+			methodParam := methodParams[paramNo]
+			methodParamData := dataxform.IAsSIMap(methodParam)
+			logger.Info("meth param data:", methodParamData)
+			fixedValue := dataxform.SIMapGetByKeyAsString(methodParamData, "fixedValue")
+			paramDescr := dataxform.SIMapGetByKeyAsString(methodParamData, "descr")
+			if fixedValue != "" {
+				compl = append(compl, newCompletion(fixedValue, fixedValue, paramDescr))
+				return compl
+			}
+			completer, configData := lookupCompleter("value", methodParamData)
+			if completer != nil {
+				compl = completer(yamlPos, edContext, configData, compl)
+				return compl
+			}
+		}
 	}
 
 	fileAsTemplatedYaml := loader.GetTemplatedYaml("htmlCompleterConfig", "ide70/dcfg/")

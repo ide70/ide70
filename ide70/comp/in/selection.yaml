@@ -15,6 +15,12 @@ unitInterface:
       descr: Persistence key
       valueCompleter:
         completerRef: dbFieldCompleter
+    test1:
+      descr: dict helper test
+      valueCompleter:
+        dictCompleter:
+          dictName: htmlEvents
+          quote: '"'
 privateProperties:
   dictionary: List representation of selectable options
 body: |

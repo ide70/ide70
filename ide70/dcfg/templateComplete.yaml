@@ -4,11 +4,17 @@ methods:
     descr: Attach event handler to HTML element
     params:
       - descr: Current component
-        value: "$.This"
+        fixedValue: "$.This"
       - descr: JS event name
-        value: '"onchange"'
+        valueCompleter:
+          dictCompleter:
+            dictName: htmlEvents
+            quote: '"'
       - descr: JS value object
-        value: '"this.value"'
+        valueCompleter:
+          dictCompleter:
+            dictName: htmlJsValueExamples
+            quote: '"'
   - name: range
     closeTag: end
     descr: loop over array

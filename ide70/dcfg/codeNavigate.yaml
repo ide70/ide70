@@ -29,3 +29,8 @@ unit:
     fileName: value
     addPrefix: "dcfg/dict/"
     addSuffix: ".yaml"
+dcfg:
+  - pathExpr: "dictCompleter.dictName"
+    fileName: value
+    addPrefix: "dcfg/dict/"
+    addSuffix: ".yaml"

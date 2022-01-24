@@ -1,0 +1,33 @@
+---
+descr: HTML event codes
+items:
+  - code: onscroll
+    descr: user scrolls up/down on the element
+  - code: onfocus
+    descr: element gains focus
+  - code: onblur
+    descr: element loses focus
+  - code: onclick
+    descr: mouse clicked
+  - code: ondblclick
+    descr: mouse clicked twice
+  - code: onmousedown
+    descr: user clicks down on any mouse button
+  - code: onmouseup
+    descr: user releases a mouse button
+  - code: onmouseover
+    descr: mouse cursor arrives over component
+  - code: onmouseout
+    descr: mouse cursor leaves component
+  - code: onmousemove
+    descr: mouse cursor moves (frequent)
+  - code: oninput
+    descr: when input/textarea changes
+  - code: onkeydown
+    descr: user presses any key
+  - code: onkeyup
+    descr: user releases any key
+  - code: onkeypress
+    descr: after key press (not fires for navigation keys)
+  - code: onchange
+    descr: when form element changes

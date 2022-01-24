@@ -12,6 +12,8 @@ func yamlDataCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 	fileName := ""
 	if fileNameSrc == "yamlParentValue" {
 		fileName = yamlPos.parent.valuePrefx
+	} else {
+		fileName = fileNameSrc 
 	}
 	fileAsTemplatedYaml := loader.GetTemplatedYaml(fileName, "ide70/"+folderPrefix+"/")
 	if fileAsTemplatedYaml != nil {

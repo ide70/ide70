@@ -45,13 +45,16 @@ var completers map[string]ValueCompleter
 
 func init() {
 	completers = map[string]ValueCompleter{
-		"jsCompleter":       jsCompleter,
-		"fileNameCompleter": fileNameCompleter,
-		"yamlDataCompleter": yamlDataCompleter,
-		"yamlPathCompleter": yamlPathCompleter,
-		"idCompleter":       idCompleter,
-		"htmlCompleter":     htmlCompleter,
-		"dictCompleter":     dictCompleter}
+		"jsCompleter":          jsCompleter,
+		"fileNameCompleter":    fileNameCompleter,
+		"fileContentCompleter": fileContentCompleter,
+		"yamlDataCompleter":    yamlDataCompleter,
+		"yamlPathCompleter":    yamlPathCompleter,
+		"idCompleter":          idCompleter,
+		"htmlCompleter":        htmlCompleter,
+		"dictCompleter":        dictCompleter,
+		"templateCompleter":    templateCompleter,
+		"union":                unionCompleter}
 }
 
 func (yPos *YamlPosition) getKey() string {
@@ -222,7 +225,27 @@ func CodeComplete(content string, row, col int, fileName string) []map[string]st
 		compl = completerCore(yamlPos, edContext, compDescrFt, compl)
 	}
 
+	headerText := ""
+	headerIdx := -1
+	for idx, complItem := range compl {
+		if complItem["header"] != "" {
+			headerText = complItem["header"]
+			headerIdx = idx
+		}
+	}
+
+	if headerText != "" {
+		sliceDeleteAt(&compl, headerIdx)
+		for _, complItem := range compl {
+			complItem["docHTML"] = "<div class='complete-doc-hdr'>"+headerText+"</div>"
+		}
+	}
+
 	return compl
+}
+
+func sliceDeleteAt(sp *[]map[string]string, i int) {
+	*sp = append((*sp)[:i], (*sp)[i+1:]...)
 }
 
 func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map[string]interface{}, compl []map[string]string) []map[string]string {
@@ -267,6 +290,9 @@ func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map
 
 			completer, configData := lookupCompleter("value", keyData)
 			if completer != nil {
+				if keyData["descr"] != nil {
+					compl = append(compl, newHeader(dataxform.SIMapGetByKeyAsString(keyData,"descr")))
+				}
 				compl = completer(yamlPos, edContext, configData, compl)
 				break
 			}
@@ -280,26 +306,6 @@ func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map
 			}
 
 			completer, configData := lookupCompleter("key", keyData)
-
-			/*if yamlPos.child != nil {
-				children := dataxform.SIMapGetByKeyAsMap(keyData, "children")
-				if len(children) > 0 {
-					levelMap = children
-				} else {
-					childrenRef := dataxform.SIMapGetByKeyAsString(keyData, "childrenRef")
-					if childrenRef != "" {
-						levelMap = references[childrenRef]
-					} else {
-						logger.Info("-- no children")
-					}
-				}
-				yamlPos = yamlPos.child
-				continue
-			}
-
-			if completer != nil {
-				compl = completer(yamlPos, edContext, configData, compl)
-			}*/
 
 			// context switching completer, no children evaluation
 			if completer != nil && dataxform.SIMapGetByKeyAsBoolean(configData, "handleChildren") {
@@ -367,6 +373,8 @@ func addValueCompletion(value, descr string, edContext *EditorContext, keyData m
 	keyPrefix := ""
 	captionPostfix := ""
 	quote := dataxform.SIMapGetByKeyAsString(keyData, "quote")
+	descrPrefix := dataxform.SIMapGetByKeyAsString(keyData, "descrPrefix")
+	descrPostfix := dataxform.SIMapGetByKeyAsString(keyData, "descrPostfix")
 	keyPostfix := ""
 	if edContext.contextType != "template" {
 		keyPostfix = "\n" + strings.Repeat(" ", edContext.keyStartCol)
@@ -374,6 +382,12 @@ func addValueCompletion(value, descr string, edContext *EditorContext, keyData m
 	if quote != "" {
 		keyPrefix = quote
 		keyPostfix = quote + keyPostfix
+	}
+	if descrPrefix != "" {
+		descr = descrPrefix + " - " + descr
+	}
+	if descrPostfix != "" {
+		descr = descr + " (" + descrPostfix + ")"
 	}
 	return append(compl, newCompletion(keyPrefix+value+keyPostfix, value+captionPostfix, descr))
 }
@@ -432,6 +446,7 @@ func lookupCompleter(completerType string, keyData map[string]interface{}) (Valu
 	completerMap := dataxform.SIMapGetByKeyAsMap(keyData, completerKey)
 	if len(completerMap) != 1 {
 		logger.Info("no completer / multiple completers")
+		logger.Info("completerType:", completerType)
 		return nil, nil
 	}
 	completerName, completerParamsIf := dataxform.GetOnlyEntry(completerMap)
@@ -448,7 +463,12 @@ func lookupCompleter(completerType string, keyData map[string]interface{}) (Valu
 		completerName, completerParamsIf = dataxform.GetOnlyEntry(completerDef)
 	}
 
+	completerParamsList := dataxform.IAsArr(completerParamsIf)
 	completerParams := dataxform.IAsSIMap(completerParamsIf)
+	if len(completerParamsList) > 0 {
+		completerParams["paramsList"] = completerParamsList
+		completerParams["completerType"] = completerType
+	}
 	configFile := dataxform.SIMapGetByKeyAsString(completerParams, "configFile")
 	var configData map[string]interface{} = nil
 	if configFile != "" {
@@ -500,5 +520,11 @@ func newCompletion(value, caption, meta string) map[string]string {
 	completion["value"] = value
 	completion["caption"] = caption
 	completion["meta"] = meta
+	return completion
+}
+
+func newHeader(header string) map[string]string {
+	completion := map[string]string{}
+	completion["header"] = header
 	return completion
 }

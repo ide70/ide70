@@ -12,7 +12,9 @@
                 self: yes
                 pathExpr: "[%].cr:value"
                 quote: '"'
-    "*comp.CompRuntimeSW":
+      CompCtx:
+        descr: Retrns current component context
+    "*comp.CompCtx":
       LoadUnit:
         descr: Loads an unit
         params:
@@ -32,6 +34,17 @@
                 pathExpr: "unitInterface.properties.%$"
                 pathNodes: yes
                 quote: '"'
+      SetProp:
+        descr: Get component property
+        params:
+          - name: "property name"
+            valueCompleter:
+              yamlPathCompleter:
+                self: yes
+                pathExpr: "unitInterface.properties.%$|privateProperties.%$"
+                pathNodes: yes
+                quote: '"'
+          - name: "property value"
       HasProp:
         descr: returns true if property defined
         params:
@@ -54,6 +67,8 @@
                 folderPrefix: unit
                 trimSuffix: .yaml
                 quote: '"'
+      EventKey:
+        descr: Key attached to event
     "comp.ITable":
       GroupBy:
         descr: Rearranges table rows grouping them by col
@@ -69,5 +84,15 @@
             valueCompleter:
               fileNameCompleter:
                 folderPrefix: dcfg/schema
+                trimSuffix: .yaml
+                quote: '"'
+    "*api.LoadContext":
+      LoadDictAsMap:
+        descr: Load dictionary as map
+        params:
+          - name: "dictName"
+            valueCompleter:
+              fileNameCompleter:
+                folderPrefix: dcfg/dict
                 trimSuffix: .yaml
                 quote: '"'

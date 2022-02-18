@@ -4,6 +4,8 @@
     - labeledTable:
         - textboxFlightID
         - inSelectionDestination
+        - inTimestampDeparture
+        - textboxDummyForTesting
         - buttonSave
 - compType: hlp/dbhelper
   tableName: flight
@@ -19,6 +21,13 @@
   cr: inSelectionDestination
   store: destination
 - compType: in/timestamp
+  label: Departure
+  cr: inTimestampDeparture
+  startYear: 2020
+  endYear: 2033
+- compType: textbox
+  label: Dummy for testing
+  cr: textboxDummyForTesting
 - compType: button
   text: Save
   eventHandlers:

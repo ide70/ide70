@@ -169,6 +169,7 @@ func createTemplate(body, name string, appParams *AppParams, bodyConsts map[stri
 		"eventHandler":        GenerateEventHandler,
 		"eventHandlerJs":      GenerateEventHandlerJs,
 		"eventHandlerWithKey": GenerateEventHandlerWithKey,
+		"numRange":            numRange,
 		"app": func() *AppParams {
 			return appParams
 		},
@@ -200,6 +201,19 @@ func dict(values ...interface{}) (map[string]interface{}, error) {
 
 func passRoot(current, root interface{}) map[string]interface{} {
 	return map[string]interface{}{"c": current, "r": root}
+}
+
+func numRange(startI, endI interface{}) (stream chan int) {
+	stream = make(chan int)
+	start := startI.(int)
+	end := endI.(int)
+	go func() {
+		for i := start; i <= end; i++ {
+			stream <- i
+		}
+		close(stream)
+	}()
+	return
 }
 
 func htmlId(sI interface{}) string {
@@ -242,9 +256,10 @@ func GenerateEventHandlerJs(comp *CompRuntime, eventType, valueJs string) string
 	return fmt.Sprintf(" %s=\"se(event,'%s',%d,%s)\"", eventType, eventType, comp.Sid(), valueJs)
 }
 
-func GenerateEventHandlerWithKey(comp *CompRuntime, eventTypeCli, eventTypeSvr, key string) string {
+func GenerateEventHandlerWithKey(comp *CompRuntime, eventTypeCli, eventTypeSvr, keyIf interface{}) string {
+	key := dataxform.IAsString(keyIf)
 	logger.Info("GenerateEventHandlerWithKey")
-	//logger.Info(comp)
+	logger.Info(comp)
 	logger.Info(eventTypeCli)
 	logger.Info(eventTypeSvr)
 	logger.Info(key)

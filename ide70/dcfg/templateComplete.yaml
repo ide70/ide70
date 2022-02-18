@@ -1,6 +1,6 @@
 ---
 methods:
-  - name: eventHandlerJs
+  eventHandlerJs:
     descr: Attach event handler to HTML element
     params:
       - descr: Current component
@@ -15,8 +15,90 @@ methods:
           dictCompleter:
             dictName: htmlJsValueExamples
             quote: '"'
-  - name: range
-    closeTag: end
-    descr: loop over array
+  eventHandlerWithKey:
+    descr: Attach event handler to HTML element
     params:
-      - descr: array to loop over
+      - descr: Current component
+        fixedValue: "$.This"
+      - descr: JS event name
+        valueCompleter:
+          dictCompleter:
+            dictName: htmlEvents
+            quote: '"'
+      - descr: Event handler event name
+        valueCompleter:
+          yamlPathCompleter:
+            self: yes
+            pathExpr: "eventHandlers.%$"
+            pathNodes: yes
+            quote: '"'
+      - descr: Key to pass to event handler, arbitary string
+        fixedValue: '""'
+  range:
+    closeTag: end
+    descr: loop over array/map
+    params:
+      - descr: loop variable(s)
+        valueCompleter:
+          dictCompleter:
+            dictName: templateLoopVars
+      - descr: assignment operator
+        fixedValue: ":="
+      - descr: object to iterate over OR iterator function
+        valueCompleter:
+          union:
+            - templateCompleter:
+                filters:
+                  kind: iterator
+            - templateCompleter:
+                filters:
+                  type: array
+            - templateCompleter:
+                filters:
+                  type: map
+  if:
+    closeTag: end
+    descr: conditional block
+    params:
+      - descr: condition
+        valueCompleter:
+          templateCompleter:
+            filters:
+              type: boolean
+  eq:
+    descr: Returns the boolean truth of arg1 == arg2
+    kind: internal
+    type: boolean
+    params:
+      - descr: Equals check first arg
+        valueCompleter:
+          templateCompleter:
+      - descr: Equals check second arg
+        valueCompleter:
+          templateCompleter:
+  numRange:
+    descr: Iterates over a numeric range
+    kind: iterator
+    params:
+      - descr: Range from
+        valueCompleter:
+          templateCompleter:
+            filters:
+              type: int
+      - descr: Range to
+        valueCompleter:
+          templateCompleter:
+            filters:
+              type: int
+#eq
+#	Returns the boolean truth of arg1 == arg2
+#ne
+#	Returns the boolean truth of arg1 != arg2
+#lt
+#	Returns the boolean truth of arg1 < arg2
+#le
+#	Returns the boolean truth of arg1 <= arg2
+#gt
+#	Returns the boolean truth of arg1 > arg2
+#ge
+#	Returns the boolean truth of arg1 >= arg2

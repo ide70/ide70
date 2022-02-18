@@ -296,31 +296,31 @@ func (ra *ResponseAction) AddLoadUnitParam(key string, value interface{}) {
 	ra.loadUnit.passParams[key] = value
 }
 
-type CompRuntimeSW struct {
+type CompCtx struct {
 	c     *CompRuntime
 	event *EventRuntime
 }
 
-func (cSW *CompRuntimeSW) SetProp(key string, value interface{}) *CompRuntimeSW {
+func (cSW *CompCtx) SetProp(key string, value interface{}) *CompCtx {
 	cSW.c.State[key] = value
 	eventLogger.Info("property", key, "set to", value)
 	return cSW
 }
 
-func (cSW *CompRuntimeSW) CreateMapProp(key string) *CompRuntimeSW {
+func (cSW *CompCtx) CreateMapProp(key string) *CompCtx {
 	cSW.c.State[key] = map[string]interface{}{}
 	return cSW
 }
 
-func (cSW *CompRuntimeSW) GetProp(key string) interface{} {
+func (cSW *CompCtx) GetProp(key string) interface{} {
 	return cSW.c.State[key]
 }
 
-func (cSW *CompRuntimeSW) HasProp(key string) bool {
+func (cSW *CompCtx) HasProp(key string) bool {
 	return cSW.c.State[key] != nil
 }
 
-func (cSW *CompRuntimeSW) Props() api.SIMap {
+func (cSW *CompCtx) Props() api.SIMap {
 	return cSW.c.State
 }
 
@@ -328,32 +328,32 @@ func (c *CompRuntime) GetProp(key string) interface{} {
 	return c.State[key]
 }
 
-func (cSW *CompRuntimeSW) ApplyToParent() *CompRuntimeSW {
+func (cSW *CompCtx) ApplyToParent() *CompCtx {
 	cSW.event.ResponseAction.ApplyToParent(true)
 	return cSW
 }
 
-func (cSW *CompRuntimeSW) RefreshHTMLProp(key, value string) *CompRuntimeSW {
+func (cSW *CompCtx) RefreshHTMLProp(key, value string) *CompCtx {
 	cSW.event.ResponseAction.SetCompPropRefresh(cSW.c, key, value)
 	return cSW
 }
 
-func (cSW *CompRuntimeSW) RefreshHTMLAttr(key, value string) *CompRuntimeSW {
+func (cSW *CompCtx) RefreshHTMLAttr(key, value string) *CompCtx {
 	cSW.event.ResponseAction.SetCompAttrRefresh(cSW.c, key, value)
 	return cSW
 }
 
-func (cSW *CompRuntimeSW) RefreshSubHTMLAttr(idPostfix, key, value string) *CompRuntimeSW {
+func (cSW *CompCtx) RefreshSubHTMLAttr(idPostfix, key, value string) *CompCtx {
 	cSW.event.ResponseAction.SetSubAttrRefresh(cSW.c, idPostfix, key, value)
 	return cSW
 }
 
-func (cSW *CompRuntimeSW) RefreshSubHTMLProp(idPostfix, key, value string) *CompRuntimeSW {
+func (cSW *CompCtx) RefreshSubHTMLProp(idPostfix, key, value string) *CompCtx {
 	cSW.event.ResponseAction.SetSubPropRefresh(cSW.c, idPostfix, key, value)
 	return cSW
 }
 
-func (cSW *CompRuntimeSW) ForwardEvent(eventType string) *CompRuntimeSW {
+func (cSW *CompCtx) ForwardEvent(eventType string) *CompCtx {
 	if eventType == "" {
 		eventType = cSW.event.TypeCode
 	}
@@ -362,21 +362,21 @@ func (cSW *CompRuntimeSW) ForwardEvent(eventType string) *CompRuntimeSW {
 	return cSW
 }
 
-func (cSW *CompRuntimeSW) AddForwardParam(key string, value interface{}) *CompRuntimeSW {
+func (cSW *CompCtx) AddForwardParam(key string, value interface{}) *CompCtx {
 	cSW.event.ResponseAction.AddForwardEventParam(key, value)
 	return cSW
 }
 
-func (cSW *CompRuntimeSW) AddForwardParams(params map[string]interface{}) *CompRuntimeSW {
+func (cSW *CompCtx) AddForwardParams(params map[string]interface{}) *CompCtx {
 	cSW.event.ResponseAction.AddForwardEventParams(params)
 	return cSW
 }
 
-func (cSW *CompRuntimeSW) Comp() *CompRuntime {
+func (cSW *CompCtx) Comp() *CompRuntime {
 	return cSW.c
 }
 
-func (cSW *CompRuntimeSW) ForwardToParent(parentCompCr, eventType string) *CompRuntimeSW {
+func (cSW *CompCtx) ForwardToParent(parentCompCr, eventType string) *CompCtx {
 	if eventType == "" {
 		eventType = cSW.event.TypeCode
 	}
@@ -393,33 +393,33 @@ func (cSW *CompRuntimeSW) ForwardToParent(parentCompCr, eventType string) *CompR
 	return cSW
 }
 
-func (cSW *CompRuntimeSW) ForwardToParentComp(parentComp *CompRuntime, eventType string) *CompRuntimeSW {
+func (cSW *CompCtx) ForwardToParentComp(parentComp *CompRuntime, eventType string) *CompCtx {
 	//logger.Info("ForwardToParentComp pc:", parentComp)
 	logger.Info("ForwardToParentComp:", parentComp.Sid(), eventType)
 	cSW.event.ResponseAction.AddParentForwardEvent(parentComp.Sid(), eventType)
 	return cSW
 }
 
-func (cSW *CompRuntimeSW) FuncExecute(funcName string, args ...string) *CompRuntimeSW {
+func (cSW *CompCtx) FuncExecute(funcName string, args ...string) *CompCtx {
 	cSW.event.ResponseAction.SetCompFuncExecute(cSW.c, funcName, args...)
 	return cSW
 }
 
-func (cSW *CompRuntimeSW) SubCompFuncExecute(idPrefix, funcName string, args ...string) *CompRuntimeSW {
+func (cSW *CompCtx) SubCompFuncExecute(idPrefix, funcName string, args ...string) *CompCtx {
 	cSW.event.ResponseAction.SetSubCompFuncExecute(cSW.c, idPrefix, funcName, args...)
 	return cSW
 }
 
-func (cSW *CompRuntimeSW) Refresh() {
+func (cSW *CompCtx) Refresh() {
 	cSW.event.ResponseAction.SetCompRefresh(cSW.c)
 }
 
-func (cSW *CompRuntimeSW) RefreshSubComp(idPostfix string) {
+func (cSW *CompCtx) RefreshSubComp(idPostfix string) {
 	cSW.event.ResponseAction.SetSubCompRefresh(cSW.c, idPostfix)
 }
 
-func (cSW *CompRuntimeSW) GetParentComp() *CompRuntimeSW {
-	return &CompRuntimeSW{c: cSW.c.State["parentComp"].(*CompRuntime), event: cSW.event}
+func (cSW *CompCtx) GetParentComp() *CompCtx {
+	return &CompCtx{c: cSW.c.State["parentComp"].(*CompRuntime), event: cSW.event}
 }
 
 func reloadUnit(e *EventRuntime, unit *UnitRuntime) {
@@ -428,16 +428,16 @@ func reloadUnit(e *EventRuntime, unit *UnitRuntime) {
 	e.ResponseAction.SetLoadUnit(unitPath)
 }
 
-func (e *EventRuntime) CurrentComp() *CompRuntimeSW {
-	return &CompRuntimeSW{c: e.Comp, event: e}
+func (e *EventRuntime) CurrentComp() *CompCtx {
+	return &CompCtx{c: e.Comp, event: e}
 }
 
 func (e *EventRuntime) EventKey() string {
 	return e.ValueStr
 }
 
-func (e *EventRuntime) ParentComp() *CompRuntimeSW {
-	return &CompRuntimeSW{c: e.Comp.State["parentComp"].(*CompRuntime), event: e}
+func (e *EventRuntime) ParentComp() *CompCtx {
+	return &CompCtx{c: e.Comp.State["parentComp"].(*CompRuntime), event: e}
 }
 
 func (e *EventRuntime) ParentContext() interface{} {
@@ -466,25 +466,25 @@ func (e *EventRuntime) LoadUnitToTarget(unitName string, target *CompRuntime) {
 	}
 }
 
-func (cSW *CompRuntimeSW) LoadUnitInto(unitName string) *CompRuntimeSW {
+func (cSW *CompCtx) LoadUnitInto(unitName string) *CompCtx {
 	cSW.event.LoadUnitToTarget(unitName, cSW.c)
 	return cSW
 }
 
-func (cSW *CompRuntimeSW) LoadUnit(unitName string) *CompRuntimeSW {
+func (cSW *CompCtx) LoadUnit(unitName string) *CompCtx {
 	cSW.event.LoadUnit(unitName)
 	return cSW
 }
 
-func (cSW *CompRuntimeSW) AddPassParam(key string, value interface{}) *CompRuntimeSW {
+func (cSW *CompCtx) AddPassParam(key string, value interface{}) *CompCtx {
 	cSW.event.ResponseAction.AddLoadUnitParam(key, value)
 	return cSW
 }
 
-func (cSW *CompRuntimeSW) GeneratedChildren() []*CompRuntimeSW {
-	children := []*CompRuntimeSW{}
+func (cSW *CompCtx) GeneratedChildren() []*CompCtx {
+	children := []*CompCtx{}
 	for _, child := range cSW.c.GenChildren {
-		children = append(children, &CompRuntimeSW{c: child, event: cSW.event})
+		children = append(children, &CompCtx{c: child, event: cSW.event})
 	}
 	return children
 }
@@ -523,7 +523,7 @@ func (e *EventRuntime) ReloadUnit() {
 	reloadUnit(e, e.UnitRuntime)
 }
 
-func (e *EventRuntime) CompProps() map[string]interface{} {
+func (e *EventRuntime) CompProps() api.SIMap {
 	return e.Comp.State
 }
 
@@ -544,11 +544,15 @@ func (vm *VmBase) Event() *EventRuntime {
 	return nil
 }
 
+func (vm *VmBase) CompCtx() *CompCtx {
+	return nil
+}
+
 func (vm *VmBase) Logger() *log.Logger {
 	return nil
 }
 
-func (vm *VmBase) CompByCr(compName string) *CompRuntimeSW {
+func (vm *VmBase) CompByCr(compName string) *CompCtx {
 	return nil
 }
 
@@ -588,7 +592,7 @@ func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 			}
 			return result
 		}
-		cSW := &CompRuntimeSW{c: c, event: event}
+		cSW := &CompCtx{c: c, event: event}
 		result, ev := vm.ToValue(cSW)
 		if ev != nil {
 			eventLogger.Error("error converting result:", ev.Error())
@@ -598,6 +602,13 @@ func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 	vm.Set("Event", func(call otto.FunctionCall) otto.Value {
 		eventVal, _ := vm.Get("currentEvent")
 		return eventVal
+	})
+	vm.Set("CompCtx", func(call otto.FunctionCall) otto.Value {
+		eventVal, _ := vm.Get("currentEvent")
+		eventIf, _ := eventVal.Export()
+		event := eventIf.(*EventRuntime)
+		co,_ := vm.ToValue(&CompCtx{c: event.Comp, event: event})
+		return co
 	})
 	vm.Set("Logger", func(call otto.FunctionCall) otto.Value {
 		result, _ := vm.ToValue(api.ApiLogger())

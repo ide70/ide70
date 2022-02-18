@@ -139,7 +139,7 @@ var YamlHighlightRules = function() {
             },
             {
                 token : "template.var",
-                regex : /\{\{\./,
+                regex : /\{\{[.$]/,
                 next : "templateVar"
             },
             {

@@ -627,7 +627,7 @@ func sIMapRemoveValueLevel(keyTokens []string, pCollection *interface{}) bool {
 			subElement := slice[index]
 			if subElement != nil {
 				if lastToken || sIMapRemoveValueLevel(keyTokens[1:], &subElement) {
-					sliceDeleteAt(&slice, index)
+					SliceDeleteAt(&slice, index)
 					collection = slice
 					*pCollection = collection
 					return len(slice) == 0
@@ -658,7 +658,7 @@ func getIndexOfToken(keyToken string) int {
 	return index
 }
 
-func sliceDeleteAt(sp *[]interface{}, i int) {
+func SliceDeleteAt(sp *[]interface{}, i int) {
 	*sp = append((*sp)[:i], (*sp)[i+1:]...)
 }
 

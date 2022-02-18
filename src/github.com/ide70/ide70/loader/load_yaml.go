@@ -59,6 +59,15 @@ func LoadTemplatedYaml(name, basePath string) *TemplatedYaml {
 	return ConvertTemplatedYaml(contentB, name)
 }
 
+func LoadFileContents(name, basePath string) string {
+	contentB, err := ioutil.ReadFile(basePath + name)
+	if err != nil {
+		logger.Error("File ", name, "at", basePath, "not found")
+		return ""
+	}
+	return string(contentB)
+}
+
 func ConvertTemplatedYaml(contentB []byte, name string) *TemplatedYaml {
 	module := &TemplatedYaml{}
 	decoder := yaml.NewDecoder(bytes.NewReader(contentB))

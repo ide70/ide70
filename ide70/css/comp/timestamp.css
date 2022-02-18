@@ -1,0 +1,15 @@
+.date-holder {
+    position: absolute;
+    background-color: pink;
+    width: 12em;
+}
+
+.date-button {
+    background-color: skyblue;
+    border: 1px solid grey;
+    cursor: pointer;
+}
+
+body .date-button:hover {
+    background-color: #d4efff;
+}

@@ -1,13 +1,13 @@
 package api
 
 import (
-	"github.com/ide70/ide70/util/log"
 	"github.com/ide70/ide70/dataxform"
 	"github.com/ide70/ide70/loader"
-	"sort"
-	"strings"
+	"github.com/ide70/ide70/util/log"
 	"reflect"
 	"runtime"
+	"sort"
+	"strings"
 )
 
 var logger = log.Logger{"api"}
@@ -81,11 +81,11 @@ func (a IArray) Sort() IArray {
 }
 
 func (a IArray) PrintDBG() {
-	logger.Info("IArray:",a)
+	logger.Info("IArray:", a)
 }
 
 func (t ITable) PrintDBG() {
-	logger.Info("ITable:",t)
+	logger.Info("ITable:", t)
 }
 
 func (a IArray) ToTable(dstCol string) ITable {
@@ -105,12 +105,12 @@ type ProcessContext struct {
 }
 
 type TblProcessContext struct {
-	pc *ProcessContext
+	pc      *ProcessContext
 	subject ITable
 }
 
 type ArrProcessContext struct {
-	pc *ProcessContext
+	pc      *ProcessContext
 	subject IArray
 }
 
@@ -277,32 +277,32 @@ func (pcT *TblProcessContext) Process() ITable {
 }
 
 func getFunctionName(i interface{}) string {
-    return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
+	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
 }
 
 func (t ITable) GroupBy(col, groupCol string) ITable {
 	dt := ITable{}
 	grpBy := map[interface{}]ITable{}
-	for _,row := range t {
+	for _, row := range t {
 		by := row[col]
 		grp := grpBy[by]
 		if grp == nil {
 			grp = ITable{}
 		}
 		subRow := SIMap{}
-		for k,v := range row {
+		for k, v := range row {
 			if k != col {
-				subRow[k]=v
+				subRow[k] = v
 			}
 		}
 		grpBy[by] = append(grp, subRow)
 	}
 	grps := IArray{}
-	for k,_ := range grpBy {
+	for k, _ := range grpBy {
 		grps = append(grps, k)
 	}
 	grpsSorted := grps.Sort()
-	for _,grp := range grpsSorted {
+	for _, grp := range grpsSorted {
 		dRow := SIMap{}
 		dRow[col] = grp
 		dRow[groupCol] = grpBy[grp]
@@ -310,7 +310,6 @@ func (t ITable) GroupBy(col, groupCol string) ITable {
 	}
 	return dt
 }
-
 
 type LoadContext struct {
 }
@@ -321,4 +320,20 @@ func (loadCtx *LoadContext) LoadYamlAsMap(fileName, folderPrefix string) SIMap {
 		return nil
 	}
 	return ty.Def
+}
+
+func (loadCtx *LoadContext) LoadDictAsMap(dictName string) SIMap {
+	res := SIMap{}
+	fileAsTemplatedYaml := loader.GetTemplatedYaml(dictName, "ide70/dcfg/dict/")
+	if fileAsTemplatedYaml != nil {
+		fileData := fileAsTemplatedYaml.Def
+		itemList := dataxform.SIMapGetByKeyAsList(fileData, "items")
+		for _, itemIf := range itemList {
+			itemData := dataxform.IAsSIMap(itemIf)
+			code := dataxform.SIMapGetByKeyAsString(itemData, "code")
+			descr := dataxform.SIMapGetByKeyAsString(itemData, "descr")
+			res[code] = descr
+		}
+	}
+	return res
 }

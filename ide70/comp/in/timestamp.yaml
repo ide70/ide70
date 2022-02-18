@@ -2,6 +2,53 @@
 unitInterface:
   descr: Date and time selector
   properties:
+    startYear:
+      descr: Start year
+      type: int
+    endYear:
+      descr: End year
+      type: int
+privateProperties:
+  stage:
+    descr: Date setting stage
+    type: string
+  yearSeleced:
+    descr: the selected year
+    type: string
+  stageSelection:
+    type: map
 body: |
-  <input id="{{.sid}}" type="text"></input>
-  <div></div>
+  <div id="{{.sid}}">
+      <input type="text" {{eventHandlerJs $.This "onclick" "null"}}></input>
+      <div class="date-holder">
+      {{if eq .stage "year"}}
+      {{range $v := numRange .startYear .endYear }}
+      <span class="date-button" {{eventHandlerWithKey $.This "onclick" "yearPressed" $v}}>{{$v}}</span>
+      {{end}}
+      {{end}}
+      {{if eq .stage "month"}}
+        {{range $k,$v := .stageSelection}}
+        <span class="date-button" {{eventHandlerWithKey $.This "onclick" "monthPressed" $k}}>{{$v}}</span>
+        {{end}}
+      {{end}}
+      </div>
+  </div>
+eventHandlers:
+  onUnitCreate:
+    action: |
+      CompCtx().SetProp("stage", "");
+  onclick:
+    action: |
+      CompCtx().SetProp("stage", "year").Refresh();
+  yearPressed:
+    action: |
+      CompCtx().SetProp("yearSeleced", Event().EventKey());
+      var months = Event().LoadCtx().LoadDictAsMap("time/months");
+      CompCtx().SetProp("stageSelection", months);
+      CompCtx().SetProp("stage", "month").Refresh();
+  monthPressed:
+    action: |
+      CompCtx().SetProp("stage", "").Refresh();
+injectRootComp:
+  css:
+    - name: comp/timestamp.css

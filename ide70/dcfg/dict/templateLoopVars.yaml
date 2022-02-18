@@ -1,0 +1,9 @@
+---
+descr: template loop variables
+items:
+  - code: "$v"
+    descr: value of actual array element
+  - code: "$idx,$v"
+    descr: index and value of actual array element
+  - code: "$k,$v"
+    descr: key and value of actual map element

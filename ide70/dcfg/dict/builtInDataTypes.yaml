@@ -1,0 +1,11 @@
+---
+descr: Built in data types
+items:
+  - code: int
+    descr: Integer
+  - code: string
+    descr: String
+  - code: array
+    descr: Array
+  - code: map
+    descr: Map

@@ -21,7 +21,7 @@ export GOPATH=`pwd`
 bin/ide70
 ```
 
-Open [IDE](localhost:7080/app/ide/login) or [Sample application](localhost:7080/app/airplane/login)
+Open [IDE](http://localhost:7080/app/ide/login) or [Sample application](http://localhost:7080/app/airplane/login)
 in your browser and enjoy.
 
 ### Windows

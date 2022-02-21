@@ -21,9 +21,15 @@ export GOPATH=`pwd`
 bin/ide70
 ```
 
-Open [IDE](http://localhost:7080/app/ide/login) or [Sample application](http://localhost:7080/app/airplane/login)
-in your browser and enjoy.
-
 ### Windows
 
-The same with windows shell possibilities...
+```
+git clone https://github.com/ide70/ide70.git
+cd ide70
+set GOPATH=%cd%
+pushd src\github.com\ide70\ide70 && go get ./... && popd
+bin\ide70.exe
+```
+
+Open [IDE](http://localhost:7080/app/ide/login) or [Sample application](http://localhost:7080/app/airplane/login)
+in your browser and enjoy.

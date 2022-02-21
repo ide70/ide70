@@ -14,6 +14,10 @@ func LastPathComponent(path string) string {
 	return tokens[len(tokens)-1]
 }
 
+func NormalizeFileName(path string) string {
+	return strings.Replace(path, string(os.PathSeparator), "/", -1)
+}
+
 func TrimLastPathComponent(path string) string {
 	tokens := strings.Split(path, "/")
 	return strings.Join(tokens[0:len(tokens)-1], "/")

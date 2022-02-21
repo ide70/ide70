@@ -4,9 +4,16 @@ import (
 	"fmt"
 	"github.com/ide70/ide70/app"
 	"github.com/ide70/ide70/server"
+	"github.com/ide70/ide70/util/file"
+	"github.com/ide70/ide70/util/log"
+	"os"
+	"path/filepath"
 )
 
+var logger = log.Logger{"app"}
+
 func LoadServer() *server.AppServer {
+	adjustWorkingDirectory()
 	app := app.LoadApplication("app")
 	addr := ":7070"
 	if app.Config["port"] != nil {
@@ -19,4 +26,12 @@ func LoadServer() *server.AppServer {
 	as := server.NewAppServer(addr, secure)
 	as.SetApplication(app)
 	return as
+}
+
+func adjustWorkingDirectory() {
+	ex,_ := os.Executable();
+	exPath := file.NormalizeFileName(filepath.Dir(ex))
+	parentPath := file.TrimLastPathComponent(exPath)
+	os.Chdir(parentPath)
+	logger.Info("Server root set to", parentPath)
 }

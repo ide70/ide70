@@ -115,7 +115,7 @@ func (s *AppServer) Start() error {
 		s.serveWebfonts(w, r)
 	})
 
-	logger.Info("Starting GUI server on:", s.App.URLString)
+	logger.Info("Starting Ide70 server on:", s.App.URLString)
 
 	s.sessStop = make(chan struct{})
 	go s.sessCleaner(s.sessStop)

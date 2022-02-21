@@ -9,9 +9,9 @@ Sample application
 
 ## Install and run
 
-### Linux
+Install go 1.13. first. Then run the following commands at command prompt:
 
-Install go 1.13. first. Then run the following commands:
+### Linux
 
 ```
 git clone https://github.com/ide70/ide70.git

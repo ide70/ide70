@@ -11,11 +11,18 @@ import (
 
 const UNIT_PATH = "ide70/unit/"
 
+type Calc struct {
+	Comp      *CompDef
+	PropertyKey string
+	jsCode string
+}
+
 type UnitDef struct {
 	RootComp      *CompDef
 	CompsMap      map[string]*CompDef
 	EventsHandler *UnitDefEventsHandler
 	Name          string
+	CalcArr		[]*Calc
 }
 
 type UnitDefContext struct {
@@ -39,6 +46,7 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 	unit.Name = name
 	unit.CompsMap = map[string]*CompDef{}
 	unit.EventsHandler = newUnitDefEventsHandler()
+	unit.CalcArr = []*Calc{}
 
 	decoder := yaml.NewDecoder(bytes.NewReader(contentB))
 

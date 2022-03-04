@@ -3,7 +3,11 @@ package dataxform
 import (
 	"fmt"
 	"strings"
+	"github.com/ide70/ide70/util/log"
+	"reflect"
 )
+
+var logger = log.Logger{"datxform"}
 
 func InterfaceReplaceMapKeyToString(i interface{}) interface{} {
 	switch itp := i.(type) {
@@ -111,6 +115,26 @@ func IAsString(i interface{}) string {
 	return ""
 }
 
+func IAsInt(i interface{}) int {
+	if i == nil {
+		return 0
+	}
+	switch iT := i.(type) {
+	case int:
+		return iT
+	case int64:
+		return int(iT)
+	case float64:
+		return int(iT)
+	case string:
+		iC := 0
+		fmt.Sscanf(iT, "%d", &iC)
+		return iC
+	}
+	logger.Warning("IAsInt unknown type:", reflect.TypeOf(i))
+	return 0
+}
+
 func IAsBool(i interface{}) bool {
 	if i == nil {
 		return false
@@ -215,7 +239,7 @@ type ArrayEntry struct {
 	a      []interface{}
 	i      int
 	v      interface{}
-	stop bool
+	stop   bool
 }
 
 type CollectionEntry interface {
@@ -704,8 +728,8 @@ func setSliceAt(slice []interface{}, index int, value interface{}) []interface{}
 }
 
 func GetOnlyEntry(m map[string]interface{}) (string, interface{}) {
-	for k,v := range m {
-		return k,v
+	for k, v := range m {
+		return k, v
 	}
 	return "", nil
 }

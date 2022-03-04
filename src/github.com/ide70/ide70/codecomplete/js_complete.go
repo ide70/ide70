@@ -10,6 +10,8 @@ import (
 )
 
 var reIdentifierStart = regexp.MustCompile(`[+-/*.{;: ()]*\w*\n*$`)
+var reVarNameStart = regexp.MustCompile(`[^.\w]+(\w+)\.\n*$`)
+var reWordEnding = regexp.MustCompile(`(\w+)\n*$`)
 
 func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
 	code := yamlPos.valuePrefx
@@ -23,8 +25,10 @@ func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 			logger.Info("func:", funcName, "nrParam:", nrParam)
 			compls := completionsOfFuncParam(tp, funcName, nrParam, yamlPos, edContext, configData)
 			if len(compls) > 0 {
+				logger.Info("compls found:",len(compls))
 				compl = append(compl, compls...)
 			} else {
+				logger.Info("no compls found")
 				compl = append(compl, completionsOfType(reflect.TypeOf(&comp.VmBase{}), "", configData)...)
 				compl = append(compl, collectVarDefs(code)...)
 			}
@@ -34,20 +38,49 @@ func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 		}
 		return compl
 	}
+	varNameStartMatches := reVarNameStart.FindStringSubmatch(code)
+	if varNameStartMatches != nil {
+		varNameStart := varNameStartMatches[1]
+		logger.Info("varNameStart:", varNameStart)
+		
+		tp := getVarType(code, varNameStart)
+
+		if tp == nil {
+			return compl
+		}
+		compl = append(compl, completionsOfType(tp, "", configData)...)
+		return compl
+	}
 	if reIdentifierStart.FindString(code) != "" {
-		logger.Info("RE tag start")
+		logger.Info("RE tag start:")
 		tp, funcNamePrefix := getReturnType(code)
 		if tp == nil {
 			return compl
 		}
 		compl = append(compl, completionsOfType(tp, funcNamePrefix, configData)...)
+		if tp == reflect.TypeOf(&comp.VmBase{}) {
+			compl = append(compl, collectVarDefs(code)...)
+		}
 	}
 	if strings.HasSuffix(code, ")") {
 	}
 	return compl
 }
 
-var reVariableDefinition = regexp.MustCompile(`var (\w+)\s*=\s*`)
+func getVarType(code, varName string) reflect.Type {
+	defs := availableVarDefs(code)
+	identifierDef := defs[varName]
+	logger.Info("identifierDef:", identifierDef)
+	// local variable and its definition found
+	if identifierDef != "" {
+		def := identifierDef + "."
+		tp, _ := getReturnType(def)
+		return tp
+	}
+	return nil
+}
+
+var reVariableDefinition = regexp.MustCompile(`var (\w+)\s*=\s*([^;]+)`)
 
 func filterNonvisibleScope(code string) string {
 	res := ""
@@ -76,12 +109,25 @@ func filterNonvisibleScope(code string) string {
 	}
 }
 
+func availableVarDefs(code string) map[string]string {
+	defs := map[string]string{}
+	code = filterNonvisibleScope(code)
+	varDefs := reVariableDefinition.FindAllStringSubmatch(code, -1)
+	varDefPositions := reVariableDefinition.FindAllStringSubmatchIndex(code, -1)
+	for idx, varDefMatch := range varDefs {
+		logger.Info("vardef:", varDefMatch[1], code[:varDefPositions[idx][1]])
+		//defs[varDefMatch[1]] = varDefMatch[2]
+		defs[varDefMatch[1]] = code[:varDefPositions[idx][1]]
+	}
+	return defs
+}
+
 func collectVarDefs(code string) []map[string]string {
 	compl := []map[string]string{}
 	code = filterNonvisibleScope(code)
 	logger.Info("vScope:", code+"|")
 	varDefs := reVariableDefinition.FindAllStringSubmatch(code, -1)
-	for _,varDefMatch := range varDefs {
+	for _, varDefMatch := range varDefs {
 		compl = append(compl, newCompletion(varDefMatch[1], varDefMatch[1], "local variable"))
 	}
 	return compl
@@ -111,7 +157,7 @@ func inspectParamBlock(code string) (int, string) {
 
 func removeLeftWhiteSpace(code string) string {
 	lines := strings.Split(code, "\n")
-	for i,line := range lines {
+	for i, line := range lines {
 		lines[i] = strings.TrimLeft(line, " \t")
 	}
 	return strings.Join(lines, "")
@@ -153,6 +199,11 @@ func getFuncNameChain(code string) []string {
 					continue
 				}
 			}
+		} else if match := reWordEnding.FindStringSubmatch(code); match != nil {
+			logger.Info("var name resolved:", match[1])
+			funcNameChain = append([]string{"var:" + match[1]}, funcNameChain...)
+			code = strings.TrimSuffix(code, match[0])
+			continue
 		}
 		break
 	}
@@ -166,7 +217,12 @@ func getReturnType(code string) (reflect.Type, string) {
 	baseType := reflect.TypeOf(&comp.VmBase{})
 	for idx, funcName := range funcNameChain {
 		baseTypePrev := baseType
-		baseType = returnTypeOfFunc(baseType, funcName)
+		if strings.HasPrefix(funcName, "var:") {
+			varName := strings.TrimPrefix(funcName, "var:")
+			baseType = getVarType(code, varName)
+		} else {
+			baseType = returnTypeOfFunc(baseType, funcName)
+		}
 		if baseType == nil {
 			if idx == len(funcNameChain)-1 {
 				return baseTypePrev, funcName
@@ -189,7 +245,12 @@ func getBaseTypeAndName(code string) (reflect.Type, string) {
 			return baseType, funcName
 			logger.Info("rb1", baseType, funcName)
 		}
-		baseType = returnTypeOfFunc(baseType, funcName)
+		if strings.HasPrefix(funcName, "var:") {
+			varName := strings.TrimPrefix(funcName, "var:")
+			baseType = getVarType(code, varName)
+		} else {
+			baseType = returnTypeOfFunc(baseType, funcName)
+		}
 		if baseType == nil {
 			return nil, ""
 			logger.Info("rb2")
@@ -277,7 +338,10 @@ func completionsOfType(tp reflect.Type, funcNameFilter string, configData map[st
 
 func completionsOfFuncParam(tp reflect.Type, methodName string, paramNo int, yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}) []map[string]string {
 	compl := []map[string]string{}
-	logger.Info("completionsOfFuncParam")
+	if tp == nil {
+		return compl
+	}
+	logger.Info("completionsOfFuncParam, base type:", tp.String())
 	functionsData := dataxform.SIMapGetByKeyAsMap(configData, "functions")
 
 	typeBasedFunctionsData := dataxform.SIMapGetByKeyAsMap(functionsData, tp.String())

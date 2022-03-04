@@ -205,8 +205,9 @@ func passRoot(current, root interface{}) map[string]interface{} {
 
 func numRange(startI, endI interface{}) (stream chan int) {
 	stream = make(chan int)
-	start := startI.(int)
-	end := endI.(int)
+	start := dataxform.IAsInt(startI)
+	end := dataxform.IAsInt(endI)
+	
 	go func() {
 		for i := start; i <= end; i++ {
 			stream <- i

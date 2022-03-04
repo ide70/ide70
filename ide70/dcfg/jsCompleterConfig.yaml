@@ -31,7 +31,7 @@
             valueCompleter:
               yamlPathCompleter:
                 self: yes
-                pathExpr: "unitInterface.properties.%$"
+                pathExpr: "unitInterface.properties.%$|privateProperties.%$"
                 pathNodes: yes
                 quote: '"'
       SetProp:
@@ -52,7 +52,7 @@
             valueCompleter:
               yamlPathCompleter:
                 self: yes
-                pathExpr: "unitInterface.properties.%$"
+                pathExpr: "unitInterface.properties.%$|privateProperties.%$"
                 pathNodes: yes
                 quote: '"'
     "*comp.EventRuntime":

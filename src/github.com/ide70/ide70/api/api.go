@@ -12,6 +12,19 @@ import (
 
 var logger = log.Logger{"api"}
 
+type API struct {
+}
+
+var ApiInst = &API{}
+
+func (a *API) Logger() *log.Logger {
+	return ApiLogger()
+}
+
+func (a *API) DateCtx() *DateCtx {
+	return &DateCtx{}
+}
+
 type SIMap map[string]interface{}
 
 type IArray []interface{}

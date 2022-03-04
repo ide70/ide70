@@ -23,7 +23,9 @@
 - compType: in/timestamp
   label: Departure
   cr: inTimestampDeparture
-  startYear: 2020
+  startYear:
+    calc: |
+      2020 + 1
   endYear: 2033
 - compType: textbox
   label: Dummy for testing

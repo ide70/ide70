@@ -313,7 +313,10 @@ func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map
 			}
 
 			if yamlPos.child == nil && completer == nil {
-				compl = addCompletion("___", edContext, keyData, compl)
+				preventBlankKey := dataxform.SIMapGetByKeyAsBoolean(keyData, "preventBlankKey")
+				if !preventBlankKey {
+					compl = addCompletion("___", edContext, keyData, compl)
+				}
 			}
 
 			if yamlPos.child != nil {
@@ -482,7 +485,21 @@ func lookupCompleter(completerType string, keyData map[string]interface{}) (Valu
 	} else {
 		configData["value"] = true
 	}
-	configData["handleChildren"] = completerName == "yamlDataCompleter"
+	
+	configData["handleChildren"] = false
+	if len(completerParamsList) > 0 {
+		logger.Info("range completerParamsList")
+		for _,subCompleterIf := range completerParamsList {
+			key,_ := dataxform.GetOnlyEntry(dataxform.IAsSIMap(subCompleterIf))
+			logger.Info("key", key)
+			if key == "yamlDataCompleter" {
+				configData["handleChildren"] = true
+			}
+		}
+	}
+	if completerName == "yamlDataCompleter" {
+		configData["handleChildren"] = true
+	}
 
 	if completerName != "" {
 		logger.Info(completerType+"Completer:", completerName)

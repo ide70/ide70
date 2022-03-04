@@ -548,7 +548,7 @@ func (vm *VmBase) CompCtx() *CompCtx {
 	return nil
 }
 
-func (vm *VmBase) Logger() *log.Logger {
+func (vm *VmBase) Api() *api.API {
 	return nil
 }
 
@@ -610,8 +610,8 @@ func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 		co,_ := vm.ToValue(&CompCtx{c: event.Comp, event: event})
 		return co
 	})
-	vm.Set("Logger", func(call otto.FunctionCall) otto.Value {
-		result, _ := vm.ToValue(api.ApiLogger())
+	vm.Set("Api", func(call otto.FunctionCall) otto.Value {
+		result, _ := vm.ToValue(api.ApiInst)
 		return result
 	})
 	eventsHandler.exMutex = &sync.RWMutex{}
@@ -674,7 +674,7 @@ func (eh *EventHandler) processEvent(e *EventRuntime) {
 	e.UnitRuntime.EventsHandler.runJs(e, eh.JsCode)
 }
 
-func (eh *UnitRuntimeEventsHandler) runJs(e *EventRuntime, jsCode string) {
+func (eh *UnitRuntimeEventsHandler) runJs(e *EventRuntime, jsCode string) interface{} {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -689,11 +689,16 @@ func (eh *UnitRuntimeEventsHandler) runJs(e *EventRuntime, jsCode string) {
 	//eventLogger.Info("event: ", e)
 
 	eventLogger.Info("Vm.Run: ", jsCode)
-	_, err := eh.Vm.Run(jsCode)
+	value, err := eh.Vm.Run(jsCode)
 	eventLogger.Info("Vm.Run end")
 	if err != nil {
 		eventLogger.Error("error evaluating script:", jsCode, err.Error())
 	}
+	valueIf, err := value.Export()
+	if err != nil {
+		eventLogger.Error("error converting result:", jsCode, err.Error())
+	}
+	return valueIf
 }
 
 func (er *EventRuntime) DBCtx() *store.DatabaseContext {

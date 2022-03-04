@@ -41,4 +41,4 @@ eventHandlers:
   onchange:
     action: |
       Event().CurrentComp().SetProp("value", Event().ValueStr);
-      Logger().Info("----val:", Event().ValueStr)
+      Api().Logger().Info("----val:", Event().ValueStr);

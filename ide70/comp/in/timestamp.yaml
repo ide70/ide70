@@ -48,7 +48,37 @@ eventHandlers:
       CompCtx().SetProp("stage", "month").Refresh();
   monthPressed:
     action: |
+      var yearSelected = CompCtx().GetProp("yearSeleced");
+      var monthSelected = Event().EventKey();
+      Api().Logger().Info("ys:",yearSelected);
+      Api().Logger().Info("ms:",monthSelected);
+      var monthFirstDay = Api().DateCtx().PureDate(yearSelected, monthSelected, 1);
+      var weekStart = monthFirstDay.Weekday();
+      Api().Logger().Info(monthFirstDay, "is", weekStart);
+      var tableFirstDay = monthFirstDay.AddDate(0, 0, -weekStart);
+      var daysTable = Api().Arrays().NewITable();
+      for i=0; i<42; i++ {
+        var actDate = tableFirstDay.AddDate(0, 0, i);
+        daysTable.AddEmptyRow().AddCol("day", actDate).
+        AddCol("avail", !actDate.Before(monthFirstDay)).
+        AddCol("key", i);
+      }
       CompCtx().SetProp("stage", "").Refresh();
 injectRootComp:
   css:
     - name: comp/timestamp.css
+#func calcMonth(startDay, actDay) {
+#    cols = arr.Make2DArr(7)
+#    firstDayOfMonth = startDay.AddDate(0,0,1-startDay.Day())
+#    firstDayOfWeek = firstDayOfMonth.Weekday()
+#    firstDayOfWeek = ( firstDayOfWeek + 6) % 7
+#    currDay = firstDayOfMonth.AddDate(0,0,-firstDayOfWeek)
+#    for i=0; i<42; i++ {
+#        var active = startDay.Month() == currDay.Month()
+#        var current = active && currDay.Day() == actDay
+#        item = { "date": currDay, "day": currDay.Day(), "active": active, "current": current }
+#        cols[i%7] += item
+#        currDay = currDay.AddDate(0,0,1)
+#    }
+#    return cols
+#}

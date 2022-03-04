@@ -1,0 +1,14 @@
+---
+unitInterface:
+  descr: General unit interface settings
+  properties:
+    any:
+      preventBlankKey: yes
+      children:
+        calc:
+          descr: Value as result of a script
+          multilineValue: yes
+          valueCompleter:
+            jsCompleter:
+              configFile: jsCompleterConfig
+              multilineValue: yes

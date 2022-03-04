@@ -30,9 +30,24 @@ func ParseCompDef(def map[string]interface{}, context *UnitDefContext) *CompDef 
 	logger.Info("ParseCompDef id", def["cr"])
 
 	compDef.EventsHandler = ParseEventHandlers(def, compDef.CompType.EventsHandler, context, compDef)
+	
+	parseCalcs(def, context, compDef)
 
 	logger.Info("ParseCompDef end")
 	return compDef
+}
+
+func parseCalcs(def map[string]interface{}, context *UnitDefContext, compDef *CompDef) {
+	dataxform.IApplyFnToNodes(def, func(entry dataxform.CollectionEntry) {
+			if entry.Key() == "calc" {
+				value := dataxform.IAsString(entry.Value())
+				if value != "" {
+					calc := &Calc{Comp: compDef, PropertyKey: entry.Parent().Key(), jsCode: value}
+					logger.Info("calc added:",*calc)
+					context.unitDef.CalcArr = append(context.unitDef.CalcArr, calc)
+				}
+			}
+	})
 }
 
 func ParseEventHandlers(def map[string]interface{}, superEventsHandler *CompDefEventsHandler, context *UnitDefContext, compDef *CompDef) *CompDefEventsHandler {

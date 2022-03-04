@@ -6,6 +6,7 @@ import (
 	"github.com/ide70/ide70/store"
 	"github.com/ide70/ide70/util/log"
 	"io"
+	"reflect"
 )
 
 var unitLogger = log.Logger{"unit"}
@@ -60,8 +61,20 @@ func InstantiateUnit(name string, app *app.Application, appParams *AppParams, pa
 	unitRuntime.UnitDef = unitDef
 	unitRuntime.RootComp = InstantiateComp(unitDef.RootComp, unitRuntime)
 	unitRuntime.EventsHandler = newUnitRuntimeEventsHandler(unitRuntime)
+	
+	unitRuntime.initialCalcs()
 
 	return unitRuntime
+}
+
+func (unit *UnitRuntime) initialCalcs() {
+	for _,calc := range unit.UnitDef.CalcArr {
+		comp := unit.CompByChildRefId[calc.Comp.ChildRefId()]
+		e := NewEventRuntime(nil, unit, comp, "calc", "")
+		calcResult := unit.EventsHandler.runJs(e, calc.jsCode)
+		logger.Info("calc result for", calc.PropertyKey, "is",calcResult,"type:",reflect.TypeOf(calcResult))
+		comp.State[calc.PropertyKey]=calcResult
+	} 
 }
 
 func RefreshUnitDef(name string) {

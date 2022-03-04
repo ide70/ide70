@@ -205,10 +205,19 @@ unit:
       any:
         descr: Component properties
         keyCompleter:
-          yamlDataCompleter:
-            folderPrefix: comp
-            fileNameSrc: yamlParentValue
-            rootKey: unitInterface.properties
+#          yamlDataCompleter:
+#            folderPrefix: comp
+#            fileNameSrc: yamlParentValue
+#            rootKey: unitInterface.properties
+          union:
+            - yamlDataCompleter:
+                folderPrefix: comp
+                fileNameSrc: yamlParentValue
+                rootKey: unitInterface.properties
+            - yamlDataCompleter:
+                folderPrefix: dcfg
+                fileNameSrc: genCompComplete
+                rootKey: unitInterface.properties
       cr:
         descr: Component reference, identifies component in unit
         mandatory: yes

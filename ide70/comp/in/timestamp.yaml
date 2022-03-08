@@ -15,11 +15,22 @@ privateProperties:
   yearSeleced:
     descr: the selected year
     type: string
+  monthSeleced:
+    descr: the selected month
+    type: string
+  daySeleced:
+    descr: the selected day
+    type: string
   stageSelection:
     type: map
+  daysTable:
+    type: array
+  fmtValue:
+    descr: Formatted date value
+    type: string
 body: |
   <div id="{{.sid}}">
-      <input type="text" {{eventHandlerJs $.This "onclick" "null"}}></input>
+      <input type="text" value="{{.fmtValue}}" {{eventHandlerJs $.This "onclick" "null"}}></input>
       <div class="date-holder">
       {{if eq .stage "year"}}
       {{range $v := numRange .startYear .endYear }}
@@ -29,6 +40,12 @@ body: |
       {{if eq .stage "month"}}
         {{range $k,$v := .stageSelection}}
         <span class="date-button" {{eventHandlerWithKey $.This "onclick" "monthPressed" $k}}>{{$v}}</span>
+        {{end}}
+      {{end}}
+      {{if eq .stage "day"}}
+        {{range $v := .daysTable}}
+        <span class="day-button date-button{{if $v.disabled}} inactive{{end}}"
+        {{if not $v.disabled}}{{eventHandlerWithKey $.This "onclick" "dayPressed" $v.day}}{{end}}>{{$v.day}}</span>
         {{end}}
       {{end}}
       </div>
@@ -48,37 +65,30 @@ eventHandlers:
       CompCtx().SetProp("stage", "month").Refresh();
   monthPressed:
     action: |
+      CompCtx().SetProp("monthSeleced", Event().EventKey());
       var yearSelected = CompCtx().GetProp("yearSeleced");
       var monthSelected = Event().EventKey();
-      Api().Logger().Info("ys:",yearSelected);
-      Api().Logger().Info("ms:",monthSelected);
       var monthFirstDay = Api().DateCtx().PureDate(yearSelected, monthSelected, 1);
       var weekStart = monthFirstDay.Weekday();
-      Api().Logger().Info(monthFirstDay, "is", weekStart);
       var tableFirstDay = monthFirstDay.AddDate(0, 0, -weekStart);
-      var daysTable = Api().Arrays().NewITable();
-      for i=0; i<42; i++ {
+      var daysTable = Api().Arrays().NewITableW();
+      for(var i=0; i<42; i++) {
         var actDate = tableFirstDay.AddDate(0, 0, i);
-        daysTable.AddEmptyRow().AddCol("day", actDate).
-        AddCol("avail", !actDate.Before(monthFirstDay)).
-        AddCol("key", i);
+        daysTable.AddEmptyRow().AddCol("day", actDate.Day()).
+        AddCol("disabled", actDate.Month() != monthFirstDay.Month());
       }
+      CompCtx().SetProp("daysTable", daysTable.Finalize())
+      CompCtx().SetProp("stage", "day").Refresh();
+  dayPressed:
+    action: |
+      CompCtx().SetProp("daySeleced", Event().EventKey());
+      var yearSelected = CompCtx().GetProp("yearSeleced");
+      var monthSelected = CompCtx().GetProp("monthSeleced");
+      var daySelected = CompCtx().GetProp("daySeleced");
+      var dateSelected = Api().DateCtx().PureDate(yearSelected, monthSelected, daySelected);
+      CompCtx().SetProp("fmtValue", Api().DateCtx().FormatTime(dateSelected, "yyyy.MM.dd"));
       CompCtx().SetProp("stage", "").Refresh();
 injectRootComp:
   css:
     - name: comp/timestamp.css
-#func calcMonth(startDay, actDay) {
-#    cols = arr.Make2DArr(7)
-#    firstDayOfMonth = startDay.AddDate(0,0,1-startDay.Day())
-#    firstDayOfWeek = firstDayOfMonth.Weekday()
-#    firstDayOfWeek = ( firstDayOfWeek + 6) % 7
-#    currDay = firstDayOfMonth.AddDate(0,0,-firstDayOfWeek)
-#    for i=0; i<42; i++ {
-#        var active = startDay.Month() == currDay.Month()
-#        var current = active && currDay.Day() == actDay
-#        item = { "date": currDay, "day": currDay.Day(), "active": active, "current": current }
-#        cols[i%7] += item
-#        currDay = currDay.AddDate(0,0,1)
-#    }
-#    return cols
-#}
+

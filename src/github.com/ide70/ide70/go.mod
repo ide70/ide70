@@ -7,4 +7,5 @@ require (
 	github.com/lib/pq v1.10.4
 	github.com/robertkrimen/otto v0.0.0-20211024170158-b87d35c0b86f
 	gopkg.in/yaml.v2 v2.4.0
+	github.com/newm4n/go-dfe
 )

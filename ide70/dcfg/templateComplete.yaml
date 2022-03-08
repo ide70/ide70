@@ -76,6 +76,14 @@ methods:
       - descr: Equals check second arg
         valueCompleter:
           templateCompleter:
+  not:
+    descr: Negate truth of argument
+    kind: internal
+    type: boolean
+    params:
+      - descr: Boolean arg
+        valueCompleter:
+          templateCompleter:
   numRange:
     descr: Iterates over a numeric range
     kind: iterator

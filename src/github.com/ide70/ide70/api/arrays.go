@@ -5,28 +5,37 @@ import ()
 type Arrays struct {
 }
 
+type ITableW struct {
+	t ITable
+}
+
 func (a *API) Arrays() *Arrays {
 	return &Arrays{}
 }
 
-func (as *Arrays) NewITable() *ITable {
-	return &ITable{}
+func (as *Arrays) NewITableW() *ITableW {
+	return &ITableW{t: ITable{}}
 }
 
-func (t *ITable) AddCol(col string, v interface{}) *ITable {
-	row := ensureRow(t)
-	(*t)[row][col] = v
-	return t
+func (tw *ITableW) AddCol(col string, v interface{}) *ITableW {
+	row := ensureRow(tw)
+	tw.t[row][col] = v
+	return tw
 }
 
-func (t *ITable) AddEmptyRow() *ITable {
-	*t = append(*t, SIMap{})
-	return t
+func (tw *ITableW) AddEmptyRow() *ITableW {
+	tw.t = append(tw.t, SIMap{})
+	return tw
 }
 
-func ensureRow(t *ITable) int {
-	if len(*t) == 0 {
-		*t = append(*t, SIMap{})
+func ensureRow(tw *ITableW) int {
+	if len(tw.t) == 0 {
+		tw.t = append(tw.t, SIMap{})
 	}
-	return len(*t) - 1
+	return len(tw.t) - 1
+}
+
+func (tw *ITableW) Finalize() ITable {
+	logger.Info("finalize, length:", len(tw.t))
+	return tw.t
 }

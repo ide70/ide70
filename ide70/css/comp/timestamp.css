@@ -1,7 +1,7 @@
 .date-holder {
     position: absolute;
     background-color: pink;
-    width: 12em;
+    width: 16em;
 }
 
 .date-button {
@@ -10,6 +10,23 @@
     cursor: pointer;
 }
 
+.date-button.inactive {
+    background-color: white;
+    border: 1px solid grey;
+    cursor: pointer;
+}
+
+.day-button {
+    min-width: 1.5em;
+    display: inline-block;
+    padding: 0.1em;
+    margin: 0.1em;
+}
+
 body .date-button:hover {
     background-color: #d4efff;
+}
+
+body .date-button.inactive:hover {
+    background-color: white;
 }

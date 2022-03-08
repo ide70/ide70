@@ -3,6 +3,7 @@ package api
 import (
 	"time"
 	"github.com/ide70/ide70/dataxform"
+	"github.com/newm4n/go-dfe"
 )
 
 type DateCtx struct{}
@@ -26,4 +27,9 @@ func (dc *DateCtx) PureDate(yearI, monthI, dayI interface{}) time.Time {
 func (dc *DateCtx) Parse(layout, value string) time.Time {
 	t, _ := time.Parse(layout, value)
 	return t
+}
+
+func (dc *DateCtx) FormatTime(t *time.Time, format string) string {
+	translation := DateFormatExchange.NewPatternTranslation()
+	return t.Format(translation.JavaToGoFormat(format))
 }

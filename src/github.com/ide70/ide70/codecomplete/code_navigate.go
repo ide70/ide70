@@ -92,7 +92,7 @@ func CodeNavigate(content string, row, col int, fileType string) *NavigationResu
 			if fileAsTemplatedYaml != nil {
 				fileData := fileAsTemplatedYaml.IDef
 				logger.Info("pathExpr:", pathExpr)
-				rePath, isValue := convertYamlpathToRegex(navigateExpr, yamlPos)
+				rePath, selector := convertYamlpathToRegex(navigateExpr, yamlPos)
 				if rePath != nil {
 					row := 0
 					col := 0
@@ -100,7 +100,8 @@ func CodeNavigate(content string, row, col int, fileType string) *NavigationResu
 						logger.Info("leaf:", entry.LinearKey())
 						if rePath.MatchString(entry.LinearKey()) {
 							logger.Info("match")
-							targetMatch := isValue && dataxform.IAsString(entry.Value()) == targetValue || !isValue && entry.Key() == targetValue
+							entryValue := leafVal(entry, selector)
+							targetMatch := entryValue == targetValue
 							if targetMatch {
 								logger.Info("targetMatch:", entry.LinearKey())
 								row, col = leafPos(entry.LinearKey(), lines)

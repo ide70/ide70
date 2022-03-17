@@ -60,14 +60,6 @@ comp:
             valueCompleter:
               fileNameCompleter:
                 folderPrefix: css
-  privateProperties:
-    descr: Private properties of the component
-    mapHead: yes
-    children:
-      any:
-        descr: Name of property
-        children:
-          descr: Description of property
   unitInterface:
     descr: Component interface available for units
     mapHead: yes
@@ -97,6 +89,32 @@ comp:
               singleToMap: Specifies possibility of extending single key to map head
               mandatory: Display property also on selecting perent
               multilineValue: Creates multi-line content for key
+              type: &propertyType
+                descr: Data type of property (optional)
+                valueCompleter:
+                  dictCompleter:
+                    dictName: builtInDataTypes
+              default: &propertyDefault
+                descr: Default value to initialize with
+                singleToMap: yes
+                children:
+                  externalReference:
+                    descr: take value from external yaml file
+                    mapHead: yes
+                    children:
+                      fileName:
+                        descr: name of external file
+                        valueCompleter:
+                          fileNameCompleter:
+                            folderPrefix: dcfg
+                            trimSuffix: .yaml
+                      key:
+                        descr: key in yaml file
+                        valueCompleter:
+                          yamlPathCompleter:
+                            folderPrefix: dcfg
+                            fileNameExpr: ../fileName
+                            pathExpr: "%:fullKey"
               keyCompleter:
                 descr: Name of completer mechanism producing possible key values
                 mapHead: yes
@@ -188,11 +206,16 @@ comp:
                 descr: Name of completer mechanism producing possible values
                 mapHead: yes
                 children: *completerNames
-              type:
-                descr: Data type of property (optional)
-                valueCompleter:
-                  dictCompleter:
-                    dictName: builtInDataTypes
+  privateProperties:
+    descr: Private properties of the component
+    mapHead: yes
+    children:
+      any:
+        descr: Name of property
+        children:
+          descr: Description of property
+          type: *propertyType
+          default: *propertyDefault
 unit:
   compType:
     descr: Component type

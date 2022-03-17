@@ -1,3 +1,11 @@
+.date-input {
+    width: 10em;
+}
+
+.time-input {
+    width: 4em;
+}
+
 .date-holder {
     position: absolute;
     background-color: pink;

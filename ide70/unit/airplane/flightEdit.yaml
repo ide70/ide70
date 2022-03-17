@@ -27,6 +27,7 @@
     calc: |
       2020 + 1
   endYear: 2033
+  store: departure
 - compType: textbox
   label: Dummy for testing
   cr: textboxDummyForTesting

@@ -2,6 +2,7 @@ package comp
 
 import (
 	"github.com/ide70/ide70/dataxform"
+	"github.com/ide70/ide70/loader"
 	"strings"
 )
 
@@ -31,9 +32,11 @@ func ParseCompDef(def map[string]interface{}, context *UnitDefContext) *CompDef 
 
 	compDef.EventsHandler = ParseEventHandlers(def, compDef.CompType.EventsHandler, context, compDef)
 	
+	parseExternalReferences(def, context, compDef)
 	parseCalcs(def, context, compDef)
 
 	logger.Info("ParseCompDef end")
+	
 	return compDef
 }
 
@@ -45,6 +48,23 @@ func parseCalcs(def map[string]interface{}, context *UnitDefContext, compDef *Co
 					calc := &Calc{Comp: compDef, PropertyKey: entry.Parent().Key(), jsCode: value}
 					logger.Info("calc added:",*calc)
 					context.unitDef.CalcArr = append(context.unitDef.CalcArr, calc)
+				}
+			}
+	})
+}
+
+func parseExternalReferences(def map[string]interface{}, context *UnitDefContext, compDef *CompDef) {
+	dataxform.IApplyFnToNodes(def, func(entry dataxform.CollectionEntry) {
+			if entry.Key() == "externalReference" {
+				props := dataxform.IAsSIMap(entry.Value())
+				if len(props) != 0 {
+					fileName := dataxform.SIMapGetByKeyAsString(props, "fileName")
+					key := dataxform.SIMapGetByKeyAsString(props, "key")
+					// betölteni
+					extConfig := loader.GetTemplatedYaml(fileName, "ide70/dcfg/")
+					value := dataxform.SIMapGetByKeyChain(extConfig.Def, key) 
+					logger.Info("external definition:", key, value)
+					entry.Parent().Update(value)
 				}
 			}
 	})

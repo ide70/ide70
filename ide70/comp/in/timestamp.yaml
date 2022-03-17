@@ -8,6 +8,22 @@ unitInterface:
     endYear:
       descr: End year
       type: int
+    dateFormat:
+      default:
+        externalReference:
+          fileName: ui
+          key: regional.dateFormat
+    timeFormat:
+      default: 
+        externalReference:
+          fileName: ui
+          key: regional.timeFormat
+    value:
+      type: date
+    store:
+      descr: Persistence key
+      valueCompleter:
+        completerRef: dbFieldCompleter
 privateProperties:
   stage:
     descr: Date setting stage
@@ -18,9 +34,11 @@ privateProperties:
   monthSeleced:
     descr: the selected month
     type: string
-  daySeleced:
-    descr: the selected day
-    type: string
+  hourSeleced:
+    descr: the selected hour
+    type: int
+  dateSelected:
+    descr: the selected date object
   stageSelection:
     type: map
   daysTable:
@@ -28,9 +46,17 @@ privateProperties:
   fmtValue:
     descr: Formatted date value
     type: string
+    default: ""
+  fmtTime:
+    descr: Formatted time value
+    type: string
+    default: ""
+  minutes:
+    type: array
 body: |
   <div id="{{.sid}}">
-      <input type="text" value="{{.fmtValue}}" {{eventHandlerJs $.This "onclick" "null"}}></input>
+      <input type="text" class="date-input" value="{{.fmtValue}}" {{eventHandlerJs $.This "onclick" "null"}}></input>
+      <input type="text" class="time-input" value="{{.fmtTime}}" {{eventHandler $.This "onclick" "onclickTime"}}></input>
       <div class="date-holder">
       {{if eq .stage "year"}}
       {{range $v := numRange .startYear .endYear }}
@@ -48,6 +74,16 @@ body: |
         {{if not $v.disabled}}{{eventHandlerWithKey $.This "onclick" "dayPressed" $v.day}}{{end}}>{{$v.day}}</span>
         {{end}}
       {{end}}
+      {{if eq .stage "hour"}}
+        {{range $v := numRange 0 23}}
+        <span class="day-button date-button" {{eventHandlerWithKey $.This "onclick" "hourPressed" $v}}>{{$v}}</span>
+        {{end}}
+      {{end}}
+      {{if eq .stage "minute"}}
+        {{range $v := .minutes}}
+        <span class="day-button date-button" {{eventHandlerWithKey $.This "onclick" "minutePressed" $v}}>{{$v}}</span>
+        {{end}}
+      {{end}}
       </div>
   </div>
 eventHandlers:
@@ -57,6 +93,9 @@ eventHandlers:
   onclick:
     action: |
       CompCtx().SetProp("stage", "year").Refresh();
+  onclickTime:
+    action: |
+      CompCtx().SetProp("stage", "hour").Refresh();
   yearPressed:
     action: |
       CompCtx().SetProp("yearSeleced", Event().EventKey());
@@ -81,12 +120,30 @@ eventHandlers:
       CompCtx().SetProp("stage", "day").Refresh();
   dayPressed:
     action: |
-      CompCtx().SetProp("daySeleced", Event().EventKey());
       var yearSelected = CompCtx().GetProp("yearSeleced");
       var monthSelected = CompCtx().GetProp("monthSeleced");
-      var daySelected = CompCtx().GetProp("daySeleced");
+      var daySelected = Event().EventKey();
       var dateSelected = Api().DateCtx().PureDate(yearSelected, monthSelected, daySelected);
-      CompCtx().SetProp("fmtValue", Api().DateCtx().FormatTime(dateSelected, "yyyy.MM.dd"));
+      CompCtx().SetProp("dateSelected", dateSelected);
+      CompCtx().SetProp("value", dateSelected);
+      CompCtx().SetProp("fmtValue", Api().DateCtx().FormatTime(dateSelected, CompCtx().GetProp("dateFormat")));
+      CompCtx().SetProp("stage", "").Refresh();
+  hourPressed:
+    action: |
+      CompCtx().SetProp("hourSeleced", Event().EventKey());
+      CompCtx().SetProp("minutes", [0,5,10,15,20,25,30,35,40,45,50,55]);
+      CompCtx().SetProp("stage", "minute").Refresh();
+  minutePressed:
+    action: |
+      var minuteSelected = Event().EventKey();
+      var hourSelected = CompCtx().GetProp("hourSeleced");
+      var dateSelected = CompCtx().GetProp("value");
+      if(dateSelected) {
+          dateSelected = Api().DateCtx().SetHour(dateSelected, hourSelected);
+          dateSelected = Api().DateCtx().SetMinute(dateSelected, minuteSelected);
+          CompCtx().SetProp("fmtTime", Api().DateCtx().FormatTime(dateSelected, CompCtx().GetProp("timeFormat")));
+          CompCtx().SetProp("value", dateSelected);
+      }
       CompCtx().SetProp("stage", "").Refresh();
 injectRootComp:
   css:

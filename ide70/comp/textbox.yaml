@@ -2,7 +2,9 @@
 unitInterface:
   descr: Text box with input capability
   properties:
-    value: Initial value
+    value:
+      descr: Initial value
+      default: ""
     readonly: Read only mode
     store:
       descr: Persistence key

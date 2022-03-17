@@ -74,7 +74,10 @@ func (yPos *YamlPosition) getIndexedKey() string {
 		key += fmt.Sprintf("[%d]", yPos.arrayPos)
 	}
 	if !yPos.isArray || yPos.child == nil || yPos.child.isArray {
-		key += "." + yPos.keyPrefix
+		if key != "" {
+			key += "."
+		}
+		key += yPos.keyPrefix
 	}
 	return key
 }

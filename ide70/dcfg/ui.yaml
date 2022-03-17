@@ -1,0 +1,6 @@
+---
+description: UI settings
+regional:
+  dateFormat: "yyyy.MM.dd"
+  timeFormat: "HH:mm"
+  firstDayOfWeek: 1

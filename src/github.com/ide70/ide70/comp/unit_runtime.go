@@ -134,6 +134,7 @@ func (unit *UnitRuntime) CollectStored() map[string]interface{} {
 			dataxform.SIMapUpdateValue(storeKey, comp.State["value"], m, true)
 		}
 	}
+	log.Info("CollectStored:", m)
 	return m
 }
 

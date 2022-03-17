@@ -24,6 +24,29 @@ func (dc *DateCtx) PureDate(yearI, monthI, dayI interface{}) time.Time {
 	return time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 }
 
+func (dc *DateCtx) PureTime(hourI, minuteI, secondI interface{}) time.Time {
+	hour := dataxform.IAsInt(hourI)
+	minute := dataxform.IAsInt(minuteI)
+	second := dataxform.IAsInt(secondI)
+	logger.Info("PureTime", hour,minute,second);
+	return time.Date(0, 1, 1, hour, minute, second, 0, time.UTC)
+}
+
+func (dc *DateCtx) SetSecond(t time.Time, secondI interface{}) time.Time {
+	second := dataxform.IAsInt(secondI)
+	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), second, t.Nanosecond(), t.Location())
+}
+
+func (dc *DateCtx) SetMinute(t time.Time, minuteI interface{}) time.Time {
+	minute := dataxform.IAsInt(minuteI)
+	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), minute, t.Second(), t.Nanosecond(), t.Location())
+}
+
+func (dc *DateCtx) SetHour(t time.Time, hourI interface{}) time.Time {
+	hour := dataxform.IAsInt(hourI)
+	return time.Date(t.Year(), t.Month(), t.Day(), hour, t.Minute(), t.Second(), t.Nanosecond(), t.Location())
+}
+
 func (dc *DateCtx) Parse(layout, value string) time.Time {
 	t, _ := time.Parse(layout, value)
 	return t

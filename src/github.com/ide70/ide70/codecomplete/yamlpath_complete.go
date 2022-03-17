@@ -34,7 +34,7 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 				if rePath.MatchString(entry.LinearKey()) {
 					logger.Info("match")
 					fileName = dataxform.IAsString(entry.Value())
-					logger.Info("fileName:"+ fileName)
+					logger.Info("fileName:" + fileName)
 				}
 			})
 		}
@@ -43,7 +43,7 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 	if fileAsTemplatedYaml != nil {
 		fileData := fileAsTemplatedYaml.IDef
 		logger.Info("pathExpr:", pathExpr)
-		rePath, isValue := convertYamlpathToRegex(pathExpr, yamlPos)
+		rePath, selector := convertYamlpathToRegex(pathExpr, yamlPos)
 		if rePath != nil {
 			treeIterationFn := dataxform.IApplyFn
 			if pathNodes {
@@ -53,7 +53,7 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 				logger.Info("leaf:", entry.LinearKey())
 				if rePath.MatchString(entry.LinearKey()) {
 					logger.Info("match")
-					value := leafVal(entry, isValue)
+					value := leafVal(entry, selector)
 
 					filtered := false
 					if filterExprList != "" {
@@ -95,15 +95,23 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 	return compl
 }
 
-func leafVal(entry dataxform.CollectionEntry, isValue bool) string {
-	if isValue {
+func leafVal(entry dataxform.CollectionEntry, selector string) string {
+	switch selector {
+	case "value":
 		return dataxform.IAsString(entry.Value())
-	} else {
-		return entry.Key()
+	case "fullKey":
+		return entry.LinearKey()
 	}
+	return entry.Key()
 }
 
-func convertYamlpathToRegex(path string, ypos *YamlPosition) (*regexp.Regexp, bool) {
+func convertYamlpathToRegex(path string, ypos *YamlPosition) (*regexp.Regexp, string) {
+	pathTokens := strings.Split(path, ":")
+	selector := "key"
+	if len(pathTokens) > 1 {
+		selector = pathTokens[1]
+	}
+	path = pathTokens[0]
 	levelBack := 0
 	for strings.HasPrefix(path, "../") {
 		path = strings.TrimPrefix(path, "../")
@@ -117,13 +125,9 @@ func convertYamlpathToRegex(path string, ypos *YamlPosition) (*regexp.Regexp, bo
 		absPathTokens := strings.Split(ypos.getIndexedKey(), ".")
 		if len(absPathTokens) < levelBack {
 			logger.Error("relative expr failed")
-			return nil, false
+			return nil, ""
 		}
 		path = strings.Join(absPathTokens[:len(absPathTokens)-levelBack], ".") + "." + path
-	}
-	isValue := strings.HasSuffix(path, ":value")
-	if isValue {
-		path = strings.TrimSuffix(path, ":value")
 	}
 	path = strings.ReplaceAll(path, "%", "\\w+")
 	path = strings.ReplaceAll(path, "*", ".*")
@@ -134,7 +138,7 @@ func convertYamlpathToRegex(path string, ypos *YamlPosition) (*regexp.Regexp, bo
 	re, err := regexp.Compile(path)
 	if err != nil {
 		logger.Error("compiling regex:", err.Error())
-		return nil, false
+		return nil, ""
 	}
-	return re, isValue
+	return re, selector
 }

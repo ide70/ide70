@@ -139,12 +139,16 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 			comp.AccessibleDef[k] = v
 		}
 	}
+	
+	parseDefaultValues(dataxform.SIMapGetByKeyChainAsMap(module.Def, "unitInterface.properties"), comp.AccessibleDef)
+	parseDefaultValues(dataxform.SIMapGetByKeyAsMap(module.Def, "privateProperties"), comp.AccessibleDef)
+	
 	// TODO: list of non-accessible definitions
-	comp.AccessibleDef["eventHandlers"] = module.Def["eventHandlers"]
+	/*comp.AccessibleDef["eventHandlers"] = module.Def["eventHandlers"]
 	comp.AccessibleDef["autoInclude"] = module.Def["autoInclude"]
 	comp.AccessibleDef["css"] = module.Def["css"]
 	comp.AccessibleDef["injectRootComp"] = module.Def["injectRootComp"]
-	comp.AccessibleDef["injectToComp"] = module.Def["injectToComp"]
+	comp.AccessibleDef["injectToComp"] = module.Def["injectToComp"]*/
 
 	comp.Body = createTemplate(body, name, appParams, bodyConsts)
 	if comp.Body == nil {
@@ -156,6 +160,16 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 
 	CompCache[name] = comp
 	return comp
+}
+
+func parseDefaultValues(def map[string]interface{}, dest map[string]interface{}) {
+	dataxform.IApplyFnToNodes(def, func(entry dataxform.CollectionEntry) {
+			if entry.Key() == "default" {
+				parentKey := entry.Parent().LinearKey()
+				dataxform.SIMapUpdateValue(parentKey, entry.Value(), dest, false)
+				logger.Warning("default value", parentKey, entry.Value())
+			}
+	})
 }
 
 func createTemplate(body, name string, appParams *AppParams, bodyConsts map[string]interface{}) *template.Template {

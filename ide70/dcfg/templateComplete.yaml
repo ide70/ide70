@@ -1,5 +1,22 @@
 ---
 methods:
+  eventHandler:
+    descr: Attach event handler to HTML element
+    params:
+      - descr: Current component
+        fixedValue: "$.This"
+      - descr: JS event name
+        valueCompleter:
+          dictCompleter:
+            dictName: htmlEvents
+            quote: '"'
+      - descr: Event handler event name (optional)
+        valueCompleter:
+          yamlPathCompleter:
+            self: yes
+            pathExpr: "eventHandlers.%$"
+            pathNodes: yes
+            quote: '"'
   eventHandlerJs:
     descr: Attach event handler to HTML element
     params:

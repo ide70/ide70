@@ -45,6 +45,8 @@
   - key: del_folder
     title: Remove Folder
     icon: fa fa-times
+  - key: close
+    title: Close
   eventHandlers:
     menu_new_file:
       action: |
@@ -70,6 +72,9 @@
         CompByCr("firstLayer").ForwardEvent("show").LoadUnitInto("ide/removeFolder")
         .AddPassParam("dirName", Event().GetParam("path"))
         .AddPassParam("dirComp", Event().GetParam("dirComp"));
+    menu_close:
+      action: |
+        
 - compType: contextMenu
   cr: fileMenu
   items:

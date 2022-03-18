@@ -33,3 +33,14 @@ bin\ide70.exe
 
 Open [IDE](http://localhost:7080/app/ide/login) or [Sample application](http://localhost:7080/app/airplane/login)
 in your browser and enjoy.
+
+
+### Setup database
+
+Install newest postgres, login as admin (postgres/rootpw) and create ide_70 database as:
+
+```
+create database ide_70;
+create user ide_70 with encrypted password 'ide_70_pwd';
+grant all privileges on database ide_70 to ide_70;
+```

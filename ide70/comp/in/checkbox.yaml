@@ -1,0 +1,18 @@
+---
+unitInterface:
+  properties:
+    value:
+      descr: Checkbox értéke
+      default: false
+    label:
+      descr: Címke
+    store:
+      descr: Persistence key
+      valueCompleter:
+        completerRef: dbFieldCompleter      
+body: |
+  <input type="checkbox" id="{{.sid}}" {{eventHandlerJs $.This "onchange" "this.checked"}}{{if eq .value true}} checked {{end}}/>
+eventHandlers:
+  onchange:
+    action: |
+      CompCtx().SetProp("value", Event().EventKey() == "true" ? true : false);

@@ -1,98 +1,142 @@
 ---
-  functions:
-    "*comp.VmBase":
-      Event:
-        descr: Current event
-      CompByCr:
-        descr: Returns component by its reference
-        params:
-          - name: compReference
-            valueCompleter:
-              yamlPathCompleter:
-                self: yes
-                pathExpr: "[%].cr:value"
-                quote: '"'
-      CompCtx:
-        descr: Retrns current component context
-    "*comp.CompCtx":
-      LoadUnit:
-        descr: Loads an unit
-        params:
-          - name: "unit name"
-            valueCompleter:
-              fileNameCompleter:
-                folderPrefix: unit
-                trimSuffix: .yaml
-                quote: '"'
-      GetProp:
-        descr: Get component property
-        params:
-          - name: "property name"
-            valueCompleter:
-              yamlPathCompleter:
-                self: yes
-                pathExpr: "unitInterface.properties.%$|privateProperties.%$"
-                pathNodes: yes
-                quote: '"'
-      SetProp:
-        descr: Get component property
-        params:
-          - name: "property name"
-            valueCompleter:
-              yamlPathCompleter:
-                self: yes
-                pathExpr: "unitInterface.properties.%$|privateProperties.%$"
-                pathNodes: yes
-                quote: '"'
-          - name: "property value"
-      HasProp:
-        descr: returns true if property defined
-        params:
-          - name: "property name"
-            valueCompleter:
-              yamlPathCompleter:
-                self: yes
-                pathExpr: "unitInterface.properties.%$|privateProperties.%$"
-                pathNodes: yes
-                quote: '"'
-    "*comp.EventRuntime":
-      ReloadUnit:
-        descr: Reloads current unit
-      LoadUnit:
-        descr: Loads an unit
-        params:
-          - name: "unit name"
-            valueCompleter:
-              fileNameCompleter:
-                folderPrefix: unit
-                trimSuffix: .yaml
-                quote: '"'
-      EventKey:
-        descr: Key attached to event
-    "comp.ITable":
-      GroupBy:
-        descr: Rearranges table rows grouping them by col
-        params:
-          - name: "group by column"
-          - name: "groups sublist column"
-    "*store.DatabaseContext":
-      CreateDBO:
-        descr: Creates database object
-        params:
-          - name: "data"
-          - name: "tableName"
-            valueCompleter:
-              fileNameCompleter:
-                folderPrefix: dcfg/schema
-                trimSuffix: .yaml
-                quote: '"'
-    "*api.LoadContext":
-      LoadDictAsMap:
-        descr: Load dictionary as map
-        params:
-          - name: "dictName"
-            valueCompleter:
-              fileNameCompleter:
-                folderPrefix: dcfg/dict
-                trimSuffix: .yaml
-                quote: '"'
+functions:
+  "*comp.VmBase":
+    Event:
+      descr: Current event
+    CompByCr:
+      descr: Returns component by its reference
+      params:
+        - name: compReference
+          valueCompleter:
+            yamlPathCompleter:
+              self: yes
+              pathExpr: "[%].cr:value"
+              quote: '"'
+    CompCtx:
+      descr: Retrns current component context
+  "*comp.CompCtx":
+    LoadUnit:
+      descr: Loads an unit
+      params:
+        - name: "unit name"
+          valueCompleter:
+            fileNameCompleter:
+              folderPrefix: unit
+              trimSuffix: .yaml
+              quote: '"'
+    GetProp:
+      descr: Get component property
+      params: &GetPropParams
+        - name: "property name"
+          valueCompleter:
+            yamlPathCompleter:
+              self: yes
+              pathExpr: "unitInterface.properties.%$|privateProperties.%$"
+              pathNodes: yes
+              quote: '"'
+    GetPropToCast:
+      descr: Get component property for casting to a type
+      params: *GetPropParams
+    SetProp:
+      descr: Get component property
+      params:
+        - name: "property name"
+          valueCompleter:
+            yamlPathCompleter:
+              self: yes
+              pathExpr: "unitInterface.properties.%$|privateProperties.%$"
+              pathNodes: yes
+              quote: '"'
+        - name: "property value"
+    HasProp:
+      descr: returns true if property defined
+      params: &HasPropParams
+        - name: "property name"
+          valueCompleter:
+            yamlPathCompleter:
+              self: yes
+              pathExpr: "unitInterface.properties.%$|privateProperties.%$"
+              pathNodes: yes
+              quote: '"'
+    RemoveProp:
+      descr: removes property
+      params: *HasPropParams
+    AddPassParam:
+      params:
+        - name: "input name"
+          valueCompleter:
+            yamlPathCompleter:
+              fileNameRegex: 'LoadUnit\("([\w\/]+)"\)'
+              folderPrefix: unit
+              pathExpr: "[0].inputs.%$"
+              pathNodes: yes
+              quote: '"'
+    RefreshSubComp:
+      params:
+        - name: "Sub part id"
+          valueCompleter:
+            yamlPathCompleter:
+              self: yes
+              pathExpr: "subParts.%$"
+              quote: '"'
+    AddForwardParam:
+      descr: Attaches parameter to forwarded event for the receiver event handler
+      params:
+        - name: Parameter name
+          valueCompleter:
+            yamlPathCompleter:
+              self: yes
+              pathExpr: "unitInterface.events.%.params.%$"
+              quote: '"'
+        - name: Parameter value
+  "*comp.EventRuntime":
+    ReloadUnit:
+      descr: Reloads current unit
+    LoadUnit:
+      descr: Loads an unit
+      params:
+        - name: "unit name"
+          valueCompleter:
+            fileNameCompleter:
+              folderPrefix: unit
+              trimSuffix: .yaml
+              quote: '"'
+    EventKey:
+      descr: Key attached to event
+    GetParam:
+      descr: Retrns parameter attached to event
+      params:
+        - name: "Attached parameter name"
+          valueCompleter:
+            yamlPathCompleter:
+              folderPrefix: comp
+              fileNameExpr: ../../../compType
+              pathExpr: "unitInterface.events.%.params.%$"
+              quote: '"'
+  "comp.ITable":
+    GroupBy:
+      descr: Rearranges table rows grouping them by col
+      params:
+        - name: "group by column"
+        - name: "groups sublist column"
+  "*store.DatabaseContext":
+    CreateDBO:
+      descr: Creates database object
+      params:
+        - name: "data"
+        - name: "tableName"
+          valueCompleter:
+            fileNameCompleter:
+              folderPrefix: dcfg/schema
+              trimSuffix: .yaml
+              quote: '"'
+  "*api.LoadContext":
+    LoadDictAsMap:
+      descr: Load dictionary as map
+      params:
+        - name: "dictName"
+          valueCompleter:
+            fileNameCompleter:
+              folderPrefix: dcfg/dict
+              trimSuffix: .yaml
+              quote: '"'

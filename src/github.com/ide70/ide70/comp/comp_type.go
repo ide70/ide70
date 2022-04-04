@@ -15,7 +15,7 @@ import "errors"
 const COMP_PATH = "ide70/comp/"
 
 var logger = log.Logger{"comp"}
-var reSubComp = regexp.MustCompile(`<(\w+)[^<>]+\{\{\.sid\}\}(-\w+)`)
+var reSubComp = regexp.MustCompile(`<(\w+)[^<>]+\{\{\.sid\}\}([-\w]+)`)
 var nonAccessibleDefinitions = map[string]bool{"unitInterface": true, "body": true}
 
 // An user defined component
@@ -261,10 +261,14 @@ func EvalComp(comp *CompRuntime) string {
 
 func GenerateEventHandler(comp *CompRuntime, eventTypeCli string, eventTypeSvrOpt ...string) string {
 	eventTypeSvr := eventTypeCli
-	if len(eventTypeSvrOpt) == 1 {
+	jsObjectToPass := "null"
+	if len(eventTypeSvrOpt) >= 1 {
 		eventTypeSvr = eventTypeSvrOpt[0]
 	}
-	return fmt.Sprintf(" %s=\"se(event,'%s',%d,null)\"", eventTypeCli, eventTypeSvr, comp.Sid())
+	if len(eventTypeSvrOpt) >= 2 {
+		jsObjectToPass = eventTypeSvrOpt[1]
+	}
+	return fmt.Sprintf(" %s=\"se(event,'%s',%d,%s)\"", eventTypeCli, eventTypeSvr, comp.Sid(), jsObjectToPass)
 }
 
 func GenerateEventHandlerJs(comp *CompRuntime, eventType, valueJs string) string {

@@ -90,6 +90,11 @@ eventHandlers:
   onUnitCreate:
     action: |
       CompCtx().SetProp("stage", "");
+      var value = CompCtx().GetProp("value");
+      value = Api().DateCtx().AsTime(value);
+      CompCtx().SetProp("value", value);
+      CompCtx().SetProp("fmtValue", Api().DateCtx().FormatTime(value, CompCtx().GetProp("dateFormat")));
+      CompCtx().SetProp("fmtTime", Api().DateCtx().FormatTime(value, CompCtx().GetProp("timeFormat")));
   onclick:
     action: |
       CompCtx().SetProp("stage", "year").Refresh();

@@ -190,7 +190,7 @@ func getFuncNameChain(code string) []string {
 		if strings.HasSuffix(code, ")") {
 			openBracketPos := findOpeningBracket(code, len(code)-1)
 			if openBracketPos != -1 {
-				nameStart := strings.LastIndexAny(code[:openBracketPos], "+-/*.{}=;: \n\t") + 1
+				nameStart := strings.LastIndexAny(code[:openBracketPos], "+-/*.{}=;,(: \n\t") + 1
 				funcName := code[nameStart:openBracketPos]
 				funcNameChain = append([]string{funcName}, funcNameChain...)
 				logger.Info("func name resolved:", funcName)

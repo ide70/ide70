@@ -17,6 +17,11 @@ methods:
             pathExpr: "eventHandlers.%$"
             pathNodes: yes
             quote: '"'
+      - descr: JS value object (optional)
+        valueCompleter:
+          dictCompleter:
+            dictName: htmlJsValueExamples
+            quote: '"'
   eventHandlerJs:
     descr: Attach event handler to HTML element
     params:
@@ -51,6 +56,22 @@ methods:
             quote: '"'
       - descr: Key to pass to event handler, arbitary string
         fixedValue: '""'
+  generateComp:
+    descr: Inject sub-component by cloning source component
+    params:
+      - descr: Current component
+        fixedValue: "$.This"
+      - descr: Source component reference
+        valueCompleter:
+          templateCompleter:
+            filters:
+              type: string
+      - descr: Unique id among sub components
+        valueCompleter:
+          templateCompleter:
+      - descr: Context attached to sub component
+        valueCompleter:
+          templateCompleter:
   range:
     closeTag: end
     descr: loop over array/map

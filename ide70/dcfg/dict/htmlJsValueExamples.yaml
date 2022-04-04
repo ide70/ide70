@@ -3,5 +3,7 @@ descr: HTML Js Example values for event handling
 items:
   - code: this.value
     descr: Value of current html tag
+  - code: this.checked
+    descr: Value of checked property (checkbox)
   - code: "null"
     descr: No value to pass

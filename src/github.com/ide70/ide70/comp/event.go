@@ -3,10 +3,10 @@ package comp
 import (
 	"fmt"
 	"github.com/ide70/ide70/api"
-	"github.com/ide70/ide70/store"
 	"github.com/ide70/ide70/util/file"
 	"github.com/ide70/ide70/util/log"
 	"github.com/robertkrimen/otto"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -61,7 +61,8 @@ type CompEventHandler struct {
 }
 
 type EventHandler struct {
-	JsCode string
+	JsCode      string
+	PropertyKey string
 }
 
 type EventRuntime struct {
@@ -307,6 +308,12 @@ func (cSW *CompCtx) SetProp(key string, value interface{}) *CompCtx {
 	return cSW
 }
 
+func (cSW *CompCtx) RemoveProp(key string) *CompCtx {
+	delete(cSW.c.State, key)
+	eventLogger.Info("property", key, "removed")
+	return cSW
+}
+
 func (cSW *CompCtx) CreateMapProp(key string) *CompCtx {
 	cSW.c.State[key] = map[string]interface{}{}
 	return cSW
@@ -326,6 +333,14 @@ func (cSW *CompCtx) Props() api.SIMap {
 
 func (c *CompRuntime) GetProp(key string) interface{} {
 	return c.State[key]
+}
+
+func (cSW *CompCtx) GetPropToCast(key string) api.Interface {
+	return api.Interface{I:cSW.c.State[key]}
+}
+
+func (cSW *CompCtx) ParentContext() api.Interface {
+	return api.Interface{I: cSW.Comp().GetProp("parentContext")}
 }
 
 func (cSW *CompCtx) ApplyToParent() *CompCtx {
@@ -607,7 +622,7 @@ func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 		eventVal, _ := vm.Get("currentEvent")
 		eventIf, _ := eventVal.Export()
 		event := eventIf.(*EventRuntime)
-		co,_ := vm.ToValue(&CompCtx{c: event.Comp, event: event})
+		co, _ := vm.ToValue(&CompCtx{c: event.Comp, event: event})
 		return co
 	})
 	vm.Set("Api", func(call otto.FunctionCall) otto.Value {
@@ -671,7 +686,12 @@ func newEventHandler() *EventHandler {
 }
 
 func (eh *EventHandler) processEvent(e *EventRuntime) {
-	e.UnitRuntime.EventsHandler.runJs(e, eh.JsCode)
+	calcResult := e.UnitRuntime.EventsHandler.runJs(e, eh.JsCode)
+	if eh.PropertyKey != "" {
+		logger.Info("calc result for", eh.PropertyKey, "is", calcResult, "type:", reflect.TypeOf(calcResult))
+		e.Comp.State[eh.PropertyKey] = calcResult
+		logger.Info("calc result done");
+	}
 }
 
 func (eh *UnitRuntimeEventsHandler) runJs(e *EventRuntime, jsCode string) interface{} {
@@ -701,7 +721,7 @@ func (eh *UnitRuntimeEventsHandler) runJs(e *EventRuntime, jsCode string) interf
 	return valueIf
 }
 
-func (er *EventRuntime) DBCtx() *store.DatabaseContext {
+func (er *EventRuntime) DBCtx() *api.DatabaseContext {
 	return er.UnitRuntime.Application.Connectors.MainDB
 }
 
@@ -721,6 +741,10 @@ func (unit *UnitCtx) CollectStored() api.SIMap {
 	return unit.unit.CollectStored()
 }
 
-func (unit *UnitCtx) InitializeStored(data api.SIMap)  {
+func (unit *UnitCtx) InitializeStored(data api.SIMap) {
 	unit.unit.InitializeStored(data)
+}
+
+func (unit *UnitCtx) GetPassParams() api.SIMap {
+	return unit.unit.PassContext.Params
 }

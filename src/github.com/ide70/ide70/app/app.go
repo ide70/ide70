@@ -3,7 +3,6 @@ package app
 import (
 	"bytes"
 	"github.com/ide70/ide70/dataxform"
-	"github.com/ide70/ide70/store"
 	"github.com/ide70/ide70/user"
 	"github.com/ide70/ide70/util/file"
 	"github.com/ide70/ide70/util/log"
@@ -29,7 +28,7 @@ type Application struct {
 }
 
 type Connectors struct {
-	MainDB      *store.DatabaseContext
+	MainDB      *api.DatabaseContext
 	FileContext *file.FileContext
 	LoadContext *api.LoadContext
 }
@@ -72,7 +71,7 @@ func LoadApplication(configFileName string) *Application {
 		connectors := dataxform.SIMapGetByKeyAsMap(app.Config, "connectors")
 		mainDB := dataxform.SIMapGetByKeyAsMap(connectors, "mainDB")
 		if len(mainDB) > 0 {
-			app.Connectors.MainDB = &store.DatabaseContext{}
+			app.Connectors.MainDB = &api.DatabaseContext{}
 			app.Connectors.MainDB.Host = dataxform.SIMapGetByKeyAsString(mainDB, "host")
 			app.Connectors.MainDB.Port = dataxform.SIMapGetByKeyAsInt(mainDB, "port")
 			app.Connectors.MainDB.DBName = dataxform.SIMapGetByKeyAsString(mainDB, "dbName")

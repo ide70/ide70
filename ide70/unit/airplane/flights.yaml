@@ -18,5 +18,15 @@
       key: departure
     - header: Destination
       key: destination
+    - header: Action
+      items:
+        - cr: buttonEdit
   dbTableName: flight
   cr: flightsData
+- compType: button
+  text: Edit
+  eventHandlers:
+    onclick:
+      action: |
+        CompCtx().LoadUnit("airplane/flightEdit").AddPassParam("flightId", CompCtx().ParentContext().AsMap().GetDbId());
+  cr: buttonEdit

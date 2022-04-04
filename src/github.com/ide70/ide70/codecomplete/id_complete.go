@@ -53,7 +53,7 @@ func firstMatchValue(expr string, yamlPos *YamlPosition, data interface{}) strin
 		logger.Info("leaf:", entry.LinearKey())
 		if re.MatchString(entry.LinearKey()) {
 			logger.Info("match")
-			value = leafVal(entry, isValue)
+			value,_ = leafValDescr(entry, isValue)
 			entry.Stop()
 		}
 	})

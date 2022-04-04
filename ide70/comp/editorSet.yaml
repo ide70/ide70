@@ -34,7 +34,7 @@ eventHandlers:
   beforeCompRefresh:
     action: |
       common_log("---component-refresh");
-      var edGroups = CompByCr("").Props().Get("editors").AsMap().KeyList().Sort().ToTable("key").
+      var edGroups = CompByCr("").Props().GetForConvert("editors").AsMap().KeyList().Sort().ToTable("key").
       ProcessContext().
       Get("key").AsStr().Token(1, "/").Set("group").
       Get("key").AsStr().FromToken(2, "/").Set("name").Process().

@@ -1,4 +1,4 @@
-package store
+package api
 
 import (
 	"encoding/json"
@@ -182,7 +182,7 @@ type ColumnOrder struct {
 }
 
 //func (dbCtx *DatabaseContext) WorksheetFindItemsPage(tableName string, allFilters map[string]*FilterTag, offset, pageSize int, orders []*ColumnOrder) []interface{} {
-func (dbCtx *DatabaseContext) WorksheetFindItemsPage(tableName string, offset, pageSize int) []interface{} {
+func (dbCtx *DatabaseContext) WorksheetFindItemsPage(tableName string, offset, pageSize int) ITable {
 	ensureTable(dbCtx, tableName)
 	//	filters := getFilterGroups(allFilters)
 	db := dbCtx.getConnection()
@@ -213,7 +213,7 @@ func (dbCtx *DatabaseContext) WorksheetFindItemsPage(tableName string, offset, p
 		return nil
 	}
 
-	datas := []interface{}{}
+	datas := ITable{}
 	for rows.Next() {
 		var id int64
 		var dataStr string

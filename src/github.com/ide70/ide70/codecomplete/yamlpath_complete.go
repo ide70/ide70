@@ -13,9 +13,10 @@ import (
 func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
 	folderPrefix := dataxform.SIMapGetByKeyAsString(configData, "folderPrefix")
 	fileNameExpr := dataxform.SIMapGetByKeyAsString(configData, "fileNameExpr")
+	fileNameRegex := dataxform.SIMapGetByKeyAsString(configData, "fileNameRegex")
 	fileName := dataxform.SIMapGetByKeyAsString(configData, "fileName")
 	pathExpr := dataxform.SIMapGetByKeyAsString(configData, "pathExpr")
-	pathNodes := dataxform.SIMapGetByKeyAsBoolean(configData, "pathNodes")
+	pathNodes := dataxform.SIMapGetByKeyAsBoolean(configData, "pathNodes") 
 	filterExprList := dataxform.SIMapGetByKeyAsString(configData, "filterExpr")
 	self := dataxform.SIMapGetByKeyAsBoolean(configData, "self")
 	convertMapDescr := dataxform.SIMapGetByKeyAsString(configData, "convertMapDescr")
@@ -24,6 +25,24 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 	if self {
 		fileAsTemplatedYaml = loader.ConvertTemplatedYaml([]byte(edContext.content), "self")
 	} else {
+		if fileNameRegex != "" {
+			reFileName, err := regexp.Compile(fileNameRegex)
+			if err != nil {
+				logger.Error("invalid regex:", err.Error())
+				return compl
+			}
+			matches := reFileName.FindAllStringSubmatch(yamlPos.valuePrefx, -1)
+			if len(matches) == 0 {
+				return compl
+			}
+			lastMatch := matches[len(matches)-1]
+			if len(lastMatch) > 1 {
+				fileName = lastMatch[1]
+			} else {
+				fileName = lastMatch[0]
+			}
+			logger.Info("fileName:" + fileName)
+		}
 		if fileNameExpr != "" {
 			selfAsTemplatedYaml := loader.ConvertTemplatedYaml([]byte(edContext.content), "self")
 			selfData := selfAsTemplatedYaml.IDef
@@ -52,24 +71,29 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 			treeIterationFn(fileData, func(entry dataxform.CollectionEntry) {
 				logger.Info("leaf:", entry.LinearKey())
 				if rePath.MatchString(entry.LinearKey()) {
-					logger.Info("match")
-					value := leafVal(entry, selector)
+					value, descr := leafValDescr(entry, selector)
+					logger.Info("match val:", value)
+					logger.Info("match descr:", descr)
 
 					filtered := false
 					if filterExprList != "" {
-						logger.Info("filterExpr:", filterExprList)
+						logger.Info("filterExprList:", filterExprList)
 						filterExprArr := strings.Split(filterExprList, "|")
 						for _, filterExpr := range filterExprArr {
 							reFilterExpr, isFilterValue := convertYamlpathToRegex(filterExpr, yamlPos)
+							logger.Info("filterExpr:", filterExpr)
 							if reFilterExpr != nil {
+								logger.Info("examine nodes")
 								dataxform.IApplyFnToNodes(fileData, func(entry dataxform.CollectionEntry) {
+										logger.Info("lin key:", entry.LinearKey())
 									if reFilterExpr.MatchString(entry.LinearKey()) {
-										filterValue := leafVal(entry, isFilterValue)
+										filterValue, _ := leafValDescr(entry, isFilterValue)
 										if value == filterValue {
 											filtered = true
 										}
 									}
 								})
+								logger.Info("examine nodes done")
 							}
 						}
 					}
@@ -83,7 +107,11 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 							logger.Info("filtered:", value)
 							return
 						}
-						compl = addCompletion(value, edContext, configData, compl)
+						actconfigData := dataxform.SIMapLightCopy(configData)
+						if descr != "" {
+							actconfigData["descr"] = descr
+						}
+						compl = addCompletion(value, edContext, actconfigData, compl)
 					}
 				}
 			})
@@ -95,14 +123,22 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 	return compl
 }
 
-func leafVal(entry dataxform.CollectionEntry, selector string) string {
+func leafValDescr(entry dataxform.CollectionEntry, selector string) (string, string) {
 	switch selector {
 	case "value":
-		return dataxform.IAsString(entry.Value())
+		return dataxform.IAsString(entry.Value()), ""
 	case "fullKey":
-		return entry.LinearKey()
+		return entry.LinearKey(), valueToDescr(entry.Value())
 	}
-	return entry.Key()
+	return entry.Key(), valueToDescr(entry.Value())
+}
+
+func valueToDescr(value interface{}) string {
+	valueStr := dataxform.IAsString(value)
+	if valueStr != "" {
+		return valueStr
+	}
+	return dataxform.SIMapGetByKeyAsString(dataxform.IAsSIMap(value), "descr")
 }
 
 func convertYamlpathToRegex(path string, ypos *YamlPosition) (*regexp.Regexp, string) {

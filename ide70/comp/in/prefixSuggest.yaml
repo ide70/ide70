@@ -1,0 +1,59 @@
+---
+unitInterface:
+  descr: Suggest results in dropdown box as user type letters
+  events:
+    filter:
+      descr: Logic that collects search results
+      params:
+        searchPrefix: The search prefix that the user typed in
+    select: Logic that processes selected item
+  properties:
+    label:
+      descr: Label
+privateProperties:
+  resultSet:
+    descr: Result of user's current search expression
+    type: array
+  selectedRow:
+    descr: Selected item
+    type: map
+subParts: 
+  options: Table of selectable options
+body: |
+  <div id="{{.sid}}">
+    <input class="suggest-input" type="text" id="{{.sid}}-typein" {{eventHandler $.This "onkeypress" "preFilter" "this.value + event.key"}}></input>
+    <div class="suggest-holder" id="{{.sid}}options">
+      <table class="suggest-table">
+      {{range $rowIdx,$resultRow := .resultSet}}
+        <tr class="suggest-row" {{eventHandlerWithKey $.This "onclick" "preSelect" $rowIdx}}>
+          {{range $k,$resultCell := $resultRow}}
+          <td>
+          {{$resultCell}}
+          </td>
+          {{end}}
+        </tr>
+      {{end}}
+      </table>
+    </div>
+  </div>
+eventHandlers:
+  preFilter:
+    action: |
+      CompCtx().ForwardEvent("filter").AddForwardParam("searchPrefix",Event().EventKey()).RefreshSubComp("options");
+  filter:
+    action: |
+      Api().Logger().Info("key typed");
+    propertyKey: resultSet
+  preSelect:
+    action: |
+      var resultSet = CompCtx().GetPropToCast("resultSet").AsITable();
+      var selectedRow = resultSet.Get(Event().EventKey());
+      CompCtx().SetProp("selectedRow", selectedRow);
+      CompCtx().RemoveProp("resultSet");
+      CompCtx().ForwardEvent("select").RefreshSubComp("options");
+  select:
+    action: |
+      Api().Logger().Info("item selected");
+injectRootComp:
+  css:
+    - name: comp/suggest.css

@@ -2,13 +2,17 @@
 - compType: page
   tree:
     - labeledTable:
-        - textboxFlightID
-        - inSelectionDestination
-        - inTimestampDeparture
-        - textboxDummyForTesting
-        - buttonSave
+      - textboxFlightID
+      - inSelectionDestination
+      - inTimestampDeparture
+      - textboxDummyForTesting
+      - inPrefixSuggestSuggestTest  
+      - buttonSave
+  inputs:
+    flightId: Id of flight database entity
 - compType: hlp/dbhelper
   tableName: flight
+  dbIdInputName: flightId
 - compType: labeledTable
   cr: labeledTable
 - compType: textbox
@@ -28,6 +32,18 @@
       2020 + 1
   endYear: 2033
   store: departure
+- compType: in/prefixSuggest
+  eventHandlers:
+    filter: 
+      action: |
+        Api().Logger().Info("searchPrefix:", Event().GetParam("searchPrefix"));
+        var crit = Api().Arrays().Like(Event().GetParam("searchPrefix"));
+        Api().Arrays().NewITableW().AddCol("code", "C1").AddCol("descr", "alma")
+        .AddEmptyRow().AddCol("code", "C2").AddCol("descr", "körte")
+        .AddEmptyRow().AddCol("code", "C3").AddCol("descr", "almamoly")
+        .Finalize().FilterColumn("descr", crit);
+  label: SuggestTest
+  cr: inPrefixSuggestSuggestTest
 - compType: textbox
   label: Dummy for testing
   cr: textboxDummyForTesting

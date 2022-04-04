@@ -100,7 +100,7 @@ func CodeNavigate(content string, row, col int, fileType string) *NavigationResu
 						logger.Info("leaf:", entry.LinearKey())
 						if rePath.MatchString(entry.LinearKey()) {
 							logger.Info("match")
-							entryValue := leafVal(entry, selector)
+							entryValue,_ := leafValDescr(entry, selector)
 							targetMatch := entryValue == targetValue
 							if targetMatch {
 								logger.Info("targetMatch:", entry.LinearKey())

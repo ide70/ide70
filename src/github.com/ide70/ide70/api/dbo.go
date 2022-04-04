@@ -1,4 +1,4 @@
-package store
+package api
 
 import (
 	"github.com/ide70/ide70/dataxform"
@@ -28,6 +28,10 @@ func (dbCtx *DatabaseContext) FindDBO(tableName string, key int64) *DataBaseObje
 	}
 	dbo := &DataBaseObject{dbCtx: dbCtx, Data: data, TableName: tableName, Key: &DataBaseObjectKey{Value: key}}
 	return dbo
+}
+
+func (dbo *DataBaseObject) GetData() SIMap{
+	return dbo.Data
 }
 
 func (dbo *DataBaseObject) UpdateData(data map[string]interface{}) {

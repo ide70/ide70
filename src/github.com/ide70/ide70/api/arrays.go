@@ -1,6 +1,10 @@
 package api
 
-import ()
+import (
+"github.com/ide70/ide70/dataxform"
+	"regexp"
+	"strings"
+)
 
 type Arrays struct {
 }
@@ -8,6 +12,15 @@ type Arrays struct {
 type ITableW struct {
 	t ITable
 }
+
+type Criterion interface {
+	isTrue(i interface {}) bool
+}
+
+type Like struct {
+	re *regexp.Regexp
+}
+
 
 func (a *API) Arrays() *Arrays {
 	return &Arrays{}
@@ -38,4 +51,33 @@ func ensureRow(tw *ITableW) int {
 func (tw *ITableW) Finalize() ITable {
 	logger.Info("finalize, length:", len(tw.t))
 	return tw.t
+}
+
+func (t ITable) FilterColumn(column string, criterion Criterion) ITable{
+	res := ITable{}
+	for _,m := range t {
+		if criterion.isTrue(m[column]) {
+			res = append(res, m)
+		}
+	}
+	return res
+}
+
+func (as *Arrays) Like(like string) Criterion {
+	return Like{re: convertLikeToRegex(like)}
+}
+
+func (l Like) isTrue(i interface{}) bool {
+	s := dataxform.IAsString(i)
+	return l.re.MatchString(s)
+}
+
+func convertLikeToRegex(like string) *regexp.Regexp {
+	like = strings.ReplaceAll(like, "%", "\\w+")
+	re, err := regexp.Compile(like)
+	if err != nil {
+		logger.Error("compiling regex:", err.Error())
+		return regexp.MustCompile("$a")
+	}
+	return re
 }

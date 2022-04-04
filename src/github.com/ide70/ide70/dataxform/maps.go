@@ -177,6 +177,7 @@ func IAsSIMap(i interface{}) map[string]interface{} {
 	if i == nil {
 		return map[string]interface{}{}
 	}
+	
 	switch iT := i.(type) {
 	case map[string]interface{}:
 		return iT

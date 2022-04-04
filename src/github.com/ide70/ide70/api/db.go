@@ -1,13 +1,10 @@
-package store
+package api
 
 import (
 	"database/sql"
 	"fmt"
-	"github.com/ide70/ide70/util/log"
 	_ "github.com/lib/pq"
 )
-
-var logger = log.Logger{"store"}
 
 type DatabaseContext struct {
 	Host     string

@@ -3,7 +3,7 @@ package comp
 import (
 	"github.com/ide70/ide70/app"
 	"github.com/ide70/ide70/dataxform"
-	"github.com/ide70/ide70/store"
+	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/util/log"
 	"io"
 	"reflect"
@@ -60,6 +60,9 @@ func InstantiateUnit(name string, app *app.Application, appParams *AppParams, pa
 
 	unitRuntime.UnitDef = unitDef
 	unitRuntime.RootComp = InstantiateComp(unitDef.RootComp, unitRuntime)
+	for _, comp := range unitDef.UnattachedComps {
+		InstantiateComp(comp, unitRuntime)
+	} 
 	unitRuntime.EventsHandler = newUnitRuntimeEventsHandler(unitRuntime)
 	
 	unitRuntime.initialCalcs()
@@ -144,11 +147,12 @@ func (unit *UnitRuntime) InitializeStored(data map[string]interface{}) {
 		if storeKey != "" {
 			comp.State["value"] =
 				dataxform.SICollGetNode(storeKey, data)
+				log.Info("datamap vt:", reflect.TypeOf(comp.State["value"]), storeKey)
 		}
 	}
 }
 
-func (unit *UnitRuntime) DBContext() *store.DatabaseContext {
+func (unit *UnitRuntime) DBContext() *api.DatabaseContext {
 	return unit.Application.Connectors.MainDB
 }
 

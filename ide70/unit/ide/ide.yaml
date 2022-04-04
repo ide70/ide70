@@ -27,7 +27,7 @@
     onclick:
       action: |
         common_log("dropping: "+Event().ParentContext());
-        CompByCr("editorSet").Props().Get("editors").AsMap().Delete(Event().ParentContext());
+        CompByCr("editorSet").Props().GetForConvert("editors").AsMap().Delete(Event().ParentContext());
         common_log("done 1");
         CompByCr("editorSet").RefreshSubComp("-tabs");
         CompByCr("editorSet").SubCompFuncExecute("edblk", "drop", Event().ParentContext());

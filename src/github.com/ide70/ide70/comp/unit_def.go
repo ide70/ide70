@@ -20,6 +20,7 @@ type Calc struct {
 type UnitDef struct {
 	RootComp      *CompDef
 	CompsMap      map[string]*CompDef
+	UnattachedComps []*CompDef
 	EventsHandler *UnitDefEventsHandler
 	Name          string
 	CalcArr		[]*Calc
@@ -126,6 +127,9 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 		}
 
 	}
+	
+	attachedCompMap := map[string]*CompDef{}
+	attachedCompMap[unit.RootComp.ChildRefId()] = unit.RootComp
 
 	for _, comp := range unit.CompsMap {
 		if comp.Props["children"] == nil {
@@ -149,6 +153,7 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 			} else {
 				comp.Children = append(comp.Children, childDef)
 				logger.Info("child add:", childDef)
+				attachedCompMap[childRef] = childDef
 			}
 		}
 	}
@@ -156,33 +161,41 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 	childrenIf := unit.RootComp.Props["tree"]
 	logger.Info("tree scruct:", childrenIf)
 	if childrenIf != nil {
-		processCompTree(unit, unit.RootComp, dataxform.IAsArr(childrenIf))
+		processCompTree(unit, unit.RootComp, dataxform.IAsArr(childrenIf), attachedCompMap)
+	}
+	
+	for cr, comp := range unit.CompsMap {
+		if attachedCompMap[cr] == nil {
+			unit.UnattachedComps = append(unit.UnattachedComps, comp)
+			logger.Info("unattached:", cr)
+		}
 	}
 
 	return unit
 }
 
-func registerChild(unit *UnitDef, comp *CompDef, childRef string) *CompDef {
+func registerChild(unit *UnitDef, comp *CompDef, childRef string, attachedCompMap map[string]*CompDef) *CompDef {
 	childDef := unit.CompsMap[childRef]
 	if childDef == nil {
 		logger.Error("tree: childRef not found:", childRef)
 		return nil
 	} else {
 		comp.Children = append(comp.Children, childDef)
+		attachedCompMap[childRef] = childDef
 		return childDef
 	}
 }
 
-func processCompTree(unit *UnitDef, comp *CompDef, children []interface{}) {
+func processCompTree(unit *UnitDef, comp *CompDef, children []interface{}, attachedCompMap map[string]*CompDef) {
 	for _, child := range children {
 		switch Tchild := child.(type) {
 		case string:
-			registerChild(unit, comp, Tchild)
+			registerChild(unit, comp, Tchild, attachedCompMap)
 		case map[string]interface{}:
 			for childRef, subNode := range Tchild {
-				childComp := registerChild(unit, comp, childRef)
+				childComp := registerChild(unit, comp, childRef, attachedCompMap)
 				if childComp != nil {
-					processCompTree(unit, childComp, dataxform.IAsArr(subNode))
+					processCompTree(unit, childComp, dataxform.IAsArr(subNode), attachedCompMap)
 				}
 			}
 		}

@@ -33,7 +33,7 @@ eventHandlers:
   onUnitCreate:
     action: |
       var dictionaryFile = Event().CurrentComp().GetProp("dictionaryFile");
-      var items = Event().LoadCtx().LoadYamlAsMap(dictionaryFile, "dcfg/dict").Get("items").AsArray();
+      var items = Event().LoadCtx().LoadYamlAsMap(dictionaryFile, "dcfg/dict").GetForConvert("items").AsArray();
       Event().CurrentComp().SetProp("dictionary", items);
       if(!Event().CurrentComp().HasProp("value")) {
             Event().CurrentComp().SetProp("value", items[0].code);

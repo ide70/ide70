@@ -36,11 +36,23 @@ type Interface struct {
 }
 
 func (i Interface) AsMap() SIMap {
+	switch iT := i.I.(type) {
+	case SIMap:
+		return iT
+	}
 	return dataxform.IAsSIMap(i.I)
 }
 
 func (i Interface) AsArray() IArray {
 	return dataxform.IAsArr(i.I)
+}
+
+func (i Interface) AsITable() ITable {
+	switch iT := i.I.(type) {
+	case ITable:
+		return iT
+	}
+	return ITable{}
 }
 
 func (i Interface) AsString() string {
@@ -61,11 +73,22 @@ func (m SIMap) Put(key string, value interface{}) {
 	m[key] = value
 }
 
-func (m SIMap) Get(key string) Interface {
+func (m SIMap) GetForConvert(key string) Interface {
 	if m == nil {
 		return Interface{nil}
 	}
 	return Interface{m[key]}
+}
+
+func (m SIMap) Get(key string) interface{} {
+	if m == nil {
+		return nil
+	}
+	return m[key]
+}
+
+func (m SIMap) GetDbId() interface{} {
+	return m.Get("_id")
 }
 
 func (m SIMap) KeyList() IArray {
@@ -99,6 +122,14 @@ func (a IArray) PrintDBG() {
 
 func (t ITable) PrintDBG() {
 	logger.Info("ITable:", t)
+}
+
+func (t ITable) Get(idxIf interface{}) SIMap {
+	idx := dataxform.IAsInt(idxIf)
+	if idx<0 || idx>= len(t) {
+		return SIMap{}
+	}
+	return t[idx]
 }
 
 func (a IArray) ToTable(dstCol string) ITable {

@@ -1,4 +1,4 @@
-package store
+package api
 
 import (
 	"github.com/ide70/ide70/dataxform"

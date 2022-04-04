@@ -20,6 +20,12 @@ unitInterface:
               pathExpr: "[%].cr:value"
               filterExpr: "[0].tree[%]*|[0].tree[%]*:value"
               convertMapDescr: Add children to this component
+    inputs:
+      descr: Unit inputs
+      mapHead: yes
+      children:
+        any:
+          descr: Name and description of input
     css:
         descr: Extra CSSes to include
         mapHead: yes

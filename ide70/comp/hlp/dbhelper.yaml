@@ -1,3 +1,22 @@
 ---
 unitInterface:
   descr: DB helper
+  properties:
+    dbIdInputName:
+      descr: Name of input parameter holding database entity id
+    tableName:
+      descr: Name of database table
+eventHandlers:
+  onUnitCreate:
+    action: |
+      var dbIdInputName = CompCtx().GetProp("dbIdInputName");
+      var dbTableName = CompCtx().GetProp("tableName");
+      Api().Logger().Info("passParams", Event().GetUnit().GetPassParams());
+      var dbId = Event().GetUnit().GetPassParams().Get(dbIdInputName);
+      Api().Logger().Info("dbId", dbId);
+      if(dbId) {
+            var dbo = Event().DBCtx().FindDBO(dbTableName, dbId);
+            if(dbo) {
+                Event().GetUnit().InitializeStored(dbo.GetData());
+            }
+      }

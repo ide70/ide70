@@ -90,6 +90,7 @@ func ParseEventHandlers(def map[string]interface{}, superEventsHandler *CompDefE
 		eventAction := dataxform.SIMapGetByKeyAsString(eventProps, "action")
 		eventHandler := newEventHandler()
 		eventHandler.JsCode = eventAction
+		eventHandler.PropertyKey = dataxform.SIMapGetByKeyAsString(eventProps, "propertyKey")
 		eventsHandler.AddHandler(eventType, eventHandler)
 	}
 	//logger.Info("eventsHandler created:", eventsHandler)

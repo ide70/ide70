@@ -438,6 +438,10 @@
   - name: id
     scope: all
     descr: Often used with CSS to style a specific element. The value of this attribute must be unique.
+    valueCompleter:
+      yamlPathCompleter:
+        self: yes
+        pathExpr: "subParts.%$"
   - name: importance 
     scope: [iframe, img, link, script]
     descr: Indicates the relative fetch priority for the resource.

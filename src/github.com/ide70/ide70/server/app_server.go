@@ -436,8 +436,14 @@ func (s *AppServer) handleEvent(sess *comp.Session, unit *comp.UnitRuntime, wr h
 }
 
 func (s *AppServer) renderComp(unit *comp.UnitRuntime, w http.ResponseWriter, r *http.Request) {
-	compIdStrs := strings.Split(r.FormValue(paramCompID), "-")
-	compId, err := strconv.ParseInt(compIdStrs[0], 10, 64)
+	compIdStr := r.FormValue(paramCompID)
+	//compIdStrs := strings.Split(r.FormValue(paramCompID), "-")
+	
+	subpartName := strings.TrimLeft(compIdStr, "0123456789")
+	if subpartName != "" {
+		compIdStr = strings.TrimSuffix(compIdStr, subpartName)
+	}
+	compId, err := strconv.ParseInt(compIdStr, 10, 64)
 	if err != nil {
 		logger.Error("Invalid component id")
 		http.Error(w, "Invalid component id!", http.StatusBadRequest)
@@ -454,10 +460,10 @@ func (s *AppServer) renderComp(unit *comp.UnitRuntime, w http.ResponseWriter, r 
 	logger.Info("event, component found:", c.ChildRefId())
 	
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8") // We send it as text!
-	if len(compIdStrs) < 2 {
+	if subpartName == "" {
 		c.Render(w)
 	} else {
-		c.RenderSub("-"+compIdStrs[1], w)
+		c.RenderSub(subpartName, w)
 	}
 }
 

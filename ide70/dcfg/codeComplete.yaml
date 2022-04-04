@@ -20,6 +20,13 @@ comp:
               jsCompleter:
                 configFile: jsCompleterConfig
                 multilineValue: yes
+          propertyKey:
+            descr: Set result to component property
+            valueCompleter:
+              yamlPathCompleter:
+                self: yes
+                pathExpr: "unitInterface.properties.%$|privateProperties.%$"
+                pathNodes: yes
       onchange:
         descr: onchange event
         mapHead: yes
@@ -146,6 +153,8 @@ comp:
                             foldersOnly: yes
                       fileNameExpr:
                         descr: absolute or relative yaml path for suggest file name
+                      fileNameRegex:
+                        descr: regex for filename, returns nearest match to cursor position
                       fileName:
                         descr: name of the file to suggest from
                       self:
@@ -206,6 +215,21 @@ comp:
                 descr: Name of completer mechanism producing possible values
                 mapHead: yes
                 children: *completerNames
+      events:
+        descr: Events that the component emittting
+        mapHead: yes
+        children:
+          any:
+            descr: Name of event
+            mapHead: yes
+            children:
+              descr: Description of event
+              params:
+                descr: Parameters passed to event
+                mapHead: yes
+                children:
+                  any:
+                    descr: Description of event parameter
   privateProperties:
     descr: Private properties of the component
     mapHead: yes
@@ -216,6 +240,13 @@ comp:
           descr: Description of property
           type: *propertyType
           default: *propertyDefault
+  subParts:
+    descr: Parts inside component we want to refresh separately
+    children:
+      any:
+        descr: Sub part id
+        children:
+          descr: Description of sub part
 unit:
   compType:
     descr: Component type
@@ -248,7 +279,25 @@ unit:
           idCompleter:
             srcExpr1: ../compType:value
             srcExpr2: ../(label|text|title):value
-      eventHandlers: *comp_event_handlers
+      eventHandlers:
+        descr: Event handlers
+        mapHead: yes
+        children:
+          any:
+            descr: Event code
+            keyCompleter:
+              yamlPathCompleter:
+                folderPrefix: comp
+                fileNameExpr: ../../compType
+                pathExpr: "unitInterface.events.%$"
+            children:
+              action:
+                descr: JS code to execute
+                multilineValue: yes
+                valueCompleter:
+                  jsCompleter:
+                    configFile: jsCompleterConfig
+                    multilineValue: yes
 dcfg/dict:
   descr:
     descr: Dictionary description
@@ -283,6 +332,33 @@ dcfg/dict:
                 children:
                   fixedValue:
                     descr: Assing fixed value to parameter
+                  valueCompleter:
+                    descr: Completer for parameter value
+                    mapHead: yes
+                    children: *completerNames
+"dcfg/jsCompleterConfig.yaml":
+  functions:
+    descr: API functions signatures and completers configuration
+    mapHead: yes
+    children:
+      any:
+        descr: Base type name
+        mapHead: yes
+        quote: '"'
+        children:
+          any:
+            descr: Method name
+            mapHead: yes
+            children:
+              descr:
+                descr: Method description
+              params:
+                descr: Method parameters
+                mapHead: yes
+                children:
+                  name:
+                    descr: parameter description
+                    listHead: yes
                   valueCompleter:
                     descr: Completer for parameter value
                     mapHead: yes

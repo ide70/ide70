@@ -1,0 +1,22 @@
+.suggest-input {
+    width: 10em;
+}
+
+.suggest-holder {
+    position: absolute;
+    background-color: pink;
+    width: 50em;
+}
+
+.suggest-table {
+    background-color: white;
+    cursor: pointer;
+    border-collapse: collapse;
+}
+
+.suggest-row {
+}
+
+body .suggest-row:hover {
+    background-color: #d4efff;
+}

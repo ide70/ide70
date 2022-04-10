@@ -1,0 +1,22 @@
+---
+- compType: page
+  tree:
+    - buttonNewAirplane
+    - airplanesList
+- compType: button
+  text: "New airplane"
+  cr: buttonNewAirplane
+  eventHandlers:
+    onclick:
+      action: |
+        Event().LoadUnit("airplane/airplaneEdit");
+- compType: datalist
+  dbTableName: airplane
+  columns:
+    - header: Airplane code
+      key: code
+    - header: Name
+      key: name
+    - header: Capacity
+      key: capacity
+  cr: airplanesList

@@ -44,6 +44,7 @@
         .Finalize().FilterColumn("descr", crit);
   label: SuggestTest
   cr: inPrefixSuggestSuggestTest
+  descrColumn: descr
 - compType: textbox
   label: Dummy for testing
   cr: textboxDummyForTesting

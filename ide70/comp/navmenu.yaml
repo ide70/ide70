@@ -64,6 +64,8 @@ body: |
   {{end}}
   </ul>
   </nav>
+  <div class="placefixer">
+  </div>
 eventHandlers:
   loadUnit:
     action: |

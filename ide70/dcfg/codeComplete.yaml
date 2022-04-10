@@ -285,11 +285,13 @@ unit:
         children:
           any:
             descr: Event code
+            mapHead: yes
             keyCompleter:
               yamlPathCompleter:
                 folderPrefix: comp
                 fileNameExpr: ../../compType
                 pathExpr: "unitInterface.events.%$"
+                pathNodes: yes
             children:
               action:
                 descr: JS code to execute
@@ -311,6 +313,16 @@ dcfg/dict:
         children:
           descr:
             descr: Dictionary item description
+dcfg/schema:
+  descr:
+    descr: Description of database table
+  columns:
+    descr: Planned columns of database table
+    mapHead: yes
+    children:
+      name:
+        descr: Column name in database and application
+        listHead: yes
 "dcfg/templateComplete.yaml":
   methods:
     descr: Template built in methods

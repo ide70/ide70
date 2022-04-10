@@ -1,0 +1,6 @@
+---
+descr: Airplane type data
+columns:
+  - name: code
+  - name: name
+  - name: capacity

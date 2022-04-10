@@ -5,6 +5,9 @@ unitInterface:
     text:
       descr: Label on button
       mandatory: yes
+  events:
+    onclick: 
+      descr: Button pressed
 include:
   - common
 body: |

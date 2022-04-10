@@ -14,6 +14,10 @@
 	--menu-top-padding: 0.25rem;
 }
 
+div.placefixer {
+    height: 0.3em;
+}
+
 nav.navmenu {
     height: 2em;
     font-size: 11pt;

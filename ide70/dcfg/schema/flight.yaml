@@ -1,5 +1,7 @@
 ---
-  columns:
-    - name: flight_id
-    - name: destination
-    - name: departure
+descr: Flights
+columns:
+  - name: flight_id
+  - name: destination
+  - name: departure
+  - name: airplane_id

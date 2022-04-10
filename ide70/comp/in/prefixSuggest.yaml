@@ -10,6 +10,15 @@ unitInterface:
   properties:
     label:
       descr: Label
+    descrColumn:
+      descr: Column name in result row that loaded into search field
+    keyColumn:
+      descr: Column name in result row that provides unique id of selection
+    valueDescr:
+      descr: Selected item secription dispalyed in search field
+      default: ""
+    value:
+      descr: Key of selected item
 privateProperties:
   resultSet:
     descr: Result of user's current search expression
@@ -21,7 +30,10 @@ subParts:
   options: Table of selectable options
 body: |
   <div id="{{.sid}}">
-    <input class="suggest-input" type="text" id="{{.sid}}-typein" {{eventHandler $.This "onkeypress" "preFilter" "this.value + event.key"}}></input>
+    <form autocomplete="off" method="post" action="" class="suggest-form">
+    <input class="suggest-input" type="text" autocomplete="off"
+    value="{{.valueDescr}}" id="{{.sid}}typein" {{eventHandler $.This "oninput" "preFilter" "this.value"}}></input>
+    </form>
     <div class="suggest-holder" id="{{.sid}}options">
       <table class="suggest-table">
       {{range $rowIdx,$resultRow := .resultSet}}
@@ -39,7 +51,13 @@ body: |
 eventHandlers:
   preFilter:
     action: |
-      CompCtx().ForwardEvent("filter").AddForwardParam("searchPrefix",Event().EventKey()).RefreshSubComp("options");
+      var fieldValue = Event().EventKey();
+      if(!fieldValue) {
+        CompCtx().RemoveProp("resultSet");
+        CompCtx().RefreshSubComp("options");    
+      } else {
+        CompCtx().ForwardEvent("filter").AddForwardParam("searchPrefix",fieldValue).RefreshSubComp("options");
+      }
   filter:
     action: |
       Api().Logger().Info("key typed");
@@ -54,6 +72,15 @@ eventHandlers:
   select:
     action: |
       Api().Logger().Info("item selected");
+      if(CompCtx().HasProp("descrColumn")) {
+          CompCtx().SetProp("valueDescr",
+          CompCtx().GetPropToCast("selectedRow").AsMap().Get(CompCtx().GetProp("descrColumn")));
+          CompCtx().RefreshSubComp("typein");
+      }
+      if(CompCtx().HasProp("keyColumn")) {
+          CompCtx().SetProp("value",
+          CompCtx().GetPropToCast("selectedRow").AsMap().Get(CompCtx().GetProp("keyColumn")));
+      }
 injectRootComp:
   css:
     - name: comp/suggest.css

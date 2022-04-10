@@ -4,8 +4,16 @@ unitInterface:
   properties:
     dbIdInputName:
       descr: Name of input parameter holding database entity id
+      valueCompleter:
+        yamlPathCompleter:
+          self: yes
+          pathExpr: "[0].inputs.%"
     tableName:
       descr: Name of database table
+      valueCompleter:
+        fileNameCompleter:
+          folderPrefix: dcfg/schema
+          trimSuffix: .yaml
 eventHandlers:
   onUnitCreate:
     action: |

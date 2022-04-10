@@ -1,0 +1,36 @@
+---
+- compType: page
+  tree: 
+    - labeledTable:
+        - textboxCode
+        - textboxName
+        - textboxCapacity
+        - buttonSave
+  inputs:
+    airplaneId: ID of airplane to edit
+- compType: hlp/dbhelper
+  tableName: airplane
+  dbIdInputName: airplaneId
+- compType: labeledTable
+  cr: labeledTable
+- compType: textbox
+  label: Code
+  store: code
+  cr: textboxCode
+- compType: textbox
+  label: Name
+  store: name
+  cr: textboxName
+- compType: textbox
+  label: "Capacity (Max. no of passengers)"
+  store: capacity
+  cr: textboxCapacity
+- compType: button
+  text: Save
+  eventHandlers:
+    onclick:
+      action: |
+        var formData = Event().GetUnit().CollectStored();
+        Event().DBCtx().CreateDBO(formData, "airplane").Save();
+        Event().LoadParent();
+  cr: buttonSave

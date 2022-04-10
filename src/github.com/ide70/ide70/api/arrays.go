@@ -13,11 +13,11 @@ type ITableW struct {
 	t ITable
 }
 
-type Criterion interface {
+type TableCriterion interface {
 	isTrue(i interface {}) bool
 }
 
-type Like struct {
+type TableLike struct {
 	re *regexp.Regexp
 }
 
@@ -53,7 +53,7 @@ func (tw *ITableW) Finalize() ITable {
 	return tw.t
 }
 
-func (t ITable) FilterColumn(column string, criterion Criterion) ITable{
+func (t ITable) FilterColumn(column string, criterion TableCriterion) ITable{
 	res := ITable{}
 	for _,m := range t {
 		if criterion.isTrue(m[column]) {
@@ -63,11 +63,11 @@ func (t ITable) FilterColumn(column string, criterion Criterion) ITable{
 	return res
 }
 
-func (as *Arrays) Like(like string) Criterion {
-	return Like{re: convertLikeToRegex(like)}
+func (as *Arrays) Like(like string) TableCriterion {
+	return TableLike{re: convertLikeToRegex(like)}
 }
 
-func (l Like) isTrue(i interface{}) bool {
+func (l TableLike) isTrue(i interface{}) bool {
 	s := dataxform.IAsString(i)
 	return l.re.MatchString(s)
 }

@@ -11,6 +11,8 @@
   structure:
     - name: Flights
       loadUnit: airplane/flights
+    - name: Airplanes
+      loadUnit: airplane/airplanes
     - name: Bookings
       loadUnit: airplane/bookings
     - name: Logout

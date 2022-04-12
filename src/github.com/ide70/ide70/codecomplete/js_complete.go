@@ -12,6 +12,7 @@ import (
 var reIdentifierStart = regexp.MustCompile(`[+-/*.{;: ()]*\w*\n*$`)
 var reVarNameStart = regexp.MustCompile(`[^.\w]+(\w+)\.\n*$`)
 var reWordEnding = regexp.MustCompile(`(\w+)\n*$`)
+var reVarDefConsts = regexp.MustCompile(`\("(\w+)"\)`)
 
 func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
 	code := yamlPos.valuePrefx
@@ -25,15 +26,15 @@ func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 			logger.Info("func:", funcName, "nrParam:", nrParam)
 			compls := completionsOfFuncParam(tp, funcName, nrParam, yamlPos, edContext, configData)
 			if len(compls) > 0 {
-				logger.Info("compls found:",len(compls))
+				logger.Info("compls found:", len(compls))
 				compl = append(compl, compls...)
 			} else {
 				logger.Info("no compls found")
-				compl = append(compl, completionsOfType(reflect.TypeOf(&comp.VmBase{}), "", configData)...)
+				compl = append(compl, completionsOfType(reflect.TypeOf(&comp.VmBase{}), "", yamlPos, edContext, configData)...)
 				compl = append(compl, collectVarDefs(code)...)
 			}
 		} else {
-			compl = append(compl, completionsOfType(reflect.TypeOf(&comp.VmBase{}), "", configData)...)
+			compl = append(compl, completionsOfType(reflect.TypeOf(&comp.VmBase{}), "", yamlPos, edContext, configData)...)
 			compl = append(compl, collectVarDefs(code)...)
 		}
 		return compl
@@ -42,13 +43,15 @@ func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 	if varNameStartMatches != nil {
 		varNameStart := varNameStartMatches[1]
 		logger.Info("varNameStart:", varNameStart)
-		
-		tp := getVarType(code, varNameStart)
+
+		tp, firstConst := getVarType(code, varNameStart)
 
 		if tp == nil {
 			return compl
 		}
-		compl = append(compl, completionsOfType(tp, "", configData)...)
+		configDataForCompl := dataxform.SIMapLightCopy(configData)
+		configDataForCompl["firstConst"] = firstConst
+		compl = append(compl, completionsOfType(tp, "",  yamlPos, edContext, configDataForCompl)...)
 		return compl
 	}
 	if reIdentifierStart.FindString(code) != "" {
@@ -57,7 +60,7 @@ func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 		if tp == nil {
 			return compl
 		}
-		compl = append(compl, completionsOfType(tp, funcNamePrefix, configData)...)
+		compl = append(compl, completionsOfType(tp, funcNamePrefix,  yamlPos, edContext, configData)...)
 		if tp == reflect.TypeOf(&comp.VmBase{}) {
 			compl = append(compl, collectVarDefs(code)...)
 		}
@@ -67,7 +70,7 @@ func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 	return compl
 }
 
-func getVarType(code, varName string) reflect.Type {
+func getVarType(code, varName string) (reflect.Type, string) {
 	defs := availableVarDefs(code)
 	identifierDef := defs[varName]
 	logger.Info("identifierDef:", identifierDef)
@@ -75,9 +78,13 @@ func getVarType(code, varName string) reflect.Type {
 	if identifierDef != "" {
 		def := identifierDef + "."
 		tp, _ := getReturnType(def)
-		return tp
+		firstConst := ""
+		if firstConstMatch := reVarDefConsts.FindStringSubmatch(code); firstConstMatch != nil {
+			firstConst = firstConstMatch[1]
+		}
+		return tp, firstConst
 	}
-	return nil
+	return nil, ""
 }
 
 var reVariableDefinition = regexp.MustCompile(`var (\w+)\s*=\s*([^;]+)`)
@@ -219,7 +226,7 @@ func getReturnType(code string) (reflect.Type, string) {
 		baseTypePrev := baseType
 		if strings.HasPrefix(funcName, "var:") {
 			varName := strings.TrimPrefix(funcName, "var:")
-			baseType = getVarType(code, varName)
+			baseType,_ = getVarType(code, varName)
 		} else {
 			baseType = returnTypeOfFunc(baseType, funcName)
 		}
@@ -247,7 +254,7 @@ func getBaseTypeAndName(code string) (reflect.Type, string) {
 		}
 		if strings.HasPrefix(funcName, "var:") {
 			varName := strings.TrimPrefix(funcName, "var:")
-			baseType = getVarType(code, varName)
+			baseType, _ = getVarType(code, varName)
 		} else {
 			baseType = returnTypeOfFunc(baseType, funcName)
 		}
@@ -289,11 +296,13 @@ func findOpeningBracket(code string, pos int) int {
 	return -1
 }
 
-func completionsOfType(tp reflect.Type, funcNameFilter string, configData map[string]interface{}) []map[string]string {
+func completionsOfType(tp reflect.Type, funcNameFilter string, yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}) []map[string]string {
 	compl := []map[string]string{}
 	numMethods := tp.NumMethod()
 	functionsData := dataxform.SIMapGetByKeyAsMap(configData, "functions")
 	typeBasedFunctionsData := dataxform.SIMapGetByKeyAsMap(functionsData, tp.String())
+	typesData := dataxform.SIMapGetByKeyAsMap(configData, "types")
+	typeBasedTypeData := dataxform.SIMapGetByKeyAsMap(typesData, tp.String())
 
 	for i := 0; i < numMethods; i++ {
 		method := tp.Method(i)
@@ -333,6 +342,18 @@ func completionsOfType(tp reflect.Type, funcNameFilter string, configData map[st
 
 		compl = append(compl, newCompletion(sigValue, signature, functionDescr))
 	}
+
+	fieldCompleter := dataxform.SIMapGetByKeyAsMap(typeBasedTypeData, "fieldCompleter")
+	if len(fieldCompleter) == 1 {
+		logger.Info("fieldCompleter found for type:", tp.String())
+		completer, configDataCompleter := lookupCompleter("value", fieldCompleter)
+
+		if completer != nil {
+			configDataCompleter["firstConst"] = configData["firstConst"]
+			compl = completer(yamlPos, edContext, configDataCompleter, compl)
+		}
+	}
+
 	return compl
 }
 

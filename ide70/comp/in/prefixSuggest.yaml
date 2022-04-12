@@ -15,7 +15,7 @@ unitInterface:
     keyColumn:
       descr: Column name in result row that provides unique id of selection
     valueDescr:
-      descr: Selected item secription dispalyed in search field
+      descr: Selected item description displayed in search field
       default: ""
     value:
       descr: Key of selected item

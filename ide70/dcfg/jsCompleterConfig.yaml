@@ -140,3 +140,21 @@ functions:
               folderPrefix: dcfg/dict
               trimSuffix: .yaml
               quote: '"'
+  "*api.QueryCtx":
+    Table:
+      descr: Create table object for querydsl style query
+      params:
+        - name: "Table name"
+          valueCompleter:
+            fileNameCompleter:
+              folderPrefix: dcfg/schema
+              trimSuffix: .yaml
+              quote: '"'
+types:
+  "api.SchemaTable":
+    fieldCompleter:
+      valueCompleter:
+        yamlPathCompleter:
+          folderPrefix: dcfg/schema
+          fileNameFromAutoProperty: firstConst
+          pathExpr: "columns[%].name:value"

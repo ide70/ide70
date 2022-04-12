@@ -155,6 +155,8 @@ comp:
                         descr: absolute or relative yaml path for suggest file name
                       fileNameRegex:
                         descr: regex for filename, returns nearest match to cursor position
+                      fileNameFromAutoProperty:
+                        descr: filename copied from an internal property
                       fileName:
                         descr: name of the file to suggest from
                       self:
@@ -375,3 +377,20 @@ dcfg/schema:
                     descr: Completer for parameter value
                     mapHead: yes
                     children: *completerNames
+  types:
+    descr: API types special completers configuration
+    mapHead: yes
+    children:
+      any:
+        descr: Base type name
+        mapHead: yes
+        quote: '"'
+        children:
+          fieldCompleter:
+            descr: Field completer for type
+            mapHead: yes
+            children:
+              valueCompleter:
+                descr: Field completer for type
+                mapHead: yes
+                children: *completerNames

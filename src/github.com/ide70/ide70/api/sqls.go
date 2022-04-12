@@ -176,11 +176,6 @@ type FilterGroup struct {
 	FilterTags []*FilterTag
 }
 
-type ColumnOrder struct {
-	fieldName string
-	isAsc     bool
-}
-
 //func (dbCtx *DatabaseContext) WorksheetFindItemsPage(tableName string, allFilters map[string]*FilterTag, offset, pageSize int, orders []*ColumnOrder) []interface{} {
 func (dbCtx *DatabaseContext) WorksheetFindItemsPage(tableName string, offset, pageSize int) ITable {
 	ensureTable(dbCtx, tableName)

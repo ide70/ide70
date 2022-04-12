@@ -14,6 +14,7 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 	folderPrefix := dataxform.SIMapGetByKeyAsString(configData, "folderPrefix")
 	fileNameExpr := dataxform.SIMapGetByKeyAsString(configData, "fileNameExpr")
 	fileNameRegex := dataxform.SIMapGetByKeyAsString(configData, "fileNameRegex")
+	fileNameFromAutoProperty := dataxform.SIMapGetByKeyAsString(configData, "fileNameFromAutoProperty")
 	fileName := dataxform.SIMapGetByKeyAsString(configData, "fileName")
 	pathExpr := dataxform.SIMapGetByKeyAsString(configData, "pathExpr")
 	pathNodes := dataxform.SIMapGetByKeyAsBoolean(configData, "pathNodes") 
@@ -56,6 +57,9 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 					logger.Info("fileName:" + fileName)
 				}
 			})
+		}
+		if fileNameFromAutoProperty != "" {
+			fileName = dataxform.SIMapGetByKeyAsString(configData, fileNameFromAutoProperty)
 		}
 		fileAsTemplatedYaml = loader.GetTemplatedYaml(fileName, "ide70/"+folderPrefix+"/")
 	}

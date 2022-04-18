@@ -10,12 +10,15 @@ import (
 )
 
 const schemaTableReferenceKey = "__tableReference"
+const idFieldName = "_id"
+const dataFieldName = "data"
 
 type QueryCtx struct {
+	dbCtx *DatabaseContext
 }
 
 func (dbCtx *DatabaseContext) QueryCtx() *QueryCtx {
-	return &QueryCtx{}
+	return &QueryCtx{dbCtx: dbCtx}
 }
 
 type ColumnOrder struct {
@@ -24,6 +27,7 @@ type ColumnOrder struct {
 }
 
 type QueryDef struct {
+	qc              *QueryCtx
 	from            *SchemaTableReference
 	selectedColumns []SchemaCol
 	condition       *QueryConditionWrapper
@@ -42,13 +46,21 @@ type SchemaTableReference struct {
 type SchemaCol struct {
 	tableRef *SchemaTableReference
 	name     string
+	idField  bool
 }
 
 func (col SchemaCol) toSQL() string {
 	if col.tableRef.alias != "" {
-		return col.tableRef.alias + "." + col.name
+		return col.columnSQL(col.tableRef.alias)
 	}
-	return col.tableRef.tableName + "." + col.name
+	return col.columnSQL(col.tableRef.tableName)
+}
+
+func (col SchemaCol) columnSQL(tableName string) string {
+	if col.idField {
+		return tableName + "." + col.name
+	}
+	return tableName + "." + dataFieldName + "->>'" + col.name + "'"
 }
 
 type QueryConditionWrapper struct {
@@ -113,14 +125,16 @@ func (qc *QueryCtx) Table(tableName string) SchemaTable {
 	for _, columnIf := range columnList {
 		column := dataxform.IAsSIMap(columnIf)
 		columnName := dataxform.SIMapGetByKeyAsString(column, "name")
-		table[columnName] = SchemaCol{name: columnName, tableRef: ref}
+		table[columnName] = SchemaCol{name: columnName, tableRef: ref, idField: false}
 	}
+	table[idFieldName] = SchemaCol{name: "id", tableRef: ref, idField: true}
 	table[schemaTableReferenceKey] = SchemaCol{tableRef: ref}
 	return table
 }
 
 func (qc *QueryCtx) From(table SchemaTable) *QueryDef {
 	qd := &QueryDef{}
+	qd.qc = qc
 	qd.from = table[schemaTableReferenceKey].tableRef
 	return qd
 }
@@ -158,11 +172,10 @@ func (qd *QueryDef) Offset(offsetIf interface{}) *QueryDef {
 }
 
 func (qd *QueryDef) List() ITable {
-	logger.Info("sql:", toSql(qd))
-	return nil
+	return qd.qc.dbCtx.RunQueryDef(qd)
 }
 
-func toSql(qd *QueryDef) string {
+func (qd *QueryDef) _toSQL() string {
 	qd.from.generateAlias(1)
 	var sb strings.Builder
 	sb.WriteString("select ")
@@ -179,12 +192,13 @@ func toSql(qd *QueryDef) string {
 		sb.WriteString(qd.condition.condition.toSQL())
 	}
 	if len(qd.ordering) > 0 {
+		sb.WriteString(" order by ")
 		for idx, orderColumn := range qd.ordering {
-		if idx > 0 {
-			sb.WriteString(", ")
+			if idx > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString(orderColumn.toSQL())
 		}
-		sb.WriteString(orderColumn.toSQL())
-	}
 	}
 	return sb.String()
 }

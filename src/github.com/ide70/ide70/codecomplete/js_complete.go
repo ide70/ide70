@@ -15,6 +15,7 @@ var reWordEnding = regexp.MustCompile(`(\w+)\n*$`)
 var reVarDefConsts = regexp.MustCompile(`\("(\w+)"\)`)
 
 func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
+	edContext.contextType = "js"
 	code := yamlPos.valuePrefx
 	logger.Info("code:", code+"|")
 	if code == "" || strings.HasSuffix(code, "(") || strings.HasSuffix(code, ",") || strings.HasSuffix(code, ", ") {
@@ -51,7 +52,7 @@ func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 		}
 		configDataForCompl := dataxform.SIMapLightCopy(configData)
 		configDataForCompl["firstConst"] = firstConst
-		compl = append(compl, completionsOfType(tp, "",  yamlPos, edContext, configDataForCompl)...)
+		compl = append(compl, completionsOfType(tp, "", yamlPos, edContext, configDataForCompl)...)
 		return compl
 	}
 	if reIdentifierStart.FindString(code) != "" {
@@ -60,7 +61,9 @@ func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 		if tp == nil {
 			return compl
 		}
-		compl = append(compl, completionsOfType(tp, funcNamePrefix,  yamlPos, edContext, configData)...)
+		logger.Info("return type: ", tp.String())
+		logger.Info("funcNamePrefix: ", funcNamePrefix)
+		compl = append(compl, completionsOfType(tp, funcNamePrefix, yamlPos, edContext, configData)...)
 		if tp == reflect.TypeOf(&comp.VmBase{}) {
 			compl = append(compl, collectVarDefs(code)...)
 		}
@@ -225,8 +228,13 @@ func getReturnType(code string) (reflect.Type, string) {
 	for idx, funcName := range funcNameChain {
 		baseTypePrev := baseType
 		if strings.HasPrefix(funcName, "var:") {
-			varName := strings.TrimPrefix(funcName, "var:")
-			baseType,_ = getVarType(code, varName)
+			if baseType.Kind() == reflect.Map {
+				logger.Info("basetype map type, tread var as map element")
+				baseType = baseType.Elem()
+			} else {
+				varName := strings.TrimPrefix(funcName, "var:")
+				baseType, _ = getVarType(code, varName)
+			}
 		} else {
 			baseType = returnTypeOfFunc(baseType, funcName)
 		}

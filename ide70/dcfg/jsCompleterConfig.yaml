@@ -154,7 +154,10 @@ types:
   "api.SchemaTable":
     fieldCompleter:
       valueCompleter:
-        yamlPathCompleter:
-          folderPrefix: dcfg/schema
-          fileNameFromAutoProperty: firstConst
-          pathExpr: "columns[%].name:value"
+        union:
+          - yamlPathCompleter:
+              folderPrefix: dcfg/schema
+              fileNameFromAutoProperty: firstConst
+              pathExpr: "columns[%].name:value"
+          - dictCompleter:
+              dictName: standardDbFields

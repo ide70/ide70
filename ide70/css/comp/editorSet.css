@@ -2,7 +2,7 @@
 	font-size: 14pt;
 	/* min-width: 1000px; */
 	width: 100%;
-	height: calc(100% - 2em);
+	height: calc(100% - 1.7em);
 }
 
 .editorSlot .ace_editor {

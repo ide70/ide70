@@ -6,6 +6,7 @@
       - inSelectionDestination
       - inTimestampDeparture
       - textboxDummyForTesting
+      - inPrefixSuggestAirplaneType
       - inPrefixSuggestSuggestTest  
       - buttonSave
   inputs:
@@ -36,6 +37,18 @@
   eventHandlers:
     filter: 
       action: |
+        var airplane = Event().DBCtx().QueryCtx().Table("airplane");
+        var q = Event().DBCtx().QueryCtx();
+        var searchText = Event().GetParam("searchPrefix");
+        q.From(airplane).Select(airplane._id, airplane.code, airplane.name).Where(airplane.name.Like("%"+searchText+"%")).
+        AscendingBy(airplane.code).List();
+  label: Airplane type
+  cr: inPrefixSuggestAirplaneType
+  descrColumn: code
+- compType: in/prefixSuggest
+  eventHandlers:
+    filter: 
+      action: |
         var t1 = Event().DBCtx().QueryCtx().Table("flight");
         var q = Event().DBCtx().QueryCtx();
         q.From(t1).Select(t1.flight_id).Where(t1.destination.Like("B%")).List();
@@ -50,7 +63,7 @@
       action: |
         var t1 = Event().DBCtx().QueryCtx().Table("flight");
         var q = Event().DBCtx().QueryCtx();
-        q.From(t1).Select(t1.flight_id).Where(t1.destination.Like("B%")).List();
+        q.From(t1).Select(t1.flight_id).Where(t1.destination.Like("B%").And(t1.flight_id.Equals(t1.departure))).List();
   label: SuggestTest
   cr: inPrefixSuggestSuggestTest
   descrColumn: descr

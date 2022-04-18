@@ -382,7 +382,7 @@ func addValueCompletion(value, descr string, edContext *EditorContext, keyData m
 	descrPrefix := dataxform.SIMapGetByKeyAsString(keyData, "descrPrefix")
 	descrPostfix := dataxform.SIMapGetByKeyAsString(keyData, "descrPostfix")
 	keyPostfix := ""
-	if edContext.contextType != "template" {
+	if edContext.contextType != "template" && edContext.contextType != "js" {
 		keyPostfix = "\n" + strings.Repeat(" ", edContext.keyStartCol)
 	}
 	if quote != "" {

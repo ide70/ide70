@@ -13,10 +13,11 @@ func unionCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData 
 	for _,subCompleterIf := range subCompleters {
 		topLevelConfig := map[string]interface{}{}
 		topLevelConfig[completerKey] = subCompleterIf
-		completer, configData := lookupCompleter(completerType, topLevelConfig)
+		completer, subConfigData := lookupCompleter(completerType, topLevelConfig)
 			if completer != nil {
-				configData["descrPostfix"] = descrPostfix
-				compl = append(compl, completer(yamlPos, edContext, configData, compl)...)
+				subConfigData["descrPostfix"] = descrPostfix
+				subConfigData["firstConst"] = configData["firstConst"] 
+				compl = append(compl, completer(yamlPos, edContext, subConfigData, compl)...)
 			}
 	}
 

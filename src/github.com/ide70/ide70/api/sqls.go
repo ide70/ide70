@@ -230,3 +230,48 @@ func (dbCtx *DatabaseContext) WorksheetFindItemsPage(tableName string, offset, p
 
 	return datas
 }
+
+func (dbCtx *DatabaseContext) RunQueryDef(qd *QueryDef) ITable {
+	ensureTable(dbCtx, qd.from.tableName)
+	
+	db := dbCtx.getConnection()
+	defer db.Close()
+
+	sql := qd._toSQL()
+	sql += ";"
+	fmt.Println("sql:", sql)
+
+	rows, err := db.Query(sql)
+
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+
+	datas := ITable{}
+	for rows.Next() {
+		colsPtr := []interface{}{}
+		for i := 0; i < len(qd.selectedColumns); i++ {
+			var colData interface{}
+			colsPtr = append(colsPtr, &colData)
+		}
+		
+
+		err := rows.Scan(colsPtr...)
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+
+		dataSet := map[string]interface{}{}
+		
+		for idx,selectedColumn := range qd.selectedColumns {
+			// TODO: column alias handling
+			dataSet[selectedColumn.name] = *colsPtr[idx].(*interface{})
+		}
+
+		datas = append(datas, dataSet)
+	}
+
+	return datas
+}

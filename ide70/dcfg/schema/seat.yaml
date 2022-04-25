@@ -1,0 +1,7 @@
+---
+descr: Seat of airplane
+columns:
+  - name: airplane_id
+  - name: code
+  - name: class
+  - name: window

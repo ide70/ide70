@@ -37,7 +37,7 @@ func templateCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 		}
 		
 		propDescr := dataxform.SIMapGetByKeyAsString(propData, "descr")
-		compl = addValueCompletion("."+name, propDescr, edContext, configData, compl)
+		compl = addValueCompletion("$."+name, propDescr, edContext, configData, compl)
 		//compl = append(compl, newCompletion("."+name, "."+name, propDescr))
 	}
 

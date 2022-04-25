@@ -103,6 +103,17 @@ methods:
           templateCompleter:
             filters:
               type: boolean
+  index:
+    descr: access map value by key
+    params:
+      - descr: map
+        valueCompleter:
+          templateCompleter:
+            filters:
+              type: map
+      - descr: key
+        valueCompleter:
+          templateCompleter:
   eq:
     descr: Returns the boolean truth of arg1 == arg2
     kind: internal

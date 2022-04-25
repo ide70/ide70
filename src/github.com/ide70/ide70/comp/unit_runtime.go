@@ -1,9 +1,9 @@
 package comp
 
 import (
+	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/app"
 	"github.com/ide70/ide70/dataxform"
-	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/util/log"
 	"io"
 	"reflect"
@@ -62,27 +62,27 @@ func InstantiateUnit(name string, app *app.Application, appParams *AppParams, pa
 	unitRuntime.RootComp = InstantiateComp(unitDef.RootComp, unitRuntime)
 	for _, comp := range unitDef.UnattachedComps {
 		InstantiateComp(comp, unitRuntime)
-	} 
+	}
 	unitRuntime.EventsHandler = newUnitRuntimeEventsHandler(unitRuntime)
-	
+
 	unitRuntime.initialCalcs()
 
 	return unitRuntime
 }
 
 func (unit *UnitRuntime) initialCalcs() {
-	for _,calc := range unit.UnitDef.CalcArr {
+	for _, calc := range unit.UnitDef.CalcArr {
 		comp := unit.CompByChildRefId[calc.Comp.ChildRefId()]
 		e := NewEventRuntime(nil, unit, comp, "calc", "")
 		calcResult := unit.EventsHandler.runJs(e, calc.jsCode)
-		logger.Info("calc result for", calc.PropertyKey, "is",calcResult,"type:",reflect.TypeOf(calcResult))
-		comp.State[calc.PropertyKey]=calcResult
-	} 
+		logger.Info("calc result for", calc.PropertyKey, "is", calcResult, "type:", reflect.TypeOf(calcResult))
+		comp.State[calc.PropertyKey] = calcResult
+	}
 }
 
 func RefreshUnitDef(name string) {
 	delete(UnitDefCache, name)
-	logger.Info("refresh unit def:",name)
+	logger.Info("refresh unit def:", name)
 }
 
 func RefreshCompType(name string) {
@@ -90,7 +90,7 @@ func RefreshCompType(name string) {
 	CompCache = map[string]*CompType{}
 	//drop all unit defs
 	UnitDefCache = map[string]*UnitDef{}
-	logger.Info("refresh comp type:",name)
+	logger.Info("refresh comp type:", name)
 }
 
 func (unit *UnitRuntime) InstantiateComp(compDef *CompDef, genChildRefId string) *CompRuntime {
@@ -125,7 +125,21 @@ func (unit *UnitRuntime) ProcessEvent(e *EventRuntime) {
 			logger.Warning("UnitRuntime ProcessEvent: component not found")
 		}
 		e.Comp = comp
-		compDefHandler.EventHandler.processEvent(e)
+		eh := compDefHandler.EventHandler
+		for {
+			eh.processEvent(e)
+			if len(e.ResponseAction.forward) > 0 {
+				logger.Info("unit event forward to type:" + e.ResponseAction.forward[0].EventType)
+				e.Comp = e.ResponseAction.forward[0].To
+				e.TypeCode = e.ResponseAction.forward[0].EventType
+				e.Params = e.ResponseAction.forward[0].Params
+				logger.Info("with params:", e.Params)
+				e.ResponseAction.forward = e.ResponseAction.forward[1:]
+				eh = e.Comp.CompDef.EventsHandler.Handlers[e.TypeCode]
+				continue
+			}
+			break
+		}
 	}
 }
 
@@ -147,7 +161,7 @@ func (unit *UnitRuntime) InitializeStored(data map[string]interface{}) {
 		if storeKey != "" {
 			comp.State["value"] =
 				dataxform.SICollGetNode(storeKey, data)
-				log.Info("datamap vt:", reflect.TypeOf(comp.State["value"]), storeKey)
+			log.Info("datamap vt:", reflect.TypeOf(comp.State["value"]), storeKey)
 		}
 	}
 }
@@ -159,4 +173,3 @@ func (unit *UnitRuntime) DBContext() *api.DatabaseContext {
 func (unit *UnitRuntime) GetParent(sess *Session) *UnitRuntime {
 	return sess.UnitCache.ActiveUnits[unit.PassContext.ParentUnitId]
 }
-

@@ -175,6 +175,15 @@ func (qd *QueryDef) List() ITable {
 	return qd.qc.dbCtx.RunQueryDef(qd)
 }
 
+func (qd *QueryDef) OneRow() SIMap {
+	qd.Limit(1);
+	resultTable := qd.qc.dbCtx.RunQueryDef(qd);
+	if len(resultTable) == 0 {
+		return nil
+	}
+	return resultTable[0]
+}
+
 func (qd *QueryDef) _toSQL() string {
 	qd.from.generateAlias(1)
 	var sb strings.Builder
@@ -208,8 +217,8 @@ func (schemaCol SchemaCol) Like(likeExpr string) *QueryConditionWrapper {
 	return &QueryConditionWrapper{condition: like}
 }
 
-func (schemaCol SchemaCol) Equals(likeExpr string) *QueryConditionWrapper {
-	like := Like{schemaCol: schemaCol, likeExpr: likeExpr}
+func (schemaCol SchemaCol) Equals(right interface{}) *QueryConditionWrapper {
+	like := Equals{schemaCol: schemaCol, right: right}
 	return &QueryConditionWrapper{condition: like}
 }
 

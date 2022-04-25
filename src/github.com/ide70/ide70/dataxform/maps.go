@@ -259,6 +259,7 @@ type CollectionEntry interface {
 	Key() string
 	Index() int
 	Value() interface{}
+	SameLevelValue(string) interface{}
 	Delete()
 	Update(v interface{})
 	LinearKey() string
@@ -291,6 +292,14 @@ func (entry *MapEntry) Index() int {
 
 func (entry *MapEntry) Value() interface{} {
 	return entry.v
+}
+
+func (entry *MapEntry) SameLevelValue(key string) interface{} {
+	return entry.m[key]
+}
+
+func (entry *ArrayEntry) SameLevelValue(key string) interface{} {
+	return nil
 }
 
 func (entry *MapEntry) Parent() CollectionEntry {

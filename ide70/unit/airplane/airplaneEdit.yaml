@@ -11,6 +11,11 @@
 - compType: hlp/dbhelper
   tableName: airplane
   dbIdInputName: airplaneId
+  eventHandlers:
+    afterSaveData:
+      action: |
+        Event().LoadParent();
+  cr: hlpDbhelper
 - compType: labeledTable
   cr: labeledTable
 - compType: textbox
@@ -30,7 +35,5 @@
   eventHandlers:
     onclick:
       action: |
-        var formData = Event().GetUnit().CollectStored();
-        Event().DBCtx().CreateDBO(formData, "airplane").Save();
-        Event().LoadParent();
+        CompByCr("hlpDbhelper").ForwardEvent("saveData");
   cr: buttonSave

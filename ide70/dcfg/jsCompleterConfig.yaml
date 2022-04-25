@@ -89,6 +89,25 @@ functions:
               pathExpr: "unitInterface.events.%.params.%$"
               quote: '"'
         - name: Parameter value
+    ForwardEvent:
+      descr: Pass control to named event handler after execution of current
+      params:
+        - name: Event name
+          valueCompleter:
+            firstOf:
+              - yamlPathCompleter:
+                  fileNameRegex: 'CompByCr\("([\w\/]+)"\)'
+                  fileNameRegexCrToCompType: yes
+                  fileNameExprCond: "cr"
+                  folderPrefix: comp
+                  pathExpr: "unitInterface.events.%$"
+                  quote: '"'
+                  pathNodes: yes
+              - yamlPathCompleter:
+                  self: yes
+                  pathExpr: "[%].eventHandlers.%$|eventHandlers.%$"
+                  quote: '"'
+                  pathNodes: yes
   "*comp.EventRuntime":
     ReloadUnit:
       descr: Reloads current unit

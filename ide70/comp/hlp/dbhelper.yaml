@@ -1,6 +1,11 @@
 ---
 unitInterface:
   descr: DB helper
+  events:
+    saveData:
+      descr: Call this event handler to save form data
+    afterSaveData:
+      descr: Called after saveData, place post save actions here
   properties:
     dbIdInputName:
       descr: Name of input parameter holding database entity id
@@ -14,6 +19,8 @@ unitInterface:
         fileNameCompleter:
           folderPrefix: dcfg/schema
           trimSuffix: .yaml
+    dataObject:
+      descr: Data object when updating data
 eventHandlers:
   onUnitCreate:
     action: |
@@ -26,5 +33,21 @@ eventHandlers:
             var dbo = Event().DBCtx().FindDBO(dbTableName, dbId);
             if(dbo) {
                 Event().GetUnit().InitializeStored(dbo.GetData());
+                CompCtx().SetProp("dataObject", dbo);
             }
       }
+  saveData:
+    action: |
+      var formData = Event().GetUnit().CollectStored();
+      var dbo = CompCtx().GetPropToCast("dataObject").AsDBO();
+      var dbTableName = CompCtx().GetProp("tableName");
+      if(dbo) {
+        dbo.UpdateData(formData);
+      } else {
+        dbo = Event().DBCtx().CreateDBO(formData, dbTableName);
+      }
+      dbo.Save();
+      CompCtx().ForwardEvent("afterSaveData");
+  afterSaveData:
+    action: |
+      "";

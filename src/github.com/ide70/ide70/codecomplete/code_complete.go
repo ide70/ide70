@@ -54,7 +54,8 @@ func init() {
 		"htmlCompleter":        htmlCompleter,
 		"dictCompleter":        dictCompleter,
 		"templateCompleter":    templateCompleter,
-		"union":                unionCompleter}
+		"union":                unionCompleter,
+		"firstOf":              unionCompleter}
 }
 
 func (yPos *YamlPosition) getKey() string {
@@ -502,6 +503,10 @@ func lookupCompleter(completerType string, keyData map[string]interface{}) (Valu
 	}
 	if completerName == "yamlDataCompleter" {
 		configData["handleChildren"] = true
+	}
+	
+	if completerName == "firstOf" {
+		configData["firstNonemptyOnly"] = true
 	}
 
 	if completerName != "" {

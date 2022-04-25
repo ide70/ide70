@@ -331,6 +331,10 @@ func (cSW *CompCtx) Props() api.SIMap {
 	return cSW.c.State
 }
 
+func (cSW *CompCtx) DBCtx() *api.DatabaseContext {
+	return cSW.c.Unit.Application.Connectors.MainDB
+}
+
 func (c *CompRuntime) GetProp(key string) interface{} {
 	return c.State[key]
 }

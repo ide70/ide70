@@ -12,7 +12,7 @@ import (
 var reIdentifierStart = regexp.MustCompile(`[+-/*.{;: ()]*\w*\n*$`)
 var reVarNameStart = regexp.MustCompile(`[^.\w]+(\w+)\.\n*$`)
 var reWordEnding = regexp.MustCompile(`(\w+)\n*$`)
-var reVarDefConsts = regexp.MustCompile(`\("(\w+)"\)`)
+var reVarDefConsts = regexp.MustCompile(`var \w+[^(]+\("(\w+)"\)`)
 
 func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
 	edContext.contextType = "js"
@@ -82,8 +82,9 @@ func getVarType(code, varName string) (reflect.Type, string) {
 		def := identifierDef + "."
 		tp, _ := getReturnType(def)
 		firstConst := ""
-		if firstConstMatch := reVarDefConsts.FindStringSubmatch(code); firstConstMatch != nil {
-			firstConst = firstConstMatch[1]
+		constMatches := reVarDefConsts.FindAllStringSubmatch(code, -1);
+		if len(constMatches) > 0 {
+			firstConst = constMatches[len(constMatches)-1][1]
 		}
 		return tp, firstConst
 	}

@@ -7,13 +7,17 @@
       - inTimestampDeparture
       - textboxDummyForTesting
       - inPrefixSuggestAirplaneType
-      - inPrefixSuggestSuggestTest  
       - buttonSave
   inputs:
     flightId: Id of flight database entity
 - compType: hlp/dbhelper
   tableName: flight
   dbIdInputName: flightId
+  cr: hlpDbhelper
+  eventHandlers:
+    afterSaveData:
+      action: |
+        Event().LoadParent();
 - compType: labeledTable
   cr: labeledTable
 - compType: textbox
@@ -37,36 +41,26 @@
   eventHandlers:
     filter: 
       action: |
-        var airplane = Event().DBCtx().QueryCtx().Table("airplane");
-        var q = Event().DBCtx().QueryCtx();
+        var q = CompCtx().DBCtx().QueryCtx();
+        var airplane = q.Table("airplane");
         var searchText = Event().GetParam("searchPrefix");
-        q.From(airplane).Select(airplane._id, airplane.code, airplane.name).Where(airplane.name.Like("%"+searchText+"%")).
+        q.From(airplane).Select(airplane._id, airplane.name, airplane.capacity).Where(airplane.name.Like("%"+searchText+"%")).
         AscendingBy(airplane.code).List();
+    initDescr:
+      action: |
+        var dataKey = Event().GetParam("dataKey");
+        var q = CompCtx().DBCtx().QueryCtx();
+        var airplane = q.Table("airplane");
+        q.From(airplane).Select(airplane.name).Where(airplane._id.Equals(dataKey)).OneRow().
+        GetOneColumnForConvert().AsString();
+  searchResultDisplayColumns:
+    - name
+    - capacity
+  descrColumn: name
+  keyColumn: id
+  store: airplane_id
   label: Airplane type
   cr: inPrefixSuggestAirplaneType
-  descrColumn: code
-- compType: in/prefixSuggest
-  eventHandlers:
-    filter: 
-      action: |
-        var t1 = Event().DBCtx().QueryCtx().Table("flight");
-        var q = Event().DBCtx().QueryCtx();
-        q.From(t1).Select(t1.flight_id).Where(t1.destination.Like("B%")).List();
-        
-        Api().Logger().Info("searchPrefix:", Event().GetParam("searchPrefix"));
-        var crit = Api().Arrays().Like(Event().GetParam("searchPrefix"));
-        Api().Arrays().NewITableW().AddCol("code", "C1").AddCol("descr", "alma")
-        .AddEmptyRow().AddCol("code", "C2").AddCol("descr", "körte")
-        .AddEmptyRow().AddCol("code", "C3").AddCol("descr", "almamoly")
-        .Finalize().FilterColumn("descr", crit);
-    test:
-      action: |
-        var t1 = Event().DBCtx().QueryCtx().Table("flight");
-        var q = Event().DBCtx().QueryCtx();
-        q.From(t1).Select(t1.flight_id).Where(t1.destination.Like("B%").And(t1.flight_id.Equals(t1.departure))).List();
-  label: SuggestTest
-  cr: inPrefixSuggestSuggestTest
-  descrColumn: descr
 - compType: textbox
   label: Dummy for testing
   cr: textboxDummyForTesting
@@ -75,7 +69,5 @@
   eventHandlers:
     onclick:
       action: |
-        var formData = Event().GetUnit().CollectStored();
-        Event().DBCtx().CreateDBO(formData, "flight").Save();
-        Event().LoadParent();
+        CompByCr("hlpDbhelper").ForwardEvent("saveData");
   cr: buttonSave

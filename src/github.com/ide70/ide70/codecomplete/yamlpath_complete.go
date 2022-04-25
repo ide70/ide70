@@ -14,10 +14,11 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 	folderPrefix := dataxform.SIMapGetByKeyAsString(configData, "folderPrefix")
 	fileNameExpr := dataxform.SIMapGetByKeyAsString(configData, "fileNameExpr")
 	fileNameRegex := dataxform.SIMapGetByKeyAsString(configData, "fileNameRegex")
+	fileNameRegexCrToCompType := dataxform.SIMapGetByKeyAsBoolean(configData, "fileNameRegexCrToCompType")
 	fileNameFromAutoProperty := dataxform.SIMapGetByKeyAsString(configData, "fileNameFromAutoProperty")
 	fileName := dataxform.SIMapGetByKeyAsString(configData, "fileName")
 	pathExpr := dataxform.SIMapGetByKeyAsString(configData, "pathExpr")
-	pathNodes := dataxform.SIMapGetByKeyAsBoolean(configData, "pathNodes") 
+	pathNodes := dataxform.SIMapGetByKeyAsBoolean(configData, "pathNodes")
 	filterExprList := dataxform.SIMapGetByKeyAsString(configData, "filterExpr")
 	self := dataxform.SIMapGetByKeyAsBoolean(configData, "self")
 	convertMapDescr := dataxform.SIMapGetByKeyAsString(configData, "convertMapDescr")
@@ -42,7 +43,23 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 			} else {
 				fileName = lastMatch[0]
 			}
-			logger.Info("fileName:" + fileName)
+			logger.Info("regex fileName:" + fileName)
+			if fileNameRegexCrToCompType {
+				selfAsTemplatedYaml := loader.ConvertTemplatedYaml([]byte(edContext.content), "self")
+				selfData := selfAsTemplatedYaml.IDef
+				rePath, _ := convertYamlpathToRegex("[%].cr", yamlPos)
+				dataxform.IApplyFn(selfData, func(entry dataxform.CollectionEntry) {
+					logger.Info("sleaf:", entry.LinearKey())
+					if rePath.MatchString(entry.LinearKey()) {
+						logger.Info("match")
+						if dataxform.IAsString(entry.Value()) == fileName {
+							fileName = dataxform.IAsString(entry.SameLevelValue("compType"))
+							logger.Info("comptype fileName:" + fileName)
+							entry.Stop()
+						}
+					}
+				})
+			}
 		}
 		if fileNameExpr != "" {
 			selfAsTemplatedYaml := loader.ConvertTemplatedYaml([]byte(edContext.content), "self")
@@ -89,7 +106,7 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 							if reFilterExpr != nil {
 								logger.Info("examine nodes")
 								dataxform.IApplyFnToNodes(fileData, func(entry dataxform.CollectionEntry) {
-										logger.Info("lin key:", entry.LinearKey())
+									logger.Info("lin key:", entry.LinearKey())
 									if reFilterExpr.MatchString(entry.LinearKey()) {
 										filterValue, _ := leafValDescr(entry, isFilterValue)
 										if value == filterValue {

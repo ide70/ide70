@@ -7,6 +7,10 @@ unitInterface:
       params:
         searchPrefix: The search prefix that the user typed in
     select: Logic that processes selected item
+    initDescr:
+      descr: Logic that collects description from dataKey
+      params:
+        dataKey: Data key to look up description
   properties:
     label:
       descr: Label
@@ -19,6 +23,19 @@ unitInterface:
       default: ""
     value:
       descr: Key of selected item
+    searchResultDisplayColumns:
+      type: array
+      descr: Columns of search result to display is search results
+      mapHead: true
+      children:
+        any:
+          descr: Column name 
+          listHead: true
+          singleKey: true
+    store:
+      descr: Persistence key
+      valueCompleter:
+        completerRef: dbFieldCompleter
 privateProperties:
   resultSet:
     descr: Result of user's current search expression
@@ -38,9 +55,9 @@ body: |
       <table class="suggest-table">
       {{range $rowIdx,$resultRow := .resultSet}}
         <tr class="suggest-row" {{eventHandlerWithKey $.This "onclick" "preSelect" $rowIdx}}>
-          {{range $k,$resultCell := $resultRow}}
+          {{range $colName := $.searchResultDisplayColumns}}
           <td>
-          {{$resultCell}}
+          {{index $resultRow $colName}}
           </td>
           {{end}}
         </tr>
@@ -54,7 +71,8 @@ eventHandlers:
       var fieldValue = Event().EventKey();
       if(!fieldValue) {
         CompCtx().RemoveProp("resultSet");
-        CompCtx().RefreshSubComp("options");    
+        CompCtx().RefreshSubComp("options");
+        CompCtx().RemoveProp("value");
       } else {
         CompCtx().ForwardEvent("filter").AddForwardParam("searchPrefix",fieldValue).RefreshSubComp("options");
       }
@@ -81,6 +99,13 @@ eventHandlers:
           CompCtx().SetProp("value",
           CompCtx().GetPropToCast("selectedRow").AsMap().Get(CompCtx().GetProp("keyColumn")));
       }
+  onUnitCreate:
+    action: |
+      CompCtx().ForwardEvent("initDescr").AddForwardParam("dataKey",CompCtx().GetProp("value"));
+  initDescr:
+    action: |
+      "";
+    propertyKey: valueDescr
 injectRootComp:
   css:
     - name: comp/suggest.css

@@ -1,0 +1,5 @@
+---
+descr: Common database fields
+items:
+  - code: _id
+    descr: Unique id

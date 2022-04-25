@@ -59,6 +59,16 @@ func (i Interface) AsString() string {
 	return dataxform.IAsString(i.I)
 }
 
+func (i Interface) AsDBO() *DataBaseObject {
+	switch iT := i.I.(type) {
+	case *DataBaseObject:
+		return iT
+	case DataBaseObject:
+		return &iT
+	}
+	return nil
+}
+
 func (m SIMap) Delete(key string) {
 	if m == nil {
 		return
@@ -89,6 +99,26 @@ func (m SIMap) Get(key string) interface{} {
 
 func (m SIMap) GetDbId() interface{} {
 	return m.Get("_id")
+}
+
+func (m SIMap) GetOneColumn() interface{} {
+	if len(m) != 1 {
+		return nil
+	}
+	for _, v := range m {
+		return v
+	}
+	return nil
+}
+
+func (m SIMap) GetOneColumnForConvert() Interface {
+	if len(m) != 1 {
+		return Interface{nil}
+	}
+	for _, v := range m {
+		return Interface{v}
+	}
+	return Interface{nil}
 }
 
 func (m SIMap) KeyList() IArray {
@@ -126,7 +156,7 @@ func (t ITable) PrintDBG() {
 
 func (t ITable) Get(idxIf interface{}) SIMap {
 	idx := dataxform.IAsInt(idxIf)
-	if idx<0 || idx>= len(t) {
+	if idx < 0 || idx >= len(t) {
 		return SIMap{}
 	}
 	return t[idx]

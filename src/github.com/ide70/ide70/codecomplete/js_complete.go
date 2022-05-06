@@ -1,9 +1,10 @@
 package codecomplete
 
 import (
-	//"fmt"
+	"fmt"
 	"github.com/ide70/ide70/comp"
 	"github.com/ide70/ide70/dataxform"
+	"github.com/ide70/ide70/loader"
 	"reflect"
 	"regexp"
 	"strings"
@@ -13,6 +14,9 @@ var reIdentifierStart = regexp.MustCompile(`[+-/*.{;: ()]*\w*\n*$`)
 var reVarNameStart = regexp.MustCompile(`[^.\w]+(\w+)\.\n*$`)
 var reWordEnding = regexp.MustCompile(`(\w+)\n*$`)
 var reVarDefConsts = regexp.MustCompile(`var \w+[^(]+\("(\w+)"\)`)
+var reVarFirstFuncName = regexp.MustCompile(`var \w+\s*=\s*(\.|\w+[^(\w]|\w+\(\))*(\w+)\("`)
+var reVariableDefinition = regexp.MustCompile(`var (\w+)\s*=\s*([^;]+)`)
+var reVarParentVar = regexp.MustCompile(`var \w+\s*=\s*(\w+)\.|var \w+\s*=\s*(\w+);`)
 
 func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
 	edContext.contextType = "js"
@@ -45,13 +49,15 @@ func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 		varNameStart := varNameStartMatches[1]
 		logger.Info("varNameStart:", varNameStart)
 
-		tp, firstConst := getVarType(code, varNameStart)
+		tp, varAttributes := getVarType(code, varNameStart)
 
 		if tp == nil {
 			return compl
 		}
 		configDataForCompl := dataxform.SIMapLightCopy(configData)
-		configDataForCompl["firstConst"] = firstConst
+		configDataForCompl["firstConst"] = varAttributes["firstConst"]
+		configDataForCompl["table"] = varAttributes["table"]
+		logger.Info("firstConst:", varAttributes["firstConst"])
 		compl = append(compl, completionsOfType(tp, "", yamlPos, edContext, configDataForCompl)...)
 		return compl
 	}
@@ -73,25 +79,56 @@ func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 	return compl
 }
 
-func getVarType(code, varName string) (reflect.Type, string) {
+func getVarType(code, varName string) (reflect.Type, map[string]string) {
 	defs := availableVarDefs(code)
-	identifierDef := defs[varName]
+	varDef := defs[varName]
+	identifierDef := varDef.defCode
 	logger.Info("identifierDef:", identifierDef)
 	// local variable and its definition found
 	if identifierDef != "" {
 		def := identifierDef + "."
 		tp, _ := getReturnType(def)
-		firstConst := ""
-		constMatches := reVarDefConsts.FindAllStringSubmatch(code, -1);
-		if len(constMatches) > 0 {
-			firstConst = constMatches[len(constMatches)-1][1]
-		}
-		return tp, firstConst
+		varAttributes := calcVarAttributes(varName, defs)
+		varAttributes["firstConst"] = varDef.firstConst
+		return tp, varAttributes
 	}
-	return nil, ""
+	return nil, nil
 }
 
-var reVariableDefinition = regexp.MustCompile(`var (\w+)\s*=\s*([^;]+)`)
+func yamlLookup(folderPrefix, fileName string, yamlExpr string) string {
+	fileAsTemplatedYaml := loader.GetTemplatedYaml(fileName, "ide70/"+folderPrefix+"/")
+	reExpr, isFilterValue := convertYamlpathToRegex(yamlExpr, nil)
+	logger.Info("filterExpr:", reExpr)
+	value := ""
+	if reExpr != nil {
+		logger.Info("examine nodes")
+		dataxform.IApplyFnToNodes(fileAsTemplatedYaml.IDef, func(entry dataxform.CollectionEntry) {
+			logger.Info("lin key:", entry.LinearKey())
+			if reExpr.MatchString(entry.LinearKey()) {
+				value, _ = leafValDescr(entry, isFilterValue)
+				return
+			}
+		})
+		logger.Info("examine nodes done")
+	}
+	return value
+}
+
+func calcVarAttributes(varName string, defs map[string]VarDef) map[string]string {
+	attributes := map[string]string{}
+	// table
+	attributeName := "table"
+	def := defs[varName]
+	if def.firstFuncName == "Table" {
+		attributes[attributeName] = def.firstConst
+	}
+	if def.firstFuncName == "JoinedTable" {
+		parentAttributes := calcVarAttributes(def.parentVarName, defs)
+		attributes[attributeName] = yamlLookup("dcfg/schema", parentAttributes[attributeName], fmt.Sprintf("connections.%s.foreignTable:value", def.firstConst))
+	}
+	logger.Info("attrs for var ", varName, attributes)
+	return attributes
+}
 
 func filterNonvisibleScope(code string) string {
 	res := ""
@@ -120,15 +157,49 @@ func filterNonvisibleScope(code string) string {
 	}
 }
 
-func availableVarDefs(code string) map[string]string {
-	defs := map[string]string{}
+type VarDef struct {
+	defCode       string
+	firstConst    string
+	firstFuncName string
+	parentVarName string
+}
+
+func findLastStringSubmatch(re *regexp.Regexp, s string) []string {
+	matches := re.FindAllStringSubmatch(s, -1)
+	if matches != nil {
+		return matches[len(matches)-1]
+	}
+	return nil
+}
+
+func availableVarDefs(code string) map[string]VarDef {
+	defs := map[string]VarDef{}
 	code = filterNonvisibleScope(code)
 	varDefs := reVariableDefinition.FindAllStringSubmatch(code, -1)
 	varDefPositions := reVariableDefinition.FindAllStringSubmatchIndex(code, -1)
 	for idx, varDefMatch := range varDefs {
-		logger.Info("vardef:", varDefMatch[1], code[:varDefPositions[idx][1]])
+		//logger.Info("vardef:", varDefMatch[1], code[:varDefPositions[idx][1]])
 		//defs[varDefMatch[1]] = varDefMatch[2]
-		defs[varDefMatch[1]] = code[:varDefPositions[idx][1]]
+		defCode := code[:varDefPositions[idx][1]]
+		varDef := VarDef{defCode: defCode}
+
+		constMatch := findLastStringSubmatch(reVarDefConsts, defCode)
+		if constMatch != nil {
+			varDef.firstConst = constMatch[1]
+		}
+
+		parentVarMatch := findLastStringSubmatch(reVarParentVar, defCode)
+		if parentVarMatch != nil {
+			varDef.parentVarName = parentVarMatch[1]
+		}
+
+		constFuncNameMatch := findLastStringSubmatch(reVarFirstFuncName, defCode)
+		if parentVarMatch != nil {
+			varDef.firstFuncName = constFuncNameMatch[2]
+		}
+
+		defs[varDefMatch[1]] = varDef
+		logger.Info("vardef:", varDefMatch[1], varDef)
 	}
 	return defs
 }
@@ -359,6 +430,8 @@ func completionsOfType(tp reflect.Type, funcNameFilter string, yamlPos *YamlPosi
 
 		if completer != nil {
 			configDataCompleter["firstConst"] = configData["firstConst"]
+			configDataCompleter["table"] = configData["table"]
+			logger.Info("configDataCompleter:", configDataCompleter)
 			compl = completer(yamlPos, edContext, configDataCompleter, compl)
 		}
 	}

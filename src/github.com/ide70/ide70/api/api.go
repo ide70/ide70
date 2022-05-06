@@ -59,6 +59,14 @@ func (i Interface) AsString() string {
 	return dataxform.IAsString(i.I)
 }
 
+func (i Interface) AsQueryDef() *QueryDef {
+	switch iT := i.I.(type) {
+	case *QueryDef:
+		return iT
+	}
+	return nil
+}
+
 func (i Interface) AsDBO() *DataBaseObject {
 	switch iT := i.I.(type) {
 	case *DataBaseObject:

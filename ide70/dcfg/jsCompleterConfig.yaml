@@ -124,7 +124,7 @@ functions:
       descr: Key attached to event
     GetParam:
       descr: Retrns parameter attached to event
-      params:
+      params: &EventGetParam
         - name: "Attached parameter name"
           valueCompleter:
             yamlPathCompleter:
@@ -132,6 +132,9 @@ functions:
               fileNameExpr: ../../../compType
               pathExpr: "unitInterface.events.%.params.%$"
               quote: '"'
+    GetParamToCast:
+      descr: Retrns parameter attached to event, for data type cast
+      params: *EventGetParam
   "comp.ITable":
     GroupBy:
       descr: Rearranges table rows grouping them by col
@@ -176,7 +179,7 @@ types:
         union:
           - yamlPathCompleter:
               folderPrefix: dcfg/schema
-              fileNameFromAutoProperty: firstConst
+              fileNameFromAutoProperty: table
               pathExpr: "columns[%].name:value"
           - dictCompleter:
               dictName: standardDbFields

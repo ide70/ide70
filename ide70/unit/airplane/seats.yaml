@@ -1,0 +1,48 @@
+---
+- compType: page
+  tree:
+    - buttonNewSeat
+    - buttonFilter
+    - seatlist
+- compType: button
+  text: "New seat"
+  cr: buttonNewSeat
+  eventHandlers:
+    onclick:
+      action: |
+        Event().LoadUnit("airplane/seatEdit");
+- compType: button
+  text: "Filter"
+  cr: buttonFilter
+  eventHandlers:
+    onclick:
+      action: |
+        CompByCr("seatlist").ForwardEvent("filter");
+- compType: datalist
+  dbTableName: seat
+  columns:
+    - header: Airplane
+      key: name
+    - header: Seat code
+      key: code
+    - header: Class
+      key: class
+    - header: Actions
+      items:
+        - cr: buttonEdit
+  cr: seatlist
+  eventHandlers:
+    filterQuery:
+      action: |
+        var qd = Event().GetParamToCast("query").AsQueryDef();
+        var q = CompCtx().DBCtx().QueryCtx();
+        var seat = q.Table("seat");
+        var apl = seat.JoinedTable("airplaneConn");
+        qd.From(seat).Select(seat._id, apl.name, seat.code, seat.class).List();
+- compType: button
+  text: Edit
+  eventHandlers:
+    onclick:
+      action: |
+        CompCtx().LoadUnit("airplane/seatEdit").AddPassParam("seatId", CompCtx().ParentContext().AsMap().Get("id"));
+  cr: buttonEdit

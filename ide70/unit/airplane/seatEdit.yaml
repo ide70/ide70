@@ -1,0 +1,64 @@
+---
+- compType: page
+  tree:
+    - labeledTable:
+      - inPrefixSuggestAirplaneType
+      - textboxCode
+      - inSelectionClass
+      - inCheckboxNearWindow
+      - buttonSave
+  inputs:
+    seatId: Id of seat database entity
+- compType: hlp/dbhelper
+  tableName: seat
+  dbIdInputName: seatId
+  cr: hlpDbhelper
+  eventHandlers:
+    afterSaveData:
+      action: |
+        Event().LoadParent();
+- compType: labeledTable
+  cr: labeledTable
+- compType: in/prefixSuggest
+  label: Airplane type
+  cr: inPrefixSuggestAirplaneType
+  eventHandlers:
+    filter:
+      action: |
+        var q = CompCtx().DBCtx().QueryCtx();
+        var airplane = q.Table("airplane");
+        var prefix = Event().GetParam("searchPrefix");
+        q.From(airplane).Select(airplane._id,airplane.name).Where(airplane.name.Like(prefix+"%"))
+        .AscendingBy(airplane.name).List();
+    initDescr:
+      action: |
+        var q = CompCtx().DBCtx().QueryCtx();
+        var airplane = q.Table("airplane");
+        var dataKey = Event().GetParam("dataKey");
+        q.From(airplane).Select(airplane.name).Where(airplane._id.Equals(dataKey)).OneRow()
+        .GetOneColumnForConvert().AsString();
+  searchResultDisplayColumns:
+    - name
+  keyColumn: id
+  descrColumn: name
+  store: airplane_id
+- compType: textbox
+  label: Code
+  cr: textboxCode
+  store: code
+- compType: in/selection
+  label: Class
+  cr: inSelectionClass
+  dictionaryFile: seatClass
+  store: class
+- compType: in/checkbox
+  label: Near window
+  cr: inCheckboxNearWindow
+  store: window
+- compType: button
+  text: Save
+  eventHandlers:
+    onclick:
+      action: |
+        CompByCr("hlpDbhelper").ForwardEvent("saveData");
+  cr: buttonSave

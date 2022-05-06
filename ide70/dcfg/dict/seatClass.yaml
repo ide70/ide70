@@ -1,0 +1,11 @@
+---
+descr: Seat class
+items:
+  - code: B
+    descr: Business
+  - code: PP
+    descr: Premium Plus
+  - code: EP
+    descr: Economy plus
+  - code: E
+    descr: Economy

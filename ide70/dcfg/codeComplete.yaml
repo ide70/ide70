@@ -249,6 +249,8 @@ comp:
         descr: Sub part id
         children:
           descr: Description of sub part
+  includeComps:
+    descr: Include components
 unit:
   compType:
     descr: Component type

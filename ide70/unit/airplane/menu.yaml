@@ -13,6 +13,8 @@
       loadUnit: airplane/flights
     - name: Airplanes
       loadUnit: airplane/airplanes
+    - name: Seats
+      loadUnit: airplane/seats
     - name: Bookings
       loadUnit: airplane/bookings
     - name: Logout

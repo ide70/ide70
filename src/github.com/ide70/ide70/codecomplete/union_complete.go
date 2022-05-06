@@ -19,6 +19,7 @@ func unionCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData 
 			if completer != nil {
 				subConfigData["descrPostfix"] = descrPostfix
 				subConfigData["firstConst"] = configData["firstConst"]
+				subConfigData["table"] = configData["table"]
 				res := completer(yamlPos, edContext, subConfigData, compl)
 				compl = append(compl, res...)
 				logger.Info("len(res):", len(res))

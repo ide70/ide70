@@ -35,8 +35,18 @@ unitInterface:
         fileNameCompleter:
           folderPrefix: dcfg/schema
           trimSuffix: .yaml
+  events:
+    filter:
+      descr: Call this event from Filter button
+      params:
+        query: Query - needs to casted to QueryDef
+    filterQuery:
+      descr: Override it to produce data for the data table
+privateProperties:
+  DataSet:
+    descr: Query result
 body: |
-  <table class="datatable">
+  <table class="datatable" id="{{.sid}}">
   <tr>
   {{range $column := .columns}}
     <th>{{$column.header}}</th>
@@ -61,6 +71,15 @@ eventHandlers:
         var dbTableName = CompByCr("").GetProp("dbTableName");
         var data = Event().DBCtx().WorksheetFindItemsPage(dbTableName , 0, 25);
         CompByCr("").SetProp("DataSet", data);
+  filter:
+    action: |
+      var q = CompCtx().DBCtx().QueryCtx();
+      var qd = q.NewQuery();
+      CompCtx().ForwardEvent("filterQuery").AddForwardParam("query", qd).Refresh();
+  filterQuery:
+    action: |
+      Api().Logger().Info("filter event");
+    propertyKey: DataSet
 injectRootComp:
   css:
     - name: comp/dataTable.css

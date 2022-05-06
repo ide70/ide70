@@ -5,3 +5,7 @@ columns:
   - name: code
   - name: class
   - name: window
+connections:
+  airplaneConn:
+    column: airplane_id
+    foreignTable: airplane

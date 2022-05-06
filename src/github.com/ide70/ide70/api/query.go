@@ -22,25 +22,33 @@ func (dbCtx *DatabaseContext) QueryCtx() *QueryCtx {
 }
 
 type ColumnOrder struct {
-	column SchemaCol
+	column *SchemaCol
 	isAsc  bool
 }
 
 type QueryDef struct {
 	qc              *QueryCtx
 	from            *SchemaTableReference
-	selectedColumns []SchemaCol
+	connections     map[string]*SchemaTableReference
+	selectedColumns []*SchemaCol
 	condition       *QueryConditionWrapper
 	ordering        []ColumnOrder
 	offset          int
 	limit           int
 }
 
-type SchemaTable map[string]SchemaCol
+type SchemaTable map[string]*SchemaCol
 
 type SchemaTableReference struct {
-	tableName string
-	alias     string
+	tableName        string
+	alias            string
+	parentConnection *SchemaConnection
+}
+
+type SchemaConnection struct {
+	parentTableRef *SchemaTableReference
+	joinCondition  QueryCondition
+	uniqueId       string
 }
 
 type SchemaCol struct {
@@ -49,16 +57,23 @@ type SchemaCol struct {
 	idField  bool
 }
 
-func (col SchemaCol) toSQL() string {
-	if col.tableRef.alias != "" {
-		return col.columnSQL(col.tableRef.alias)
-	}
-	return col.columnSQL(col.tableRef.tableName)
+func (col *SchemaCol) toSQL() string {
+	return col.toSQLWithConversion("")
 }
 
-func (col SchemaCol) columnSQL(tableName string) string {
+func (col *SchemaCol) toSQLWithConversion(dataTypeConv string) string {
+	if col.tableRef.alias != "" {
+		return col.columnSQL(col.tableRef.alias, dataTypeConv)
+	}
+	return col.columnSQL(col.tableRef.tableName, dataTypeConv)
+}
+
+func (col *SchemaCol) columnSQL(tableName, dataTypeConv string) string {
 	if col.idField {
 		return tableName + "." + col.name
+	}
+	if dataTypeConv != "" {
+		return "("+tableName + "." + dataFieldName + "->'" + col.name + "')::"+dataTypeConv
 	}
 	return tableName + "." + dataFieldName + "->>'" + col.name + "'"
 }
@@ -72,7 +87,7 @@ type QueryCondition interface {
 }
 
 type Like struct {
-	schemaCol SchemaCol
+	schemaCol *SchemaCol
 	likeExpr  string
 }
 
@@ -81,15 +96,33 @@ func (like Like) toSQL() string {
 }
 
 type Equals struct {
-	schemaCol SchemaCol
+	schemaCol *SchemaCol
 	right     interface{}
 }
 
 func (equals Equals) toSQL() string {
-	return equals.schemaCol.toSQL() + " = " + schemaColOrConstToSQL(equals.right)
+	dc1,dc2:=autoSQLDataTypeConversion(equals.schemaCol, equals.right)
+	return equals.schemaCol.toSQLWithConversion(dc1) + " = " + schemaColOrConstToSQL(equals.right, dc2)
 }
 
-func schemaColOrConstToSQL(i interface{}) string {
+func autoSQLDataTypeConversion(col1, col2 interface{}) (string, string) {
+	switch col1T := col1.(type) {
+	case *SchemaCol:
+		switch col2T := col2.(type) {
+		case *SchemaCol:
+			if col1T.idField && !col2T.idField {
+				return "", "numeric"
+			}
+			if !col1T.idField && col2T.idField {
+				return "numeric", ""
+			}
+		}
+
+	}
+	return "", ""
+}
+
+func schemaColOrConstToSQL(i interface{}, dataTypeConversion string) string {
 	switch it := i.(type) {
 	case int, int64:
 		return fmt.Sprintf("%d", i)
@@ -99,10 +132,26 @@ func schemaColOrConstToSQL(i interface{}) string {
 		return sqlStringConst(it)
 	case time.Time:
 		return "TIMESTAMP " + sqlStringConst(it.Format("2006-01-02 15:04:05"))
-	case SchemaCol:
-		return it.toSQL()
+	case *SchemaCol:
+		return it.toSQLWithConversion(dataTypeConversion)
 	}
 	return "null"
+}
+
+func isNumeric(i interface{}) bool {
+	switch it := i.(type) {
+	case int, int64:
+		return true
+	case float32, float64:
+		return true
+	case string:
+		return false
+	case time.Time:
+		return false
+	case *SchemaCol:
+		return it.idField
+	}
+	return false
 }
 
 type And struct {
@@ -115,6 +164,10 @@ func (and And) toSQL() string {
 }
 
 func (qc *QueryCtx) Table(tableName string) SchemaTable {
+	return newSchemaTable(tableName)
+}
+
+func newSchemaTable(tableName string) SchemaTable {
 	table := SchemaTable{}
 	ref := &SchemaTableReference{tableName: tableName}
 	fileAsTemplatedYaml := loader.GetTemplatedYaml(tableName, "ide70/dcfg/schema/")
@@ -125,21 +178,81 @@ func (qc *QueryCtx) Table(tableName string) SchemaTable {
 	for _, columnIf := range columnList {
 		column := dataxform.IAsSIMap(columnIf)
 		columnName := dataxform.SIMapGetByKeyAsString(column, "name")
-		table[columnName] = SchemaCol{name: columnName, tableRef: ref, idField: false}
+		table[columnName] = &SchemaCol{name: columnName, tableRef: ref, idField: false}
 	}
-	table[idFieldName] = SchemaCol{name: "id", tableRef: ref, idField: true}
-	table[schemaTableReferenceKey] = SchemaCol{tableRef: ref}
+	table[idFieldName] = &SchemaCol{name: "id", tableRef: ref, idField: true}
+	table[schemaTableReferenceKey] = &SchemaCol{tableRef: ref}
 	return table
 }
 
+func (st SchemaTable) JoinedTable(connectionName string) SchemaTable {
+	table := SchemaTable{}
+	parentRef := st[schemaTableReferenceKey].tableRef
+	parentTableName := parentRef.tableName
+	fileAsTemplatedYaml := loader.GetTemplatedYaml(parentTableName, "ide70/dcfg/schema/")
+	if fileAsTemplatedYaml == nil {
+		return table
+	}
+	connMap := dataxform.SIMapGetByKeyAsMap(fileAsTemplatedYaml.Def, "connections")
+	logger.Info("connMap:", connMap)
+	for connName, connIf := range connMap {
+		if connName != connectionName {
+			continue
+		}
+		logger.Info("connName:", connName)
+		conn := dataxform.IAsSIMap(connIf)
+		logger.Info("conn:", conn)
+		localColumnName := dataxform.SIMapGetByKeyAsString(conn, "column")
+		foreignTableName := dataxform.SIMapGetByKeyAsString(conn, "foreignTable")
+		foreignColumnName := dataxform.SIMapGetByKeyAsString(conn, "foreignColumn")
+		if foreignColumnName == "" {
+			foreignColumnName = idFieldName
+		}
+		table = newSchemaTable(foreignTableName)
+		ref := table[schemaTableReferenceKey].tableRef
+		parentUniqueId := parentTableName
+		if parentRef.parentConnection != nil {
+			parentUniqueId = parentRef.parentConnection.uniqueId
+		}
+		condition := Equals{schemaCol: st[localColumnName], right: table[foreignColumnName]}
+		ref.parentConnection = &SchemaConnection{parentTableRef: parentRef, joinCondition: condition, uniqueId: parentUniqueId + "." + connectionName}
+		break
+	}
+	logger.Info("JoinedTable:", table)
+
+	return table
+}
+
+func newQueryDef() *QueryDef {
+	return &QueryDef{connections: map[string]*SchemaTableReference{}}
+}
+
 func (qc *QueryCtx) From(table SchemaTable) *QueryDef {
-	qd := &QueryDef{}
+	qd := newQueryDef()
 	qd.qc = qc
 	qd.from = table[schemaTableReferenceKey].tableRef
 	return qd
 }
 
-func (qd *QueryDef) Select(columns ...SchemaCol) *QueryDef {
+func (qc *QueryCtx) NewQuery() *QueryDef {
+	qd := newQueryDef()
+	qd.qc = qc
+	return qd
+}
+
+func (qd *QueryDef) From(table SchemaTable) *QueryDef {
+	qd.from = table[schemaTableReferenceKey].tableRef
+	return qd
+}
+
+func (qc *QueryCtx) Join(table SchemaTable) *QueryDef {
+	qd := newQueryDef()
+	qd.qc = qc
+	qd.from = table[schemaTableReferenceKey].tableRef
+	return qd
+}
+
+func (qd *QueryDef) Select(columns ...*SchemaCol) *QueryDef {
 	qd.selectedColumns = append(qd.selectedColumns, columns...)
 	return qd
 }
@@ -149,12 +262,12 @@ func (qd *QueryDef) Where(condition *QueryConditionWrapper) *QueryDef {
 	return qd
 }
 
-func (qd *QueryDef) AscendingBy(column SchemaCol) *QueryDef {
+func (qd *QueryDef) AscendingBy(column *SchemaCol) *QueryDef {
 	qd.ordering = append(qd.ordering, ColumnOrder{column: column, isAsc: true})
 	return qd
 }
 
-func (qd *QueryDef) DescendingBy(column SchemaCol) *QueryDef {
+func (qd *QueryDef) DescendingBy(column *SchemaCol) *QueryDef {
 	qd.ordering = append(qd.ordering, ColumnOrder{column: column, isAsc: false})
 	return qd
 }
@@ -176,8 +289,8 @@ func (qd *QueryDef) List() ITable {
 }
 
 func (qd *QueryDef) OneRow() SIMap {
-	qd.Limit(1);
-	resultTable := qd.qc.dbCtx.RunQueryDef(qd);
+	qd.Limit(1)
+	resultTable := qd.qc.dbCtx.RunQueryDef(qd)
 	if len(resultTable) == 0 {
 		return nil
 	}
@@ -185,7 +298,17 @@ func (qd *QueryDef) OneRow() SIMap {
 }
 
 func (qd *QueryDef) _toSQL() string {
-	qd.from.generateAlias(1)
+	aliasIdx := 1
+	qd.from.generateAlias(aliasIdx)
+	aliasIdx++
+	logger.Info("connections generation start")
+	qd.lookupConnections()
+	logger.Info("connections generated")
+	for _, conn := range qd.connections {
+		conn.generateAlias(aliasIdx)
+		aliasIdx++
+	}
+	logger.Info("aliases for connections generated")
 	var sb strings.Builder
 	sb.WriteString("select ")
 	for idx, selectedColumn := range qd.selectedColumns {
@@ -195,7 +318,15 @@ func (qd *QueryDef) _toSQL() string {
 		sb.WriteString(selectedColumn.toSQL())
 	}
 	sb.WriteString(" from ")
-	sb.WriteString(qd.from.toSQL())
+	sb.WriteString(qd.from.toTableSQL())
+
+	// generate joins
+	for _, join := range qd.connections {
+		logger.Info("generating join:", join)
+		sb.WriteString(join.toJoinSQL())
+	}
+	logger.Info("joins generated")
+
 	if qd.condition != nil {
 		sb.WriteString(" where ")
 		sb.WriteString(qd.condition.condition.toSQL())
@@ -209,15 +340,42 @@ func (qd *QueryDef) _toSQL() string {
 			sb.WriteString(orderColumn.toSQL())
 		}
 	}
+	if qd.offset != 0 {
+		sb.WriteString(" offset ")
+		sb.WriteString(fmt.Sprintf("%d", qd.offset))
+	}
+	if qd.limit != 0 {
+		sb.WriteString(" limit ")
+		sb.WriteString(fmt.Sprintf("%d", qd.limit))
+	}
 	return sb.String()
 }
 
-func (schemaCol SchemaCol) Like(likeExpr string) *QueryConditionWrapper {
+func (qd *QueryDef) lookupConnections() {
+	logger.Info("qd.selectedColumns", qd.selectedColumns)
+	for _, selectedColumn := range qd.selectedColumns {
+		qd.addConnectingTable(selectedColumn.tableRef)
+	}
+}
+
+func (qd *QueryDef) addConnectingTable(tableRef *SchemaTableReference) {
+	logger.Info("addConnectingTable tableRef:", tableRef)
+	conn := tableRef.parentConnection
+	if conn != nil {
+		logger.Info("conn:", conn)
+		if qd.connections[conn.uniqueId] == nil {
+			qd.addConnectingTable(conn.parentTableRef)
+			qd.connections[conn.uniqueId] = tableRef
+		}
+	}
+}
+
+func (schemaCol *SchemaCol) Like(likeExpr string) *QueryConditionWrapper {
 	like := Like{schemaCol: schemaCol, likeExpr: likeExpr}
 	return &QueryConditionWrapper{condition: like}
 }
 
-func (schemaCol SchemaCol) Equals(right interface{}) *QueryConditionWrapper {
+func (schemaCol *SchemaCol) Equals(right interface{}) *QueryConditionWrapper {
 	like := Equals{schemaCol: schemaCol, right: right}
 	return &QueryConditionWrapper{condition: like}
 }
@@ -235,11 +393,20 @@ func (str *SchemaTableReference) generateAlias(idx int) {
 	str.alias = fmt.Sprintf("T%d", idx)
 }
 
-func (str *SchemaTableReference) toSQL() string {
+func (str *SchemaTableReference) toTableSQL() string {
 	sql := str.tableName
 	if str.alias != "" {
 		sql += " " + str.alias
 	}
+	return sql
+}
+
+func (str *SchemaTableReference) toJoinSQL() string {
+	sql := " JOIN "
+	sql += str.toTableSQL()
+	logger.Info("str.parentConnection:", str.parentConnection)
+	sql += " ON "
+	sql += str.parentConnection.joinCondition.toSQL()
 	return sql
 }
 

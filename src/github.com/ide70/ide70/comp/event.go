@@ -555,6 +555,10 @@ func (e *EventRuntime) GetParam(key string) interface{} {
 	return e.Params[key]
 }
 
+func (e *EventRuntime) GetParamToCast(key string) api.Interface {
+	return api.Interface{I:e.Params[key]}
+}
+
 func (e *EventRuntime) GetUnit() *UnitCtx {
 	return &UnitCtx{e.UnitRuntime}
 }

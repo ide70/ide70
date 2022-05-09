@@ -29,11 +29,20 @@ functions:
       params: &GetPropParams
         - name: "property name"
           valueCompleter:
-            yamlPathCompleter:
-              self: yes
-              pathExpr: "unitInterface.properties.%$|privateProperties.%$"
-              pathNodes: yes
-              quote: '"'
+            firstOf:
+              - yamlPathCompleter:
+                  fileNameRegex: 'CompByCr\("([\w\/]+)"\)'
+                  fileNameRegexCrToCompType: yes
+                  fileNameExprCond: "cr"
+                  folderPrefix: comp
+                  pathExpr: "unitInterface.properties.%$"
+                  quote: '"'
+                  pathNodes: yes
+              - yamlPathCompleter:
+                  self: yes
+                  pathExpr: "unitInterface.properties.%$|privateProperties.%$"
+                  pathNodes: yes
+                  quote: '"'
     GetPropToCast:
       descr: Get component property for casting to a type
       params: *GetPropParams
@@ -171,6 +180,18 @@ functions:
             fileNameCompleter:
               folderPrefix: dcfg/schema
               trimSuffix: .yaml
+              quote: '"'
+  "api.SchemaTable":
+    JoinedTable:
+      descr: Create joined table object for querydsl table
+      params:
+        - name: "Connection name"
+          valueCompleter:
+            yamlPathCompleter:
+              folderPrefix: dcfg/schema
+              fileNameFromAutoProperty: table
+              pathExpr: "connections.%$"
+              pathNodes: yes
               quote: '"'
 types:
   "api.SchemaTable":

@@ -101,6 +101,9 @@ type Equals struct {
 }
 
 func (equals Equals) toSQL() string {
+	if equals.right == nil {
+		return "1 = 1"
+	}
 	dc1,dc2:=autoSQLDataTypeConversion(equals.schemaCol, equals.right)
 	return equals.schemaCol.toSQLWithConversion(dc1) + " = " + schemaColOrConstToSQL(equals.right, dc2)
 }

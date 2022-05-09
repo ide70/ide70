@@ -101,7 +101,9 @@ eventHandlers:
       }
   onUnitCreate:
     action: |
-      CompCtx().ForwardEvent("initDescr").AddForwardParam("dataKey",CompCtx().GetProp("value"));
+      if(CompCtx().HasProp("value")) {
+        CompCtx().ForwardEvent("initDescr").AddForwardParam("dataKey",CompCtx().GetProp("value"));
+      }
   initDescr:
     action: |
       "";

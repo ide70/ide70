@@ -6,6 +6,7 @@
         - textboxName
         - textboxCapacity
         - buttonSave
+        - buttonSeats
   inputs:
     airplaneId: ID of airplane to edit
 - compType: hlp/dbhelper
@@ -37,3 +38,11 @@
       action: |
         CompByCr("hlpDbhelper").ForwardEvent("saveData");
   cr: buttonSave
+- compType: button
+  text: "Seats..."
+  cr: buttonSeats
+  eventHandlers:
+    onclick:
+      action: |
+        var currentAirplaneId = Event().GetUnit().GetPassParams().Get("airplaneId");
+        CompCtx().LoadUnit("airplane/seats").AddPassParam("airplaneId", currentAirplaneId);

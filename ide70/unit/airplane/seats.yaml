@@ -2,8 +2,12 @@
 - compType: page
   tree:
     - buttonNewSeat
+    - labeledTable:
+        - inPrefixSuggestAirplaneType
     - buttonFilter
     - seatlist
+  inputs:
+    airplaneId: Restict listing to given airplane (optional)
 - compType: button
   text: "New seat"
   cr: buttonNewSeat
@@ -11,6 +15,33 @@
     onclick:
       action: |
         Event().LoadUnit("airplane/seatEdit");
+- compType: labeledTable
+  cr: labeledTable
+- compType: in/prefixSuggest
+  label: Airplane type
+  cr: inPrefixSuggestAirplaneType
+  eventHandlers:
+    filter:
+      action: |
+        var q = CompCtx().DBCtx().QueryCtx();
+        var airplane = q.Table("airplane");
+        var prefix = Event().GetParam("searchPrefix");
+        q.From(airplane).Select(airplane._id,airplane.name).Where(airplane.name.Like(prefix+"%"))
+        .AscendingBy(airplane.name).List();
+    initDescr:
+      action: |
+        var q = CompCtx().DBCtx().QueryCtx();
+        var airplane = q.Table("airplane");
+        var dataKey = Event().GetParam("dataKey");
+        q.From(airplane).Select(airplane.name).Where(airplane._id.Equals(dataKey)).OneRow()
+        .GetOneColumnForConvert().AsString();
+  searchResultDisplayColumns:
+    - name
+  keyColumn: id
+  descrColumn: name
+  value:
+    calc: |
+      Event().GetUnit().GetPassParams().Get("airplaneId");
 - compType: button
   text: "Filter"
   cr: buttonFilter
@@ -38,7 +69,8 @@
         var q = CompCtx().DBCtx().QueryCtx();
         var seat = q.Table("seat");
         var apl = seat.JoinedTable("airplaneConn");
-        qd.From(seat).Select(seat._id, apl.name, seat.code, seat.class).List();
+        var airplane_id = CompByCr("inPrefixSuggestAirplaneType").GetProp("value");
+        qd.From(seat).Select(seat._id, apl.name, seat.code, seat.class).Where(apl._id.Equals(airplane_id)).List();
 - compType: button
   text: Edit
   eventHandlers:

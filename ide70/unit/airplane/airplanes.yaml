@@ -19,4 +19,15 @@
       key: name
     - header: Capacity
       key: capacity
+    - header: Actions
+      items:
+        - cr: buttonEdit
   cr: airplanesList
+- compType: button
+  text: Edit
+  eventHandlers:
+    onclick:
+      action: |
+        CompCtx().LoadUnit("airplane/airplaneEdit").AddPassParam("airplaneId", CompCtx().ParentContext().
+        AsMap().GetDbId());
+  cr: buttonEdit

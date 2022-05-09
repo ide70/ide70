@@ -68,9 +68,7 @@ body: |
 eventHandlers:
   onUnitCreate:
     action: |
-        var dbTableName = CompByCr("").GetProp("dbTableName");
-        var data = Event().DBCtx().WorksheetFindItemsPage(dbTableName , 0, 25);
-        CompByCr("").SetProp("DataSet", data);
+      CompCtx().ForwardEvent("filter");
   filter:
     action: |
       var q = CompCtx().DBCtx().QueryCtx();
@@ -78,7 +76,8 @@ eventHandlers:
       CompCtx().ForwardEvent("filterQuery").AddForwardParam("query", qd).Refresh();
   filterQuery:
     action: |
-      Api().Logger().Info("filter event");
+      var dbTableName = CompByCr("").GetProp("dbTableName");
+      Event().DBCtx().WorksheetFindItemsPage(dbTableName , 0, 25);
     propertyKey: DataSet
 injectRootComp:
   css:

@@ -26,10 +26,11 @@ func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 		nrParam, codeWithoutParams := inspectParamBlock(code)
 		logger.Info("codeWithoutParams:", codeWithoutParams, "nrParam:", nrParam)
 		if nrParam >= 0 {
-			tp, funcName :=
+			tp, funcName, attrs :=
 				getBaseTypeAndName(codeWithoutParams)
 			logger.Info("func:", funcName, "nrParam:", nrParam)
-			compls := completionsOfFuncParam(tp, funcName, nrParam, yamlPos, edContext, configData)
+			
+			compls := completionsOfFuncParam(tp, funcName, nrParam, yamlPos, edContext, configData, attrs)
 			if len(compls) > 0 {
 				logger.Info("compls found:", len(compls))
 				compl = append(compl, compls...)
@@ -323,28 +324,29 @@ func getReturnType(code string) (reflect.Type, string) {
 	return baseType, ""
 }
 
-func getBaseTypeAndName(code string) (reflect.Type, string) {
+func getBaseTypeAndName(code string) (reflect.Type, string, map[string]string) {
 	funcNameChain := getFuncNameChain(code)
+	attrs := map[string]string{}
 
 	baseType := reflect.TypeOf(&comp.VmBase{})
 	for idx, funcName := range funcNameChain {
 		if idx == len(funcNameChain)-1 {
-			return baseType, funcName
+			return baseType, funcName, attrs
 			logger.Info("rb1", baseType, funcName)
 		}
 		if strings.HasPrefix(funcName, "var:") {
 			varName := strings.TrimPrefix(funcName, "var:")
-			baseType, _ = getVarType(code, varName)
+			baseType, attrs = getVarType(code, varName)
 		} else {
 			baseType = returnTypeOfFunc(baseType, funcName)
 		}
 		if baseType == nil {
-			return nil, ""
+			return nil, "", nil
 			logger.Info("rb2")
 		}
 	}
 	logger.Info("rb3", baseType)
-	return baseType, ""
+	return baseType, "", attrs
 }
 
 func returnTypeOfFunc(baseType reflect.Type, funcName string) reflect.Type {
@@ -439,7 +441,7 @@ func completionsOfType(tp reflect.Type, funcNameFilter string, yamlPos *YamlPosi
 	return compl
 }
 
-func completionsOfFuncParam(tp reflect.Type, methodName string, paramNo int, yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}) []map[string]string {
+func completionsOfFuncParam(tp reflect.Type, methodName string, paramNo int, yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, attrs map[string]string) []map[string]string {
 	compl := []map[string]string{}
 	if tp == nil {
 		return compl
@@ -460,6 +462,8 @@ func completionsOfFuncParam(tp reflect.Type, methodName string, paramNo int, yam
 	completer, configDataCompleter := lookupCompleter("value", paramDescriptor)
 
 	if completer != nil {
+		configDataCompleter["firstConst"] = attrs["firstConst"]
+		configDataCompleter["table"] = attrs["table"]
 		compl = completer(yamlPos, edContext, configDataCompleter, compl)
 	}
 

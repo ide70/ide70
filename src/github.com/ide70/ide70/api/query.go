@@ -73,13 +73,14 @@ func (col *SchemaCol) columnSQL(tableName, dataTypeConv string) string {
 		return tableName + "." + col.name
 	}
 	if dataTypeConv != "" {
-		return "("+tableName + "." + dataFieldName + "->'" + col.name + "')::"+dataTypeConv
+		return "(" + tableName + "." + dataFieldName + "->'" + col.name + "')::" + dataTypeConv
 	}
 	return tableName + "." + dataFieldName + "->>'" + col.name + "'"
 }
 
 type QueryConditionWrapper struct {
-	condition QueryCondition
+	condition        QueryCondition
+	conditionColumns []*SchemaCol
 }
 
 type QueryCondition interface {
@@ -104,7 +105,7 @@ func (equals Equals) toSQL() string {
 	if equals.right == nil {
 		return "1 = 1"
 	}
-	dc1,dc2:=autoSQLDataTypeConversion(equals.schemaCol, equals.right)
+	dc1, dc2 := autoSQLDataTypeConversion(equals.schemaCol, equals.right)
 	return equals.schemaCol.toSQLWithConversion(dc1) + " = " + schemaColOrConstToSQL(equals.right, dc2)
 }
 
@@ -160,6 +161,15 @@ func isNumeric(i interface{}) bool {
 type And struct {
 	c1 QueryCondition
 	c2 QueryCondition
+}
+
+type Or struct {
+	c1 QueryCondition
+	c2 QueryCondition
+}
+
+func (or Or) toSQL() string {
+	return or.c1.toSQL() + " or " + or.c2.toSQL()
 }
 
 func (and And) toSQL() string {
@@ -359,6 +369,11 @@ func (qd *QueryDef) lookupConnections() {
 	for _, selectedColumn := range qd.selectedColumns {
 		qd.addConnectingTable(selectedColumn.tableRef)
 	}
+	if qd.condition != nil {
+		for _, conditionColumn := range qd.condition.conditionColumns {
+			qd.addConnectingTable(conditionColumn.tableRef)
+		}
+	}
 }
 
 func (qd *QueryDef) addConnectingTable(tableRef *SchemaTableReference) {
@@ -375,17 +390,29 @@ func (qd *QueryDef) addConnectingTable(tableRef *SchemaTableReference) {
 
 func (schemaCol *SchemaCol) Like(likeExpr string) *QueryConditionWrapper {
 	like := Like{schemaCol: schemaCol, likeExpr: likeExpr}
-	return &QueryConditionWrapper{condition: like}
+	return &QueryConditionWrapper{condition: like, conditionColumns: []*SchemaCol{schemaCol}}
 }
 
 func (schemaCol *SchemaCol) Equals(right interface{}) *QueryConditionWrapper {
 	like := Equals{schemaCol: schemaCol, right: right}
-	return &QueryConditionWrapper{condition: like}
+	qcw := &QueryConditionWrapper{condition: like}
+	conditionColumns := []*SchemaCol{schemaCol}
+	switch rightT := right.(type) {
+	case *SchemaCol:
+		conditionColumns = append(conditionColumns, rightT)
+	}
+	qcw.conditionColumns = conditionColumns
+	return qcw
 }
 
 func (c *QueryConditionWrapper) And(cRight *QueryConditionWrapper) *QueryConditionWrapper {
 	and := And{c1: c.condition, c2: cRight.condition}
-	return &QueryConditionWrapper{condition: and}
+	return &QueryConditionWrapper{condition: and, conditionColumns: append(c.conditionColumns, cRight.conditionColumns...)}
+}
+
+func (c *QueryConditionWrapper) Or(cRight *QueryConditionWrapper) *QueryConditionWrapper {
+	and := Or{c1: c.condition, c2: cRight.condition}
+	return &QueryConditionWrapper{condition: and, conditionColumns: append(c.conditionColumns, cRight.conditionColumns...)}
 }
 
 func sqlStringConst(s string) string {

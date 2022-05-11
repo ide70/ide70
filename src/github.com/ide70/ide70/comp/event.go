@@ -756,3 +756,7 @@ func (unit *UnitCtx) InitializeStored(data api.SIMap) {
 func (unit *UnitCtx) GetPassParams() api.SIMap {
 	return unit.unit.PassContext.Params
 }
+
+func (unit *UnitCtx) GetPassParam(key string) interface{} {
+	return unit.unit.PassContext.Params[key]
+}

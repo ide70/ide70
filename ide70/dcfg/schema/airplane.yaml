@@ -4,3 +4,12 @@ columns:
   - name: code
   - name: name
   - name: capacity
+connections:
+  flightMConn:
+    column: _id
+    foreignTable: flight
+    foreignColumn: airplane_id
+  seatMConn:
+    column: _id
+    foreignTable: seat
+    foreignColumn: airplane_id

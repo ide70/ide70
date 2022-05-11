@@ -5,3 +5,7 @@ columns:
   - name: destination
   - name: departure
   - name: airplane_id
+connections:
+  airplaneConn:
+    column: airplane_id
+    foreignTable: airplane

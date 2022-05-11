@@ -83,6 +83,7 @@ func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 func getVarType(code, varName string) (reflect.Type, map[string]string) {
 	defs := availableVarDefs(code)
 	varDef := defs[varName]
+	logger.Info("vdef:", varDef)
 	identifierDef := varDef.defCode
 	logger.Info("identifierDef:", identifierDef)
 	// local variable and its definition found
@@ -182,20 +183,24 @@ func availableVarDefs(code string) map[string]VarDef {
 		//logger.Info("vardef:", varDefMatch[1], code[:varDefPositions[idx][1]])
 		//defs[varDefMatch[1]] = varDefMatch[2]
 		defCode := code[:varDefPositions[idx][1]]
+		logger.Info("defCode:",defCode)
 		varDef := VarDef{defCode: defCode}
 
 		constMatch := findLastStringSubmatch(reVarDefConsts, defCode)
+		logger.Info("constMatch:",constMatch)
 		if constMatch != nil {
 			varDef.firstConst = constMatch[1]
 		}
 
 		parentVarMatch := findLastStringSubmatch(reVarParentVar, defCode)
+		logger.Info("parentVarMatch:",parentVarMatch)
 		if parentVarMatch != nil {
 			varDef.parentVarName = parentVarMatch[1]
 		}
 
 		constFuncNameMatch := findLastStringSubmatch(reVarFirstFuncName, defCode)
-		if parentVarMatch != nil {
+		logger.Info("constFuncNameMatch:",constFuncNameMatch)
+		if constFuncNameMatch != nil {
 			varDef.firstFuncName = constFuncNameMatch[2]
 		}
 

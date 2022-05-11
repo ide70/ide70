@@ -150,6 +150,16 @@ functions:
       params:
         - name: "group by column"
         - name: "groups sublist column"
+  "*comp.UnitCtx":
+    GetPassParam:
+      descr: Returns unit passed paramter by key
+      params:
+        - name: parameter key
+          valueCompleter:
+            yamlPathCompleter:
+              self: yes
+              pathExpr: "[0].inputs.%$"
+              quote: '"'
   "*store.DatabaseContext":
     CreateDBO:
       descr: Creates database object

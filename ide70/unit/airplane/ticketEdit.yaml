@@ -1,0 +1,51 @@
+---
+- compType: page
+  tree:
+    - labeledTable:
+      - inPrefixSuggestFlight
+      - inPrefixSuggestSeat
+  inputs:
+    ticketId: Id of ticket database entity
+- compType: labeledTable
+  cr: labeledTable
+- compType: in/prefixSuggest
+  eventHandlers:
+    filter: 
+      action: |
+        var q = CompCtx().DBCtx().QueryCtx();
+        var flight = q.Table("flight");
+        var searchText = Event().GetParam("searchPrefix");
+        q.From(flight).Select(flight._id,flight.flight_id,flight.destination,flight.departure).
+        Where(flight.destination.Like("%"+searchText+"%")).
+        AscendingBy(flight.departure).List();
+  searchResultDisplayColumns:
+    - flight_id
+    - destination
+    - departure
+  descrColumn: flight_id
+  keyColumn: id
+  store: airplane_id
+  label: Flight
+  cr: inPrefixSuggestFlight
+- compType: in/prefixSuggest
+  eventHandlers:
+    filter: 
+      action: |
+        var q = CompCtx().DBCtx().QueryCtx();
+        var flightId = CompByCr("inPrefixSuggestFlight").GetProp("value");
+        var airplane = q.Table("airplane");
+        var flight = airplane.JoinedTable("flightMConn");
+        var seat = airplane.JoinedTable("seatMConn");
+        var searchText = Event().GetParam("searchPrefix");
+        q.From(airplane).Select(seat._id, seat.code, seat.class, seat.window).
+        Where(flight._id.Equals(flightId).And(seat.code.Like('%'+searchText+'%'))).
+        AscendingBy(seat.code).List();
+  searchResultDisplayColumns:
+    - code
+    - class
+    - window
+  descrColumn: code
+  keyColumn: id
+  store: airplane_id
+  label: Seat
+  cr: inPrefixSuggestSeat

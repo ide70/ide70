@@ -1,0 +1,13 @@
+---
+descr: Flight reservation
+columns:
+  - name: flight_id
+  - name: seat_id
+  - name: price
+connections:
+  flightConn:
+    column: flight_id
+    foreignTable: flight
+  seatConn:
+    column: seat_id
+    foreignTable: seat

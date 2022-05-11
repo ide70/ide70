@@ -41,7 +41,7 @@
   descrColumn: name
   value:
     calc: |
-      Event().GetUnit().GetPassParams().Get("airplaneId");
+      Event().GetUnit().GetPassParam("airplaneId");
 - compType: button
   text: "Filter"
   cr: buttonFilter

@@ -327,6 +327,36 @@ dcfg/schema:
       name:
         descr: Column name in database and application
         listHead: yes
+  connections:
+    descr: Connections to foreign database tables
+    mapHead: yes
+    children:
+      any:
+        descr: Connection name
+        mapHead: yes
+        children:
+          column:
+            descr: Connecting column
+            valueCompleter:
+              union:
+                - yamlPathCompleter:
+                    self: yes
+                    pathExpr: "columns[%].name:value"
+                - dictCompleter:
+                    dictName: standardDbFields
+          foreignTable:
+            descr: Foreign table name
+            valueCompleter:
+              fileNameCompleter:
+                folderPrefix: dcfg/schema
+                trimSuffix: .yaml
+          foreignColumn:
+            descr: Foreign column name, optional, default is id
+            valueCompleter:
+              yamlPathCompleter:
+                folderPrefix: dcfg/schema
+                fileNameExpr: ../foreignTable
+                pathExpr: "columns[%].name:value"
 "dcfg/templateComplete.yaml":
   methods:
     descr: Template built in methods

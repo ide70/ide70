@@ -139,10 +139,10 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 			comp.AccessibleDef[k] = v
 		}
 	}
-	
+
 	parseDefaultValues(dataxform.SIMapGetByKeyChainAsMap(module.Def, "unitInterface.properties"), comp.AccessibleDef)
 	parseDefaultValues(dataxform.SIMapGetByKeyAsMap(module.Def, "privateProperties"), comp.AccessibleDef)
-	
+
 	// TODO: list of non-accessible definitions
 	/*comp.AccessibleDef["eventHandlers"] = module.Def["eventHandlers"]
 	comp.AccessibleDef["autoInclude"] = module.Def["autoInclude"]
@@ -164,11 +164,11 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 
 func parseDefaultValues(def map[string]interface{}, dest map[string]interface{}) {
 	dataxform.IApplyFnToNodes(def, func(entry dataxform.CollectionEntry) {
-			if entry.Key() == "default" {
-				parentKey := entry.Parent().LinearKey()
-				dataxform.SIMapUpdateValue(parentKey, entry.Value(), dest, false)
-				logger.Warning("default value", parentKey, entry.Value())
-			}
+		if entry.Key() == "default" {
+			parentKey := entry.Parent().LinearKey()
+			dataxform.SIMapUpdateValue(parentKey, entry.Value(), dest, false)
+			logger.Warning("default value", parentKey, entry.Value())
+		}
 	})
 }
 
@@ -184,6 +184,9 @@ func createTemplate(body, name string, appParams *AppParams, bodyConsts map[stri
 		"eventHandlerJs":      GenerateEventHandlerJs,
 		"eventHandlerWithKey": GenerateEventHandlerWithKey,
 		"numRange":            numRange,
+		"numRangeOpenEnd":     numRangeOpenEnd,
+		"linearContext":       LinearContext,
+		"generateSubComp":     GenerateSubComp,
 		"app": func() *AppParams {
 			return appParams
 		},
@@ -221,9 +224,23 @@ func numRange(startI, endI interface{}) (stream chan int) {
 	stream = make(chan int)
 	start := dataxform.IAsInt(startI)
 	end := dataxform.IAsInt(endI)
-	
+
 	go func() {
 		for i := start; i <= end; i++ {
+			stream <- i
+		}
+		close(stream)
+	}()
+	return
+}
+
+func numRangeOpenEnd(startI, endI interface{}) (stream chan int) {
+	stream = make(chan int)
+	start := dataxform.IAsInt(startI)
+	end := dataxform.IAsInt(endI)
+
+	go func() {
+		for i := start; i < end; i++ {
 			stream <- i
 		}
 		close(stream)
@@ -277,12 +294,89 @@ func GenerateEventHandlerJs(comp *CompRuntime, eventType, valueJs string) string
 
 func GenerateEventHandlerWithKey(comp *CompRuntime, eventTypeCli, eventTypeSvr, keyIf interface{}) string {
 	key := dataxform.IAsString(keyIf)
-	logger.Info("GenerateEventHandlerWithKey")
+	/*logger.Info("GenerateEventHandlerWithKey")
 	logger.Info(comp)
 	logger.Info(eventTypeCli)
 	logger.Info(eventTypeSvr)
-	logger.Info(key)
+	logger.Info(key)*/
 	return fmt.Sprintf(" %s=\"se(event,'%s',%d,'%s')\"", eventTypeCli, eventTypeSvr, comp.Sid(), key)
+}
+
+type GenerationContext struct {
+	index            int
+	key              string
+	parentComp       *CompRuntime
+	childRef         string
+	generateChildRef func(gc *GenerationContext, childRef string) string
+	generateChildRefPrefix func(gc *GenerationContext) string
+	generateStoreKey func(gc *GenerationContext, child *CompRuntime) string
+}
+
+func LinearContext(parentComp *CompRuntime, childRefIf interface{}, indexIf interface{}) *GenerationContext {
+	logger.Info("LinearContext")
+	childRef := ""
+	switch childRefT := childRefIf.(type) {
+	case *CompRuntime:
+		childRef = childRefT.ChildRefId()
+	default:
+		childRef = dataxform.IAsString(childRefIf)
+	}
+	index := dataxform.IAsInt(indexIf)
+	gc := &GenerationContext{index: index, parentComp: parentComp, childRef: childRef, generateChildRef: generateChildRefLinear, generateStoreKey: generateStoreKeyLinear, generateChildRefPrefix: generateChildRefPrefixLinear}
+	logger.Info("GenerationContext:", gc)
+	return gc
+}
+
+func generateChildRefLinear(gc *GenerationContext, childRef string) string {
+	return fmt.Sprintf("%s_%d.%s", gc.parentComp.ChildRefId(), gc.index, childRef)
+}
+
+func generateChildRefPrefixLinear(gc *GenerationContext) string {
+	return fmt.Sprintf("%s_%d.", gc.parentComp.ChildRefId(), gc.index)
+}
+
+func generateStoreKeyLinear(gc *GenerationContext, child *CompRuntime) string {
+	if gc.parentComp.State["store"] == nil {
+		return fmt.Sprintf("%s[%d]", child.State["store"], gc.index)
+	}
+	return fmt.Sprintf("%s.%s[%d]", gc.parentComp.State["store"], child.State["store"], gc.index)
+}
+
+func GenerateSubComp(gc *GenerationContext) string {
+	logger.Info("GenerateSubComp:", gc)
+	genChildRefId := gc.generateChildRef(gc, gc.childRef)
+
+	comp := gc.parentComp.GenChildren[genChildRefId]
+
+	if comp == nil {
+		logger.Info("genRuntimeRef", genChildRefId)
+		srcCompDef := gc.parentComp.Unit.UnitDef.CompsMap[gc.childRef]
+		if srcCompDef == nil {
+			logger.Warning("source component not found:", gc.childRef)
+			return ""
+		}
+		comp = gc.parentComp.Unit.InstantiateGeneratedComp(srcCompDef, gc)
+		comp.State["parentContext"] = gc
+		comp.State["parentComp"] = gc.parentComp
+
+		rootCompIf := gc.parentComp.State["rootCompSt"]
+		if rootCompIf == nil {
+			comp.State["rootCompSt"] = gc.parentComp.State
+		} else {
+			comp.State["rootCompSt"] = rootCompIf
+		}
+
+		gc.parentComp.GenChildren[genChildRefId] = comp
+	}
+
+	e := NewEventRuntime(nil, gc.parentComp.Unit, comp, EvtBeforeCompRefresh, "")
+	ProcessCompEvent(e)
+
+	logger.Info("CRs:", gc.parentComp.Unit.CompByChildRefId)
+
+	sb := &strings.Builder{}
+	comp.Render(sb)
+	return sb.String()
 }
 
 func GenerateComp(parentComp *CompRuntime, sourceChildRef string, genRuntimeRefIf interface{}, context interface{}) string {

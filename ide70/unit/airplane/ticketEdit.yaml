@@ -1,11 +1,19 @@
 ---
 - compType: page
   tree:
-    - labeledTable:
-      - inPrefixSuggestFlight
-      - inPrefixSuggestSeat
+    - cnrRepeat:
+      - labeledTable:
+        - inPrefixSuggestFlight
+        - inPrefixSuggestSeat
+    - buttonSave
   inputs:
     ticketId: Id of ticket database entity
+- compType: hlp/dbhelper
+  tableName: ticket
+  dbIdInputName: ticketId
+  cr: hlpDbhelper
+- compType: cnr/repeat
+  cr: cnrRepeat
 - compType: labeledTable
   cr: labeledTable
 - compType: in/prefixSuggest
@@ -24,8 +32,8 @@
     - departure
   descrColumn: flight_id
   keyColumn: id
-  store: airplane_id
   label: Flight
+  store: flight
   cr: inPrefixSuggestFlight
 - compType: in/prefixSuggest
   eventHandlers:
@@ -38,7 +46,7 @@
         var seat = airplane.JoinedTable("seatMConn");
         var searchText = Event().GetParam("searchPrefix");
         q.From(airplane).Select(seat._id, seat.code, seat.class, seat.window).
-        Where(flight._id.Equals(flightId).And(seat.code.Like('%'+searchText+'%'))).
+        Where(flight._id.Equals(flightId).And(seat.code.Like('%'+searchText+'%').OrEmpty(searchText))).
         AscendingBy(seat.code).List();
   searchResultDisplayColumns:
     - code
@@ -46,6 +54,14 @@
     - window
   descrColumn: code
   keyColumn: id
-  store: airplane_id
+  minPrefixLength: 0
   label: Seat
+  store: seat
   cr: inPrefixSuggestSeat
+- compType: button
+  text: Save
+  eventHandlers:
+    onclick:
+      action: |
+        CompByCr("hlpDbhelper").ForwardEvent("saveData");
+  cr: buttonSave

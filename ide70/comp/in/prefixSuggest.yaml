@@ -36,6 +36,9 @@ unitInterface:
       descr: Persistence key
       valueCompleter:
         completerRef: dbFieldCompleter
+    minPrefixLength:
+      descr: Minimal search prefix length to perform a search
+      default: 1
 privateProperties:
   resultSet:
     descr: Result of user's current search expression
@@ -43,37 +46,56 @@ privateProperties:
   selectedRow:
     descr: Selected item
     type: map
+  showOptions:
+    descr: Show options
+    default: "no"
 subParts: 
   options: Table of selectable options
 body: |
   <div id="{{.sid}}">
     <form autocomplete="off" method="post" action="" class="suggest-form">
     <input class="suggest-input" type="text" autocomplete="off"
-    value="{{.valueDescr}}" id="{{.sid}}typein" {{eventHandler $.This "oninput" "preFilter" "this.value"}}></input>
+    value="{{.valueDescr}}" id="{{.sid}}typein" {{eventHandler $.This "oninput" "preFilter" "this.value"}}
+    {{eventHandler $.This "onfocus" "preFilter" "this.value"}}
+    {{eventHandler $.This "onblur" "closeFilter" "this.value"}}
+    ></input>
     </form>
     <div class="suggest-holder" id="{{.sid}}options">
       <table class="suggest-table">
-      {{range $rowIdx,$resultRow := .resultSet}}
-        <tr class="suggest-row" {{eventHandlerWithKey $.This "onclick" "preSelect" $rowIdx}}>
-          {{range $colName := $.searchResultDisplayColumns}}
-          <td>
-          {{index $resultRow $colName}}
-          </td>
-          {{end}}
-        </tr>
+      {{if eq $.showOptions "yes"}}
+        {{range $rowIdx,$resultRow := .resultSet}}
+          <tr class="suggest-row" {{eventHandlerWithKey $.This "onmousedown" "preSelect" $rowIdx}}>
+            {{range $colName := $.searchResultDisplayColumns}}
+            <td>
+            {{index $resultRow $colName}}
+            </td>
+            {{end}}
+          </tr>
+        {{end}}
       {{end}}
       </table>
     </div>
   </div>
 eventHandlers:
+  closeFilter:
+    action: |
+      if(CompCtx().GetProp("showOptions") == "yes") {
+          Api().Logger().Info("-----------EFFECTIVE");
+          CompCtx().SetProp("showOptions", "no");
+          CompCtx().RefreshSubComp("options");
+      }
+      Api().Logger().Info("-----------CLOSE");
   preFilter:
     action: |
       var fieldValue = Event().EventKey();
-      if(!fieldValue) {
+      var minLength = CompCtx().GetProp("minPrefixLength");
+      if(fieldValue.length < minLength) {
         CompCtx().RemoveProp("resultSet");
+        CompCtx().SetProp("showOptions", "no");
         CompCtx().RefreshSubComp("options");
         CompCtx().RemoveProp("value");
       } else {
+        CompCtx().SetProp("showOptions", "yes")
         CompCtx().ForwardEvent("filter").AddForwardParam("searchPrefix",fieldValue).RefreshSubComp("options");
       }
   filter:
@@ -82,10 +104,12 @@ eventHandlers:
     propertyKey: resultSet
   preSelect:
     action: |
+      Api().Logger().Info("-----------PS");
       var resultSet = CompCtx().GetPropToCast("resultSet").AsITable();
       var selectedRow = resultSet.Get(Event().EventKey());
       CompCtx().SetProp("selectedRow", selectedRow);
       CompCtx().RemoveProp("resultSet");
+      CompCtx().SetProp("showOptions", "no");
       CompCtx().ForwardEvent("select").RefreshSubComp("options");
   select:
     action: |

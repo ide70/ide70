@@ -2,6 +2,7 @@ package comp
 
 import (
 	"fmt"
+	"github.com/ide70/ide70/dataxform"
 	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/util/file"
 	"github.com/ide70/ide70/util/log"
@@ -606,7 +607,12 @@ func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 		if childRefId == "" {
 			c = event.Comp
 		} else {
-			c = unit.CompByChildRefId[childRefId]
+			if prefix := dataxform.SIMapGetByKeyAsString(event.Comp.State, "crPrefix"); prefix != "" {
+				c = unit.CompByChildRefId[prefix + childRefId]
+			}
+			if c == nil {
+				c = unit.CompByChildRefId[childRefId]
+			}
 		}
 		if c == nil {
 			result, ev := vm.ToValue(nil)

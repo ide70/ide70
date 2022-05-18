@@ -612,7 +612,7 @@ func SIMapUpdateValue(keyExpr string, value interface{}, m map[string]interface{
 	keyTokens := tokenizeKeyExpr(keyExpr)
 	collection := interface{}(m)
 
-	if removeEmpty && isEmpty(value) {
+	if removeEmpty && IsEmpty(value) {
 		sIMapRemoveValueLevel(keyTokens, &collection)
 	} else {
 		sIMapAddValueLevel(keyTokens, value, &collection)
@@ -726,7 +726,7 @@ func buildSiMapFromKeyTokensAndValue(keyTokens []string, value interface{}) inte
 	return collection
 }
 
-func isEmpty(value interface{}) bool {
+func IsEmpty(value interface{}) bool {
 	if value == nil {
 		return true
 	}

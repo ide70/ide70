@@ -12,7 +12,7 @@
 - compType: dialogContainer
   title: Development Environment login
   cr: loginContainer
-  horizPos: 75
+  horizPos: 25
   vertPos: 40
 - compType: labeledTable
   cr: loginTable

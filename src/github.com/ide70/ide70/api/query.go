@@ -168,12 +168,19 @@ type Or struct {
 	c2 QueryCondition
 }
 
+type TrueCondition struct {
+}
+
 func (or Or) toSQL() string {
 	return or.c1.toSQL() + " or " + or.c2.toSQL()
 }
 
 func (and And) toSQL() string {
 	return and.c1.toSQL() + " and " + and.c2.toSQL()
+}
+
+func (ec TrueCondition) toSQL() string {
+	return ""
 }
 
 func (qc *QueryCtx) Table(tableName string) SchemaTable {
@@ -405,14 +412,43 @@ func (schemaCol *SchemaCol) Equals(right interface{}) *QueryConditionWrapper {
 	return qcw
 }
 
+func (c *QueryConditionWrapper) OrEmpty(right interface{}) *QueryConditionWrapper {
+	empty := dataxform.IsEmpty(right)
+	if empty {
+		return &QueryConditionWrapper{condition: TrueCondition{}, conditionColumns: c.conditionColumns}
+	} else {
+		return c
+	}
+}
+
+func isTrueCondition(c *QueryConditionWrapper) bool {
+	switch c.condition.(type) {
+		case TrueCondition:
+		return true
+	}
+	return false
+}
+
 func (c *QueryConditionWrapper) And(cRight *QueryConditionWrapper) *QueryConditionWrapper {
+	if isTrueCondition(cRight) {
+		return &QueryConditionWrapper{condition: c.condition, conditionColumns: append(c.conditionColumns, cRight.conditionColumns...)}
+	}
+	if isTrueCondition(c) {
+		return &QueryConditionWrapper{condition: cRight.condition, conditionColumns: append(c.conditionColumns, cRight.conditionColumns...)}
+	}
 	and := And{c1: c.condition, c2: cRight.condition}
 	return &QueryConditionWrapper{condition: and, conditionColumns: append(c.conditionColumns, cRight.conditionColumns...)}
 }
 
 func (c *QueryConditionWrapper) Or(cRight *QueryConditionWrapper) *QueryConditionWrapper {
-	and := Or{c1: c.condition, c2: cRight.condition}
-	return &QueryConditionWrapper{condition: and, conditionColumns: append(c.conditionColumns, cRight.conditionColumns...)}
+	if isTrueCondition(cRight) {
+		return &QueryConditionWrapper{condition: TrueCondition{}, conditionColumns: append(c.conditionColumns, cRight.conditionColumns...)}
+	}
+	if isTrueCondition(c) {
+		return &QueryConditionWrapper{condition: TrueCondition{}, conditionColumns: append(c.conditionColumns, cRight.conditionColumns...)}
+	}
+	or := Or{c1: c.condition, c2: cRight.condition}
+	return &QueryConditionWrapper{condition: or, conditionColumns: append(c.conditionColumns, cRight.conditionColumns...)}
 }
 
 func sqlStringConst(s string) string {

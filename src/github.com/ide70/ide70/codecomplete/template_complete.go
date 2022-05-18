@@ -19,6 +19,7 @@ func templateCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 	procPropertyData(ppData, propMap)
 	procPropertyData(propertyData, propMap)
 	propMap["sid"] = "Components unique ID"
+	propMap["Children"] = map[string]interface{}{"descr":"Child components", "type": "array"}
 	
 	filterData := dataxform.SIMapGetByKeyAsMap(configData, "filters")
 	

@@ -72,6 +72,30 @@ methods:
       - descr: Context attached to sub component
         valueCompleter:
           templateCompleter:
+  generateSubComp:
+    descr: Inject sub-component by cloning source component
+    params:
+      - descr: Component Generation Context
+        valueCompleter:
+          templateCompleter:
+            filters:
+              type: GenerationContext
+  linearContext:
+    descr: Creates context for linear sub component generation
+    type: GenerationContext
+    params: 
+      - descr: Current component
+        fixedValue: "$.This"
+      - descr: Child component / child component reference
+        valueCompleter:
+          templateCompleter:
+            filters:
+              type: string
+      - descr: linear index
+        valueCompleter:
+          templateCompleter:
+            filters:
+              type: int
   range:
     closeTag: end
     descr: loop over array/map
@@ -135,6 +159,20 @@ methods:
           templateCompleter:
   numRange:
     descr: Iterates over a numeric range
+    kind: iterator
+    params:
+      - descr: Range from
+        valueCompleter:
+          templateCompleter:
+            filters:
+              type: int
+      - descr: Range to
+        valueCompleter:
+          templateCompleter:
+            filters:
+              type: int
+  numRangeOpenEnd:
+    descr: Iterates over a numeric range not including end
     kind: iterator
     params:
       - descr: Range from

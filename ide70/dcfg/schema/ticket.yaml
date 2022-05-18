@@ -1,0 +1,4 @@
+---
+descr: Airplane ticket
+columns:
+  - name: ticket_code

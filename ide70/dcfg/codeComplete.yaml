@@ -1,4 +1,57 @@
 ---
+_common:
+  compType: &compType
+    descr: Component type
+    listHead: yes
+    valueCompleter:
+      fileNameCompleter:
+        folderPrefix: comp
+        trimSuffix: .yaml
+    children:
+      any:
+        descr: Component properties
+        keyCompleter:
+#          yamlDataCompleter:
+#            folderPrefix: comp
+#            fileNameSrc: yamlParentValue
+#            rootKey: unitInterface.properties
+          union:
+            - yamlDataCompleter:
+                folderPrefix: comp
+                fileNameSrc: yamlParentValue
+                rootKey: unitInterface.properties
+            - yamlDataCompleter:
+                folderPrefix: dcfg
+                fileNameSrc: genCompComplete
+                rootKey: unitInterface.properties
+      cr:
+        descr: Component reference, identifies component in unit
+        mandatory: yes
+        valueCompleter:
+          idCompleter:
+            srcExpr1: ../compType:value
+            srcExpr2: ../(label|text|title):value
+      eventHandlers:
+        descr: Event handlers
+        mapHead: yes
+        children:
+          any:
+            descr: Event code
+            mapHead: yes
+            keyCompleter:
+              yamlPathCompleter:
+                folderPrefix: comp
+                fileNameExpr: ../../compType
+                pathExpr: "unitInterface.events.%$"
+                pathNodes: yes
+            children:
+              action:
+                descr: JS code to execute
+                multilineValue: yes
+                valueCompleter:
+                  jsCompleter:
+                    configFile: jsCompleterConfig
+                    multilineValue: yes
 comp:
   body:
     descr: Component HTML body
@@ -251,59 +304,13 @@ comp:
           descr: Description of sub part
   includeComps:
     descr: Include components
-unit:
-  compType:
-    descr: Component type
-    listHead: yes
-    valueCompleter:
-      fileNameCompleter:
-        folderPrefix: comp
-        trimSuffix: .yaml
+  autoInclude:
+    descr: Include components as part of this component
+    mapHead: yes
     children:
-      any:
-        descr: Component properties
-        keyCompleter:
-#          yamlDataCompleter:
-#            folderPrefix: comp
-#            fileNameSrc: yamlParentValue
-#            rootKey: unitInterface.properties
-          union:
-            - yamlDataCompleter:
-                folderPrefix: comp
-                fileNameSrc: yamlParentValue
-                rootKey: unitInterface.properties
-            - yamlDataCompleter:
-                folderPrefix: dcfg
-                fileNameSrc: genCompComplete
-                rootKey: unitInterface.properties
-      cr:
-        descr: Component reference, identifies component in unit
-        mandatory: yes
-        valueCompleter:
-          idCompleter:
-            srcExpr1: ../compType:value
-            srcExpr2: ../(label|text|title):value
-      eventHandlers:
-        descr: Event handlers
-        mapHead: yes
-        children:
-          any:
-            descr: Event code
-            mapHead: yes
-            keyCompleter:
-              yamlPathCompleter:
-                folderPrefix: comp
-                fileNameExpr: ../../compType
-                pathExpr: "unitInterface.events.%$"
-                pathNodes: yes
-            children:
-              action:
-                descr: JS code to execute
-                multilineValue: yes
-                valueCompleter:
-                  jsCompleter:
-                    configFile: jsCompleterConfig
-                    multilineValue: yes
+      compType: *compType
+unit:
+  compType: *compType
 dcfg/dict:
   descr:
     descr: Dictionary description

@@ -59,9 +59,9 @@ func InstantiateUnit(name string, app *app.Application, appParams *AppParams, pa
 	}
 
 	unitRuntime.UnitDef = unitDef
-	unitRuntime.RootComp = InstantiateComp(unitDef.RootComp, unitRuntime)
+	unitRuntime.RootComp = InstantiateComp(unitDef.RootComp, unitRuntime, nil)
 	for _, comp := range unitDef.UnattachedComps {
-		InstantiateComp(comp, unitRuntime)
+		InstantiateComp(comp, unitRuntime, nil)
 	}
 	unitRuntime.EventsHandler = newUnitRuntimeEventsHandler(unitRuntime)
 
@@ -94,8 +94,15 @@ func RefreshCompType(name string) {
 }
 
 func (unit *UnitRuntime) InstantiateComp(compDef *CompDef, genChildRefId string) *CompRuntime {
-	comp := InstantiateComp(compDef, unit)
+	comp := InstantiateComp(compDef, unit, nil)
 	comp.State["cr"] = genChildRefId
+	// fire initialization event of component
+
+	return comp
+}
+
+func (unit *UnitRuntime) InstantiateGeneratedComp(compDef *CompDef, gc *GenerationContext) *CompRuntime {
+	comp := InstantiateComp(compDef, unit, gc)
 	// fire initialization event of component
 
 	return comp
@@ -148,7 +155,10 @@ func (unit *UnitRuntime) CollectStored() map[string]interface{} {
 	for _, comp := range unit.CompByChildRefId {
 		storeKey := dataxform.SIMapGetByKeyAsString(comp.State, "store")
 		if storeKey != "" {
-			dataxform.SIMapUpdateValue(storeKey, comp.State["value"], m, true)
+			logger.Info("comp:",comp.ChildRefId()," key:",storeKey," value:", comp.State["value"]);
+			if value,has := comp.State["value"]; has {
+				dataxform.SIMapUpdateValue(storeKey, value, m, true)
+			}
 		}
 	}
 	log.Info("CollectStored:", m)

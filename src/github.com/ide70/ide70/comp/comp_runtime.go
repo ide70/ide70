@@ -45,12 +45,12 @@ func (comp *CompRuntime) RenderSub(subCompName string, writer io.Writer) {
 		} else {
 			logger.Info("event not defined")
 		}
-		
+
 		subTemplate.Execute(writer, comp.State)
 	}
 }
 
-func InstantiateComp(compDef *CompDef, unit *UnitRuntime) *CompRuntime {
+func InstantiateComp(compDef *CompDef, unit *UnitRuntime, gc *GenerationContext) *CompRuntime {
 	logger.Info("InstantiateComp", compDef.ChildRefId(), compDef.CompType.Name)
 	comp := &CompRuntime{}
 	comp.CompDef = compDef
@@ -61,6 +61,16 @@ func InstantiateComp(compDef *CompDef, unit *UnitRuntime) *CompRuntime {
 		logger.Error(err.Error())
 	}
 	logger.Debug("RegisterComp", compDef)
+
+	if gc != nil {
+		// override fixed cr and store by generation context
+		comp.State["cr"] = gc.generateChildRef(gc, comp.ChildRefId())
+		comp.State["crPrefix"] = gc.generateChildRefPrefix(gc)
+		if _, has := comp.State["store"]; has {
+			comp.State["store"] = gc.generateStoreKey(gc, comp)
+		}
+	}
+
 	unit.registerComp(comp)
 
 	comp.GenChildren = map[string]*CompRuntime{}
@@ -69,7 +79,7 @@ func InstantiateComp(compDef *CompDef, unit *UnitRuntime) *CompRuntime {
 	logger.Debug("comp.State", comp.State)
 
 	for _, childDef := range compDef.Children {
-		comp.Children = append(comp.Children, InstantiateComp(childDef, unit))
+		comp.Children = append(comp.Children, InstantiateComp(childDef, unit, gc))
 	}
 	comp.State["Children"] = comp.Children
 	comp.State["This"] = comp

@@ -1,0 +1,38 @@
+---
+unitInterface:
+  descr: Container repeating children components
+  properties:
+    nrRows:
+      descr: Number of rows initially
+      default: 1
+      type: int
+body: |
+  <table id="{{.sid}}">
+  {{range $row := numRangeOpenEnd 0 $.nrRows}}
+    <tr>
+    <td>
+    {{range $child := $.Children}}
+    {{linearContext $.This $child $row | generateSubComp}}
+    {{end}}
+    </td>
+    </tr>
+  {{end}}
+    <tr>
+    <td>
+    {{generateComp $.This "buttonAdd" "X" nil}}
+    </td>
+    </tr>
+  </table>
+autoInclude:
+  - compType: button
+    text: "+"
+    cr: buttonAdd
+    eventHandlers:
+      onclick:
+        action: |
+          var parent = CompCtx().GetParentComp();
+          var nrRows = parent.GetProp("nrRows");
+          Api().Logger().Info("nrRows:", nrRows);
+          nrRows++;
+          parent.SetProp("nrRows", nrRows);
+          parent.Refresh();

@@ -35,6 +35,14 @@ func InterfaceMapToStringMap(m map[interface{}]interface{}) map[string]interface
 	return dm
 }
 
+func IArrToStringArr(list []interface{}) []string{
+	listS := []string{}
+	for _,item := range list {
+		listS = append(listS, IAsString(item))
+	}
+	return listS
+}
+
 func SIMapGetByKeyAsList(m map[string]interface{}, k string) []interface{} {
 	entry := m[k]
 	if entry == nil {
@@ -754,4 +762,12 @@ func GetOnlyEntry(m map[string]interface{}) (string, interface{}) {
 		return k, v
 	}
 	return "", nil
+}
+
+func StringListToSet(list []string) map[string]bool {
+	m := map[string]bool{}
+	for _, e:= range list {
+		m[e] = true
+	}
+	return m
 }

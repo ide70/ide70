@@ -15,8 +15,8 @@
       loadUnit: airplane/airplanes
     - name: Seats
       loadUnit: airplane/seats
-    - name: Bookings
-      loadUnit: airplane/ticketEdit
+    - name: Tickets
+      loadUnit: airplane/tickets
     - name: Logout
       fireEvent: logout
       alignRight: true

@@ -1,0 +1,43 @@
+---
+- compType: page
+  tree:
+    - buttonNewTicket
+    - buttonFilter
+    - ticketlist
+- compType: button
+  text: "New ticket"
+  cr: buttonNewTicket
+  eventHandlers:
+    onclick:
+      action: |
+        Event().LoadUnit("airplane/ticketEdit");
+- compType: button
+  text: "Filter"
+  cr: buttonFilter
+  eventHandlers:
+    onclick:
+      action: |
+        CompByCr("ticketlist").ForwardEvent("filter");
+- compType: datalist
+  dbTableName: ticket
+  columns:
+    - header: Ticket code
+      key: ticket_code
+    - header: Actions
+      items:
+        - cr: buttonEdit
+  cr: ticketlist
+  eventHandlers:
+    filterQuery:
+      action: |
+        var qd = Event().GetParamToCast("query").AsQueryDef();
+        var q = CompCtx().DBCtx().QueryCtx();
+        var ticket = q.Table("ticket");
+        qd.From(ticket).Select(ticket._id, ticket.ticket_code).List();
+- compType: button
+  text: Edit
+  eventHandlers:
+    onclick:
+      action: |
+        CompCtx().LoadUnit("airplane/ticketEdit").AddPassParam("ticketId", CompCtx().ParentContext().AsMap().Get("id"));
+  cr: buttonEdit

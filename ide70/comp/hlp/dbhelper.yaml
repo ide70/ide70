@@ -21,8 +21,29 @@ unitInterface:
           trimSuffix: .yaml
     dataObject:
       descr: Data object when updating data
+injectToUnit:
+  initialEventList:
+    - onDBOLoad
+    - onDataLoad
+    - onUnitCreate
+injectToComp:
+  - filter:
+      hasProp: store
+    defs:
+      eventHandlers:
+        onDataLoad:
+          action: |
+            var crDbHelper = CompCtx().GetUnit().GetProp("crDbHelper");
+            var dbHelper = CompByCr(crDbHelper);
+            var dbo = dbHelper.GetPropToCast("dataObject").AsDBO();
+            if(dbo) {
+                CompCtx().InitializeStored(dbo.GetData());
+            }
+copyPropertyToUnit:
+  - srcProp: cr
+    dstProp: crDbHelper
 eventHandlers:
-  onUnitCreate:
+  onDBOLoad:
     action: |
       var dbIdInputName = CompCtx().GetProp("dbIdInputName");
       var dbTableName = CompCtx().GetProp("tableName");
@@ -32,7 +53,7 @@ eventHandlers:
       if(dbId) {
             var dbo = Event().DBCtx().FindDBO(dbTableName, dbId);
             if(dbo) {
-                Event().GetUnit().InitializeStored(dbo.GetData());
+                //Event().GetUnit().InitializeStored(dbo.GetData());
                 CompCtx().SetProp("dataObject", dbo);
             }
       }

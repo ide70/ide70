@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"io"
+	"github.com/ide70/ide70/dataxform"
 )
 
 // a component instance
@@ -27,7 +28,7 @@ func (comp *CompRuntime) Render(writer io.Writer) {
 	//buf := &bytes.Buffer{}
 	//comp.CompDef.CompType.Body.Execute(buf, comp.State)
 	//logger.Info(buf.String())
-	if len(comp.GenChildren) > 0 {
+	if len(comp.GenChildren) > 0 && !dataxform.SIMapGetByKeyAsBoolean(comp.State, "keepExistingGenChildren") {
 		comp.GenChildren = map[string]*CompRuntime{}
 	}
 	comp.CompDef.CompType.Body.Execute(writer, comp.State)
@@ -83,6 +84,10 @@ func InstantiateComp(compDef *CompDef, unit *UnitRuntime, gc *GenerationContext)
 	}
 	comp.State["Children"] = comp.Children
 	comp.State["This"] = comp
+	
+	if gc != nil {
+		unit.ProcessInitEventsComp(comp)
+	}
 
 	logger.Info("InstantiateComp-done")
 

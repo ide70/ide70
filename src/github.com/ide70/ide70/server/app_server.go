@@ -200,8 +200,9 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 			s.renderComp(unit, w, r)
 		case comp.PathUnitById:
 			logger.Info("existing unit runtime process create event..")
-			e := comp.NewEventRuntime(sess, unit, nil, comp.EvtUnitCreate, "")
-			unit.ProcessEvent(e)
+			//e := comp.NewEventRuntime(sess, unit, nil, comp.EvtUnitCreate, "")
+			//unit.ProcessEvent(e)
+			unit.ProcessInitEvents(sess)
 			logger.Info("existing unit runtime render start..")
 			unit.Render(w)
 		}
@@ -238,8 +239,9 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 			logger.Info("unit runtime cached in session")
 		}
 		logger.Info("unit runtime process create event..")
-		e := comp.NewEventRuntime(sess, unit, nil, comp.EvtUnitCreate, "")
-		unit.ProcessEvent(e)
+		unit.ProcessInitEvents(sess)
+		//e := comp.NewEventRuntime(sess, unit, nil, comp.EvtUnitCreate, "")
+		//unit.ProcessEvent(e)
 		logger.Info("unit runtime render start..")
 		unit.Render(w)
 		logger.Info("unit runtime rendered")

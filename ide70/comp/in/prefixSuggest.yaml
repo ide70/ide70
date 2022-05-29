@@ -126,6 +126,7 @@ eventHandlers:
   onUnitCreate:
     action: |
       if(CompCtx().HasProp("value")) {
+        Api().Logger().Info("HAS PROP: "+CompCtx().GetProp("value"));
         CompCtx().ForwardEvent("initDescr").AddForwardParam("dataKey",CompCtx().GetProp("value"));
       }
   initDescr:

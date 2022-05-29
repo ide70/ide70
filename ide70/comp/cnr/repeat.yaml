@@ -6,6 +6,10 @@ unitInterface:
       descr: Number of rows initially
       default: 1
       type: int
+    store:
+      descr: Database field
+privateProperties:
+  value: Array of subcomponents data
 body: |
   <table id="{{.sid}}">
   {{range $row := numRangeOpenEnd 0 $.nrRows}}
@@ -23,6 +27,13 @@ body: |
     </td>
     </tr>
   </table>
+eventHandlers:
+  onUnitCreate:
+    action: |
+      var value = CompCtx().GetProp("value");
+      if(value && value.length > 0) {
+          CompCtx().SetProp("nrRows", value.length);
+      }
 autoInclude:
   - compType: button
     text: "+"

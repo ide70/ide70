@@ -120,9 +120,27 @@ func (unit *UnitRuntime) getID() string {
 	return unit.RootComp.State["_unitID"].(string)
 }
 
+func (unit *UnitRuntime) ProcessInitEventsComp(comp *CompRuntime) {
+	eventCodeList := unit.UnitDef.getInitialEventCodes()
+	logger.Info("IEC eventCodeList for",comp.ChildRefId(), eventCodeList)
+	for _, eventCode := range eventCodeList {
+		e := NewEventRuntime(nil, unit, comp, eventCode, "")
+		ProcessCompEvent(e)
+	}
+}
+
+func (unit *UnitRuntime) ProcessInitEvents(sess *Session) {
+	eventCodeList := unit.UnitDef.getInitialEventCodes()
+	logger.Info("eventCodeList:",eventCodeList)
+	for _, eventCode := range eventCodeList {
+		e := NewEventRuntime(sess, unit, nil, eventCode, "")
+		unit.ProcessEvent(e)
+	}
+}
+
 // process unit lifecycle events
 func (unit *UnitRuntime) ProcessEvent(e *EventRuntime) {
-	logger.Info("ProcessEvent")
+	logger.Info("ProcessEvent:", e.TypeCode)
 	logger.Info("handlers", unit.UnitDef.EventsHandler.Handlers)
 	compDefHandlers := unit.UnitDef.EventsHandler.Handlers[e.TypeCode]
 	for _, compDefHandler := range compDefHandlers {
@@ -155,8 +173,8 @@ func (unit *UnitRuntime) CollectStored() map[string]interface{} {
 	for _, comp := range unit.CompByChildRefId {
 		storeKey := dataxform.SIMapGetByKeyAsString(comp.State, "store")
 		if storeKey != "" {
-			logger.Info("comp:",comp.ChildRefId()," key:",storeKey," value:", comp.State["value"]);
-			if value,has := comp.State["value"]; has {
+			logger.Info("comp:", comp.ChildRefId(), " key:", storeKey, " value:", comp.State["value"])
+			if value, has := comp.State["value"]; has {
 				dataxform.SIMapUpdateValue(storeKey, value, m, true)
 			}
 		}
@@ -176,6 +194,18 @@ func (unit *UnitRuntime) InitializeStored(data map[string]interface{}) {
 	}
 }
 
+/*func (unit *UnitRuntime) InitializeStoredComp(comp *CompRuntime, data map[string]interface{}) {
+
+	storeKey := dataxform.SIMapGetByKeyAsString(comp.State, "store")
+	if storeKey == "" {
+		return
+	}
+	comp.State["value"] =
+		dataxform.SICollGetNode(storeKey, data)
+	log.Info("datamap vt:", reflect.TypeOf(comp.State["value"]), storeKey)
+
+}*/
+
 func (unit *UnitRuntime) DBContext() *api.DatabaseContext {
 	return unit.Application.Connectors.MainDB
 }
@@ -183,3 +213,4 @@ func (unit *UnitRuntime) DBContext() *api.DatabaseContext {
 func (unit *UnitRuntime) GetParent(sess *Session) *UnitRuntime {
 	return sess.UnitCache.ActiveUnits[unit.PassContext.ParentUnitId]
 }
+

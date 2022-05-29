@@ -339,14 +339,17 @@ func generateStoreKeyLinear(gc *GenerationContext, child *CompRuntime) string {
 	if gc.parentComp.State["store"] == nil {
 		return fmt.Sprintf("%s[%d]", child.State["store"], gc.index)
 	}
-	return fmt.Sprintf("%s.%s[%d]", gc.parentComp.State["store"], child.State["store"], gc.index)
+	return fmt.Sprintf("%s[%d].%s", gc.parentComp.State["store"], gc.index, child.State["store"])
 }
 
 func GenerateSubComp(gc *GenerationContext) string {
 	logger.Info("GenerateSubComp:", gc)
 	genChildRefId := gc.generateChildRef(gc, gc.childRef)
+	gc.parentComp.State["keepExistingGenChildren"] = true
 
 	comp := gc.parentComp.GenChildren[genChildRefId]
+	
+	logger.Info("comp is new:", (comp == nil))
 
 	if comp == nil {
 		logger.Info("genRuntimeRef", genChildRefId)
@@ -367,6 +370,7 @@ func GenerateSubComp(gc *GenerationContext) string {
 		}
 
 		gc.parentComp.GenChildren[genChildRefId] = comp
+		
 	}
 
 	e := NewEventRuntime(nil, gc.parentComp.Unit, comp, EvtBeforeCompRefresh, "")

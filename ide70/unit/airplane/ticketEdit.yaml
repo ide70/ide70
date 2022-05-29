@@ -1,6 +1,8 @@
 ---
 - compType: page
   tree:
+    - ticketHeader:
+      - textboxTicketCode
     - cnrRepeat:
       - labeledTable:
         - inPrefixSuggestFlight
@@ -12,8 +14,15 @@
   tableName: ticket
   dbIdInputName: ticketId
   cr: hlpDbhelper
+- compType: labeledTable
+  cr: ticketHeader
+- compType: textbox
+  label: Ticket code
+  store: ticket_code
+  cr: textboxTicketCode
 - compType: cnr/repeat
   cr: cnrRepeat
+  store: reservations
 - compType: labeledTable
   cr: labeledTable
 - compType: in/prefixSuggest
@@ -26,6 +35,14 @@
         q.From(flight).Select(flight._id,flight.flight_id,flight.destination,flight.departure).
         Where(flight.destination.Like("%"+searchText+"%")).
         AscendingBy(flight.departure).List();
+    initDescr:
+      action: |
+        var dataKey = Event().GetParam("dataKey");
+        var q = CompCtx().DBCtx().QueryCtx();
+        var flight = q.Table("flight");
+        q.From(flight).Select(flight.flight_id).
+        Where(flight._id.Equals(dataKey)).OneRow().
+        GetOneColumnForConvert().AsString();
   searchResultDisplayColumns:
     - flight_id
     - destination
@@ -48,6 +65,12 @@
         q.From(airplane).Select(seat._id, seat.code, seat.class, seat.window).
         Where(flight._id.Equals(flightId).And(seat.code.Like('%'+searchText+'%').OrEmpty(searchText))).
         AscendingBy(seat.code).List();
+    initDescr:
+      action: |
+        var q = CompCtx().DBCtx().QueryCtx();
+        var dataKey = Event().GetParam("dataKey");
+        var seat = q.Table("seat");
+        q.From(seat).Select(seat.code).Where(seat._id.Equals(dataKey)).OneRow().GetOneColumnForConvert().AsString();
   searchResultDisplayColumns:
     - code
     - class

@@ -2,8 +2,8 @@ package comp
 
 import (
 	"fmt"
-	"github.com/ide70/ide70/dataxform"
 	"github.com/ide70/ide70/api"
+	"github.com/ide70/ide70/dataxform"
 	"github.com/ide70/ide70/util/file"
 	"github.com/ide70/ide70/util/log"
 	"github.com/robertkrimen/otto"
@@ -341,7 +341,7 @@ func (c *CompRuntime) GetProp(key string) interface{} {
 }
 
 func (cSW *CompCtx) GetPropToCast(key string) api.Interface {
-	return api.Interface{I:cSW.c.State[key]}
+	return api.Interface{I: cSW.c.State[key]}
 }
 
 func (cSW *CompCtx) ParentContext() api.Interface {
@@ -491,6 +491,16 @@ func (cSW *CompCtx) LoadUnitInto(unitName string) *CompCtx {
 	return cSW
 }
 
+func (cSW *CompCtx) InitializeStored(data map[string]interface{}) {
+	comp := cSW.c
+	storeKey := dataxform.SIMapGetByKeyAsString(comp.State, "store")
+	if storeKey != "" {
+		comp.State["value"] =
+			dataxform.SICollGetNode(storeKey, data)
+		log.Info("datamap v vt key:", comp.State["value"], reflect.TypeOf(comp.State["value"]), storeKey)
+	}
+}
+
 func (cSW *CompCtx) LoadUnit(unitName string) *CompCtx {
 	cSW.event.LoadUnit(unitName)
 	return cSW
@@ -557,11 +567,15 @@ func (e *EventRuntime) GetParam(key string) interface{} {
 }
 
 func (e *EventRuntime) GetParamToCast(key string) api.Interface {
-	return api.Interface{I:e.Params[key]}
+	return api.Interface{I: e.Params[key]}
 }
 
 func (e *EventRuntime) GetUnit() *UnitCtx {
 	return &UnitCtx{e.UnitRuntime}
+}
+
+func (cCtx *CompCtx) GetUnit() *UnitCtx {
+	return &UnitCtx{cCtx.event.UnitRuntime}
 }
 
 func (vm *VmBase) Event() *EventRuntime {
@@ -608,7 +622,7 @@ func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 			c = event.Comp
 		} else {
 			if prefix := dataxform.SIMapGetByKeyAsString(event.Comp.State, "crPrefix"); prefix != "" {
-				c = unit.CompByChildRefId[prefix + childRefId]
+				c = unit.CompByChildRefId[prefix+childRefId]
 			}
 			if c == nil {
 				c = unit.CompByChildRefId[childRefId]
@@ -656,6 +670,13 @@ func newUnitDefEventsHandler() *UnitDefEventsHandler {
 }
 
 func (esh *UnitDefEventsHandler) AddHandler(eventType string, handler *CompEventHandler) {
+	for idx, exisingHandler := range esh.Handlers[eventType] {
+		if exisingHandler.CompDef.ChildRefId() == handler.CompDef.ChildRefId() {
+			esh.Handlers[eventType][idx] = handler
+			logger.Info("Overriding handler for:" + eventType)
+			return
+		}
+	}
 	esh.Handlers[eventType] = append(esh.Handlers[eventType], handler)
 }
 
@@ -704,7 +725,7 @@ func (eh *EventHandler) processEvent(e *EventRuntime) {
 	if eh.PropertyKey != "" {
 		logger.Info("calc result for", eh.PropertyKey, "is", calcResult, "type:", reflect.TypeOf(calcResult))
 		e.Comp.State[eh.PropertyKey] = calcResult
-		logger.Info("calc result done");
+		logger.Info("calc result done")
 	}
 }
 
@@ -765,4 +786,12 @@ func (unit *UnitCtx) GetPassParams() api.SIMap {
 
 func (unit *UnitCtx) GetPassParam(key string) interface{} {
 	return unit.unit.PassContext.Params[key]
+}
+
+func (unit *UnitCtx) GetProp(key string) interface{} {
+	return unit.unit.UnitDef.Props[key]
+}
+
+func (unit *UnitCtx) GetPropToCast(key string) api.Interface {
+	return api.Interface{I: unit.unit.UnitDef.Props[key]}
 }

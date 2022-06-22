@@ -6,6 +6,12 @@
     width: 4em;
 }
 
+.date-input:read-only, .time-input:read-only {
+    background-color: whitesmoke;
+    color: gray;
+    border: 1px solid gray;
+}
+
 .date-holder {
     position: absolute;
     background-color: pink;

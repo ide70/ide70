@@ -2,3 +2,10 @@
 descr: Airplane ticket
 columns:
   - name: ticket_code
+connections:
+  reservationMxConn:
+    foreignTable: flightReservation
+    mx: mx_ticket_reservation
+  reservationConn:
+    foreignTable: flightReservation
+    foreignColumn: ticket_id

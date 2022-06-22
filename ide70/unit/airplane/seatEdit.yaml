@@ -30,13 +30,12 @@
         var prefix = Event().GetParam("searchPrefix");
         q.From(airplane).Select(airplane._id,airplane.name).Where(airplane.name.Like(prefix+"%"))
         .AscendingBy(airplane.name).List();
-    initDescr:
+    lookupSelectedData:
       action: |
         var q = CompCtx().DBCtx().QueryCtx();
         var airplane = q.Table("airplane");
         var dataKey = Event().GetParam("dataKey");
-        q.From(airplane).Select(airplane.name).Where(airplane._id.Equals(dataKey)).OneRow()
-        .GetOneColumnForConvert().AsString();
+        q.From(airplane).Select(airplane.name).Where(airplane._id.Equals(dataKey)).OneRow();
   searchResultDisplayColumns:
     - name
   keyColumn: id

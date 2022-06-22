@@ -9,3 +9,5 @@ items:
     descr: Array
   - code: map
     descr: Map
+  - code: boolean
+    descr: Boolean

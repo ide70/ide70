@@ -205,6 +205,7 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 			unit.ProcessInitEvents(sess)
 			logger.Info("existing unit runtime render start..")
 			unit.Render(w)
+			unit.ProcessPostRenderEvents(sess)
 		}
 	default:
 		unitName := strings.Join(parts, "/")
@@ -245,6 +246,7 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		logger.Info("unit runtime render start..")
 		unit.Render(w)
 		logger.Info("unit runtime rendered")
+		unit.ProcessPostRenderEvents(sess)
 	}
 
 	/*

@@ -2,8 +2,15 @@
   dbFieldCompleter:
     descr: Completes db fields of a table
     definition:
-      yamlPathCompleter:
-        folderPrefix: dcfg/schema
-        fileNameExpr: "[%].tableName:value"
-        pathExpr: "columns[%].name:value"
-        filterExpr: "compType[%].columns[%].key:value"
+      union:
+        - yamlPathCompleter:
+            folderPrefix: dcfg/schema
+            fileNameExpr: "[%].tableName:value"
+            pathExpr: "columns[%].name:value"
+            filterExpr: "compType[%].columns[%].key:value"
+        - yamlPathCompleter:
+            folderPrefix: dcfg/schema
+            fileNameExpr: "[%].tableName:value"
+            pathExpr: "connections.%$"
+            pathNodes: yes
+            filterExpr: "compType[%].columns[%].key:value"

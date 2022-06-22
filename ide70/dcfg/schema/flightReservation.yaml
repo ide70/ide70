@@ -3,6 +3,7 @@ descr: Flight reservation
 columns:
   - name: flight_id
   - name: seat_id
+  - name: ticket_id
   - name: price
 connections:
   flightConn:

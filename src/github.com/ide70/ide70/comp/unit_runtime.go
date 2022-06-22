@@ -103,10 +103,20 @@ func (unit *UnitRuntime) InstantiateComp(compDef *CompDef, genChildRefId string)
 
 func (unit *UnitRuntime) InstantiateGeneratedComp(compDef *CompDef, gc *GenerationContext) *CompRuntime {
 	comp := InstantiateComp(compDef, unit, gc)
-	// fire initialization event of component
+	// fire initialization event of component tree
+	unit.processInitEventsCompTree(comp)
 
 	return comp
 }
+
+func (unit *UnitRuntime) processInitEventsCompTree(comp *CompRuntime) {
+	unit.ProcessInitEventsComp(comp)
+	for _,subComp := range comp.Children {
+		unit.processInitEventsCompTree(subComp)
+	}
+}
+
+
 
 func (unit *UnitRuntime) Render(writer io.Writer) {
 	unit.RootComp.Render(writer)
@@ -122,7 +132,7 @@ func (unit *UnitRuntime) getID() string {
 
 func (unit *UnitRuntime) ProcessInitEventsComp(comp *CompRuntime) {
 	eventCodeList := unit.UnitDef.getInitialEventCodes()
-	logger.Info("IEC eventCodeList for",comp.ChildRefId(), eventCodeList)
+	//logger.Info("IEC eventCodeList for",comp.ChildRefId(), eventCodeList)
 	for _, eventCode := range eventCodeList {
 		e := NewEventRuntime(nil, unit, comp, eventCode, "")
 		ProcessCompEvent(e)
@@ -131,7 +141,16 @@ func (unit *UnitRuntime) ProcessInitEventsComp(comp *CompRuntime) {
 
 func (unit *UnitRuntime) ProcessInitEvents(sess *Session) {
 	eventCodeList := unit.UnitDef.getInitialEventCodes()
-	logger.Info("eventCodeList:",eventCodeList)
+	//logger.Info("eventCodeList:",eventCodeList)
+	for _, eventCode := range eventCodeList {
+		e := NewEventRuntime(sess, unit, nil, eventCode, "")
+		unit.ProcessEvent(e)
+	}
+}
+
+func (unit *UnitRuntime) ProcessPostRenderEvents(sess *Session) {
+	eventCodeList := unit.UnitDef.getPostRenderEventCodes()
+	logger.Info("post render eventCodeList:",eventCodeList)
 	for _, eventCode := range eventCodeList {
 		e := NewEventRuntime(sess, unit, nil, eventCode, "")
 		unit.ProcessEvent(e)
@@ -145,7 +164,7 @@ func (unit *UnitRuntime) ProcessEvent(e *EventRuntime) {
 	compDefHandlers := unit.UnitDef.EventsHandler.Handlers[e.TypeCode]
 	for _, compDefHandler := range compDefHandlers {
 		comp := unit.CompByChildRefId[compDefHandler.CompDef.ChildRefId()]
-		logger.Info("On comp", comp.ChildRefId())
+		//logger.Info("On comp", comp.ChildRefId())
 		if comp == nil {
 			logger.Warning("UnitRuntime ProcessEvent: component not found")
 		}

@@ -85,9 +85,9 @@ func InstantiateComp(compDef *CompDef, unit *UnitRuntime, gc *GenerationContext)
 	comp.State["Children"] = comp.Children
 	comp.State["This"] = comp
 	
-	if gc != nil {
+	/*if gc != nil {
 		unit.ProcessInitEventsComp(comp)
-	}
+	}*/
 
 	logger.Info("InstantiateComp-done")
 
@@ -104,6 +104,14 @@ func (comp *CompRuntime) ChildRefId() string {
 
 func (comp *CompRuntime) IsEventDefined(eventType string) bool {
 	return comp.CompDef.EventsHandler.Handlers[eventType] != nil
+}
+
+func (comp *CompRuntime) Drop() {
+	delete(comp.Unit.CompByChildRefId,comp.ChildRefId())
+	delete(comp.Unit.CompRegistry,comp.ID)
+	for _,child := range comp.Children {
+		child.Drop()
+	}
 }
 
 func deepCopyMap(m map[string]interface{}) (map[string]interface{}, error) {

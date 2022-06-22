@@ -61,6 +61,66 @@ func (dbCtx *DatabaseContext) CRUDGenInsert(tableName string, data string) int64
 	return id
 }
 
+//select data from mx_ticket_reservation where (data->'id_ticket')::numeric = 24 and (data->'ord')::numeric = 0;
+
+func criteriasToSql(criterias...*ColumnCriteria) string{
+	var sb strings.Builder
+	for idx,criteria := range criterias {
+		if idx>0 {
+			sb.WriteString(" AND ")
+		}
+		sb.WriteString(fmt.Sprintf("(data->'%s')::numeric = $%d", criteria.column, idx+1))
+	}
+	return sb.String()
+}
+
+func criteriasToArgs(criterias...*ColumnCriteria) []interface{}{
+	args := []interface{}{}
+	for _,criteria := range criterias {
+		args = append(args, criteria.value)
+	}
+	return args
+}
+
+func (dbCtx *DatabaseContext) CRUDGenFindbyCriteria(tableName string, criterias...*ColumnCriteria) map[string]interface{} {
+	ensureTable(dbCtx, tableName)
+	db := dbCtx.getConnection()
+	defer db.Close()
+
+	sql := "select id, data from " + tableName + " where "+criteriasToSql(criterias...)+";"
+	logger.Info("sql:", sql)
+	args := criteriasToArgs(criterias...)
+	logger.Info("args:", args)
+
+	rows, err := db.Query(sql, args...)
+
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+
+	if rows.Next() {
+		var id int64
+		var data string
+
+		err := rows.Scan(&id, &data)
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+
+		dataSet := map[string]interface{}{}
+		decoder := json.NewDecoder(strings.NewReader(data))
+		decoder.Decode(&dataSet)
+
+		dataSet["_id"] = id
+
+		return dataSet
+	}
+
+	return nil
+}
+
 func (dbCtx *DatabaseContext) CRUDGenFind(tableName string, id int64) map[string]interface{} {
 	ensureTable(dbCtx, tableName)
 	db := dbCtx.getConnection()

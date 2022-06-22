@@ -11,6 +11,9 @@ var YamlHighlightRules = function() {
                 token : "comment",
                 regex : "#.*$"
             }, {
+                token : "template.function",
+                regex : "(?<=- compType: )[/\\w]+"
+            }, {
                 token : "support.function",
                 regex : /\{\{[^}]*\}\}/
             },

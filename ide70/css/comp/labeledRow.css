@@ -1,0 +1,8 @@
+table.labeled-row {
+    border-collapse: collapse;
+}
+
+.labeled-row td, .labeled-row th {
+    text-align: left;
+    padding: 0mm 2mm 0mm 2mm;
+}

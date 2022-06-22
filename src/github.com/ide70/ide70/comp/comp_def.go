@@ -11,6 +11,7 @@ type CompDef struct {
 	Children      []*CompDef
 	Props         map[string]interface{}
 	EventsHandler *CompDefEventsHandler
+	Triggers      map[string]string
 }
 
 func ParseCompDef(def map[string]interface{}, context *UnitDefContext) *CompDef {
@@ -33,6 +34,7 @@ func ParseCompDef(def map[string]interface{}, context *UnitDefContext) *CompDef 
 
 	parseExternalReferences(def, context, compDef)
 	parseCalcs(def, context, compDef)
+	parseTriggerDefs(def, compDef)
 	parseUnitRelatedDefs(def, context)
 
 	logger.Info("ParseCompDef end")
@@ -42,6 +44,15 @@ func ParseCompDef(def map[string]interface{}, context *UnitDefContext) *CompDef 
 
 func (compDef *CompDef) ParseEventHandlers(context *UnitDefContext) {
 	compDef.EventsHandler = ParseEventHandlers(compDef.Props, compDef.CompType.EventsHandler, context, compDef)
+}
+
+
+func parseTriggerDefs(def map[string]interface{}, compDef *CompDef) {
+	compDef.Triggers = map[string]string{}
+	setTriggers := dataxform.SIMapGetByKeyAsMap(def, "setTriggers")
+	for propertyKey, eventTypeIf := range setTriggers {
+		compDef.Triggers[propertyKey] = dataxform.IAsString(eventTypeIf)
+	}
 }
 
 func parseUnitRelatedDefs(def map[string]interface{}, context *UnitDefContext) {
@@ -99,7 +110,10 @@ func ParseEventHandlers(def map[string]interface{}, superEventsHandler *CompDefE
 	var initEventCodeList map[string]bool
 	
 	if context != nil {
-		initEventCodeList = dataxform.StringListToSet(context.unitDef.getInitialEventCodes())
+		codeList := context.unitDef.getInitialEventCodes()
+		codeList = append(codeList, context.unitDef.getPostRenderEventCodes()...)
+		initEventCodeList = dataxform.StringListToSet(codeList)
+		
 	} else {
 		initEventCodeList = map[string]bool{}
 	}

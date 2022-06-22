@@ -26,6 +26,7 @@
   store: flight_id
 - compType: in/selection
   dictionaryFile: airport
+  allowEmpty: yes
   label: Destination
   cr: inSelectionDestination
   store: destination
@@ -46,13 +47,12 @@
         var searchText = Event().GetParam("searchPrefix");
         q.From(airplane).Select(airplane._id, airplane.name, airplane.capacity).Where(airplane.name.Like("%"+searchText+"%")).
         AscendingBy(airplane.code).List();
-    initDescr:
+    lookupSelectedData:
       action: |
         var dataKey = Event().GetParam("dataKey");
         var q = CompCtx().DBCtx().QueryCtx();
         var airplane = q.Table("airplane");
-        q.From(airplane).Select(airplane.name).Where(airplane._id.Equals(dataKey)).OneRow().
-        GetOneColumnForConvert().AsString();
+        q.From(airplane).Select(airplane.name, airplane.capacity).Where(airplane._id.Equals(dataKey)).OneRow();
   searchResultDisplayColumns:
     - name
     - capacity

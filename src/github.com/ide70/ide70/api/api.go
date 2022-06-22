@@ -51,12 +51,27 @@ func (i Interface) AsITable() ITable {
 	switch iT := i.I.(type) {
 	case ITable:
 		return iT
+	case []interface{}:
+		rt := ITable{}
+		for _, e := range iT {
+			switch eT := e.(type) {
+			case SIMap:
+				rt = append(rt, eT)
+			case map[string]interface{}:
+				rt = append(rt, eT)
+			}
+		}
+		return rt
 	}
 	return ITable{}
 }
 
 func (i Interface) AsString() string {
 	return dataxform.IAsString(i.I)
+}
+
+func (i Interface) AsInt64() int64 {
+	return dataxform.IAsInt64(i.I)
 }
 
 func (i Interface) AsQueryDef() *QueryDef {
@@ -72,6 +87,16 @@ func (i Interface) AsDBO() *DataBaseObject {
 	case *DataBaseObject:
 		return iT
 	case DataBaseObject:
+		return &iT
+	}
+	return nil
+}
+
+func (i Interface) AsUpdateSet() *DboUpdateSet {
+	switch iT := i.I.(type) {
+	case *DboUpdateSet:
+		return iT
+	case DboUpdateSet:
 		return &iT
 	}
 	return nil

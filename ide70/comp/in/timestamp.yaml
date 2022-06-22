@@ -24,6 +24,11 @@ unitInterface:
       descr: Persistence key
       valueCompleter:
         completerRef: dbFieldCompleter
+    readonly:
+      descr: Read only mode
+      type: boolean
+setTriggers:
+  value: setValue
 privateProperties:
   stage:
     descr: Date setting stage
@@ -55,6 +60,10 @@ privateProperties:
     type: array
 body: |
   <div id="{{.sid}}">
+  {{if $.readonly}}
+    <input type="text" class="date-input" value="{{.fmtValue}}" readonly></input>
+    <input type="text" class="time-input" value="{{.fmtTime}}" readonly></input>
+  {{else}}
       <input type="text" class="date-input" value="{{.fmtValue}}" {{eventHandlerJs $.This "onclick" "null"}}></input>
       <input type="text" class="time-input" value="{{.fmtTime}}" {{eventHandler $.This "onclick" "onclickTime"}}></input>
       <div class="date-holder">
@@ -85,16 +94,20 @@ body: |
         {{end}}
       {{end}}
       </div>
+  {{end}}
   </div>
 eventHandlers:
+  setValue:
+    action: |
+      var value = CompCtx().GetProp("value");
+      CompCtx().SetProp("fmtValue", Api().DateCtx().FormatTime(value, CompCtx().GetProp("dateFormat")));
+      CompCtx().SetProp("fmtTime", Api().DateCtx().FormatTime(value, CompCtx().GetProp("timeFormat")));
   onUnitCreate:
     action: |
       CompCtx().SetProp("stage", "");
       var value = CompCtx().GetProp("value");
       value = Api().DateCtx().AsTime(value);
       CompCtx().SetProp("value", value);
-      CompCtx().SetProp("fmtValue", Api().DateCtx().FormatTime(value, CompCtx().GetProp("dateFormat")));
-      CompCtx().SetProp("fmtTime", Api().DateCtx().FormatTime(value, CompCtx().GetProp("timeFormat")));
   onclick:
     action: |
       CompCtx().SetProp("stage", "year").Refresh();
@@ -131,7 +144,6 @@ eventHandlers:
       var dateSelected = Api().DateCtx().PureDate(yearSelected, monthSelected, daySelected);
       CompCtx().SetProp("dateSelected", dateSelected);
       CompCtx().SetProp("value", dateSelected);
-      CompCtx().SetProp("fmtValue", Api().DateCtx().FormatTime(dateSelected, CompCtx().GetProp("dateFormat")));
       CompCtx().SetProp("stage", "").Refresh();
   hourPressed:
     action: |
@@ -143,10 +155,10 @@ eventHandlers:
       var minuteSelected = Event().EventKey();
       var hourSelected = CompCtx().GetProp("hourSeleced");
       var dateSelected = CompCtx().GetProp("value");
+      Api().Logger().Info("ds:", dateSelected);
       if(dateSelected) {
           dateSelected = Api().DateCtx().SetHour(dateSelected, hourSelected);
           dateSelected = Api().DateCtx().SetMinute(dateSelected, minuteSelected);
-          CompCtx().SetProp("fmtTime", Api().DateCtx().FormatTime(dateSelected, CompCtx().GetProp("timeFormat")));
           CompCtx().SetProp("value", dateSelected);
       }
       CompCtx().SetProp("stage", "").Refresh();

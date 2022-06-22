@@ -5,8 +5,7 @@ body: |
   <table class="labeled-table">
   {{range .Children}}
   <tr>
-  <td>
-  {{.GetProp "label"}}:
+  <td>{{if .GetProp "label"}}{{.GetProp "label"}}:{{end}}
   </td>
   <td>
   {{evalComp .}}

@@ -13,6 +13,11 @@ type ITableW struct {
 	t ITable
 }
 
+type RowToInsert struct {
+	row SIMap
+	itablew *ITableW
+}
+
 type TableCriterion interface {
 	isTrue(i interface {}) bool
 }
@@ -30,6 +35,10 @@ func (as *Arrays) NewITableW() *ITableW {
 	return &ITableW{t: ITable{}}
 }
 
+func (t ITable) Change() *ITableW {
+	return &ITableW{t: t}
+}
+
 func (tw *ITableW) AddCol(col string, v interface{}) *ITableW {
 	row := ensureRow(tw)
 	tw.t[row][col] = v
@@ -39,6 +48,27 @@ func (tw *ITableW) AddCol(col string, v interface{}) *ITableW {
 func (tw *ITableW) AddEmptyRow() *ITableW {
 	tw.t = append(tw.t, SIMap{})
 	return tw
+}
+
+func (tw *ITableW) RowToInsert() *RowToInsert {
+	return &RowToInsert{itablew: tw, row: SIMap{}}
+}
+
+func (r *RowToInsert) AddCol(col string, v interface{}) *RowToInsert {
+	r.row[col] = v
+	return r
+}
+
+func (r *RowToInsert) InsertAt0() *ITableW {
+	logger.Info("RowToInsert before:", r.itablew.t)
+	r.itablew.t = append(ITable{r.row}, r.itablew.t...)
+	logger.Info("RowToInsert after:", r.itablew.t)
+	return r.itablew
+}
+
+func (r *RowToInsert) Append() *ITableW {
+	r.itablew.t = append(r.itablew.t, r.row)
+	return r.itablew
 }
 
 func ensureRow(tw *ITableW) int {

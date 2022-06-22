@@ -6,9 +6,12 @@ unitInterface:
       descr: Logic that collects search results
       params:
         searchPrefix: The search prefix that the user typed in
-    select: Logic that processes selected item
-    initDescr:
-      descr: Logic that collects description from dataKey
+    select:
+      descr: Logic that processes selected item
+      params:
+        skipSetKey: Sikp setting key (on initialization phase)
+    lookupSelectedData:
+      descr: Logic that collects data of originally selected row
       params:
         dataKey: Data key to look up description
   properties:
@@ -39,6 +42,14 @@ unitInterface:
     minPrefixLength:
       descr: Minimal search prefix length to perform a search
       default: 1
+    additionalFields:
+      descr: Additional info fields
+      children:
+        cr:
+          descr: Cr of field
+          listHead: true
+        columnName:
+          Result column name to load into this field
 privateProperties:
   resultSet:
     descr: Result of user's current search expression
@@ -80,11 +91,9 @@ eventHandlers:
   closeFilter:
     action: |
       if(CompCtx().GetProp("showOptions") == "yes") {
-          Api().Logger().Info("-----------EFFECTIVE");
           CompCtx().SetProp("showOptions", "no");
           CompCtx().RefreshSubComp("options");
       }
-      Api().Logger().Info("-----------CLOSE");
   preFilter:
     action: |
       var fieldValue = Event().EventKey();
@@ -119,20 +128,28 @@ eventHandlers:
           CompCtx().GetPropToCast("selectedRow").AsMap().Get(CompCtx().GetProp("descrColumn")));
           CompCtx().RefreshSubComp("typein");
       }
-      if(CompCtx().HasProp("keyColumn")) {
+      if(CompCtx().HasProp("keyColumn") && !Event().GetParam("skipSetKey")) {
           CompCtx().SetProp("value",
           CompCtx().GetPropToCast("selectedRow").AsMap().Get(CompCtx().GetProp("keyColumn")));
+      }
+      if(CompCtx().HasProp("additionalFields")) {
+          var additionalFields = CompCtx().GetProp("additionalFields");
+          Api().Logger().Info("additionalFields:"+additionalFields);
+          additionalFields.forEach(function (additionalField) {
+            Api().Logger().Info("additionalField:"+ Event().CurrentComp().GetProp("crPrefix"));
+            CompByCr(additionalField.cr).SetProp("value", CompCtx().GetPropToCast("selectedRow").AsMap().Get(additionalField.columnName)).Refresh();
+          });
       }
   onUnitCreate:
     action: |
       if(CompCtx().HasProp("value")) {
         Api().Logger().Info("HAS PROP: "+CompCtx().GetProp("value"));
-        CompCtx().ForwardEvent("initDescr").AddForwardParam("dataKey",CompCtx().GetProp("value"));
+        CompCtx().ForwardEvent("lookupSelectedData").AddForwardParam("dataKey",CompCtx().GetProp("value")).ForwardEvent("select").AddForwardParam("skipSetKey", true);
       }
-  initDescr:
+  lookupSelectedData:
     action: |
       "";
-    propertyKey: valueDescr
+    propertyKey: selectedRow
 injectRootComp:
   css:
     - name: comp/suggest.css

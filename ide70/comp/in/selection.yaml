@@ -21,19 +21,36 @@ unitInterface:
         dictCompleter:
           dictName: htmlEvents
           quote: '"'
+    readonly:
+      descr: Read only mode
+      type: boolean
+    allowEmpty:
+      descr: Add empty element
 privateProperties:
-  dictionary: List representation of selectable options
+  dictionary:
+    descr: List representation of selectable options
+    type: array
 body: |
-  <select id="{{.sid}}" {{eventHandlerJs $.This "onchange" "this.value"}}>
-  {{range .dictionary}}
-  <option value="{{.code}}"{{if eq .code $.value}} selected{{end}}>{{.descr}}</option>
+  {{if $.readonly}}
+    <input id="{{.sid}}" readonly class="textbox" type="text"
+    value="{{range $v := $.dictionary}}{{if eq $v.code $.value}}{{$v.descr}}{{end}}{{end}}">
+    </input>
+  {{else}}
+    <select id="{{.sid}}" {{eventHandlerJs $.This "onchange" "this.value"}}>
+    {{range .dictionary}}
+      <option value="{{.code}}"{{if eq .code $.value}} selected{{end}}>{{.descr}}</option>
+    {{end}}
+    </select>
   {{end}}
-  </select>
 eventHandlers:
   onUnitCreate:
     action: |
       var dictionaryFile = Event().CurrentComp().GetProp("dictionaryFile");
-      var items = Event().LoadCtx().LoadYamlAsMap(dictionaryFile, "dcfg/dict").GetForConvert("items").AsArray();
+      var items = Event().LoadCtx().LoadYamlAsMap(dictionaryFile, "dcfg/dict").GetForConvert("items").AsITable();
+      var allowEmpty = CompCtx().GetProp("allowEmpty");
+      if(allowEmpty) {
+        items = items.Change().RowToInsert().AddCol("code", "").AddCol("descr", "-").InsertAt0().Finalize();
+      }
       Event().CurrentComp().SetProp("dictionary", items);
       if(!Event().CurrentComp().HasProp("value")) {
             Event().CurrentComp().SetProp("value", items[0].code);

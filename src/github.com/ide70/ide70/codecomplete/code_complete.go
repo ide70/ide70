@@ -105,7 +105,7 @@ func findMultilineValue(lines []string, row, col int) (string, int) {
 	for srchRow := row; srchRow >= 0; srchRow-- {
 		line := lines[srchRow]
 		spaces := nrOfBeginningSpaces(line)
-		if spaces < curSpaces {
+		if spaces < keySpaces {
 			if strings.HasSuffix(line, ":") {
 				keySpaces = nrOfBeginningSpaces(line)
 			} else if strings.HasSuffix(line, ": |") {

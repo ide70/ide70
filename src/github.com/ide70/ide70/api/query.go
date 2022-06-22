@@ -55,6 +55,7 @@ type SchemaCol struct {
 	tableRef *SchemaTableReference
 	name     string
 	idField  bool
+	count    bool
 }
 
 func (col *SchemaCol) toSQL() string {
@@ -71,6 +72,9 @@ func (col *SchemaCol) toSQLWithConversion(dataTypeConv string) string {
 func (col *SchemaCol) columnSQL(tableName, dataTypeConv string) string {
 	if col.idField {
 		return tableName + "." + col.name
+	}
+	if col.count {
+		return "count(*)"
 	}
 	if dataTypeConv != "" {
 		return "(" + tableName + "." + dataFieldName + "->'" + col.name + "')::" + dataTypeConv
@@ -110,18 +114,11 @@ func (equals Equals) toSQL() string {
 }
 
 func autoSQLDataTypeConversion(col1, col2 interface{}) (string, string) {
-	switch col1T := col1.(type) {
-	case *SchemaCol:
-		switch col2T := col2.(type) {
-		case *SchemaCol:
-			if col1T.idField && !col2T.idField {
-				return "", "numeric"
-			}
-			if !col1T.idField && col2T.idField {
-				return "numeric", ""
-			}
-		}
-
+	if isNumeric(col1) && !isNumeric(col2) {
+		return "", "numeric"
+	}
+	if !isNumeric(col1) && isNumeric(col2) {
+		return "numeric", ""
 	}
 	return "", ""
 }
@@ -187,6 +184,17 @@ func (qc *QueryCtx) Table(tableName string) SchemaTable {
 	return newSchemaTable(tableName)
 }
 
+func (qc *QueryCtx) mxTable(mxTableName,tableName1,tableName2 string) SchemaTable {
+	table := SchemaTable{}
+	ref := &SchemaTableReference{tableName: mxTableName}
+	table["id_"+tableName1] = &SchemaCol{name: "id_"+tableName1, tableRef: ref}
+	table["id_"+tableName2] = &SchemaCol{name: "id_"+tableName2, tableRef: ref}
+	table["ord"] = &SchemaCol{name: "ord", tableRef: ref}
+	table[idFieldName] = &SchemaCol{name: "id", tableRef: ref, idField: true}
+	table[schemaTableReferenceKey] = &SchemaCol{tableRef: ref}
+	return table
+}
+
 func newSchemaTable(tableName string) SchemaTable {
 	table := SchemaTable{}
 	ref := &SchemaTableReference{tableName: tableName}
@@ -198,7 +206,7 @@ func newSchemaTable(tableName string) SchemaTable {
 	for _, columnIf := range columnList {
 		column := dataxform.IAsSIMap(columnIf)
 		columnName := dataxform.SIMapGetByKeyAsString(column, "name")
-		table[columnName] = &SchemaCol{name: columnName, tableRef: ref, idField: false}
+		table[columnName] = &SchemaCol{name: columnName, tableRef: ref}
 	}
 	table[idFieldName] = &SchemaCol{name: "id", tableRef: ref, idField: true}
 	table[schemaTableReferenceKey] = &SchemaCol{tableRef: ref}
@@ -274,6 +282,11 @@ func (qc *QueryCtx) Join(table SchemaTable) *QueryDef {
 
 func (qd *QueryDef) Select(columns ...*SchemaCol) *QueryDef {
 	qd.selectedColumns = append(qd.selectedColumns, columns...)
+	return qd
+}
+
+func (qd *QueryDef) Count() *QueryDef {
+	qd.selectedColumns = append(qd.selectedColumns, &SchemaCol{count: true})
 	return qd
 }
 
@@ -374,6 +387,9 @@ func (qd *QueryDef) _toSQL() string {
 func (qd *QueryDef) lookupConnections() {
 	logger.Info("qd.selectedColumns", qd.selectedColumns)
 	for _, selectedColumn := range qd.selectedColumns {
+		if selectedColumn.tableRef == nil {
+			selectedColumn.tableRef = qd.from
+		}
 		qd.addConnectingTable(selectedColumn.tableRef)
 	}
 	if qd.condition != nil {
@@ -423,7 +439,7 @@ func (c *QueryConditionWrapper) OrEmpty(right interface{}) *QueryConditionWrappe
 
 func isTrueCondition(c *QueryConditionWrapper) bool {
 	switch c.condition.(type) {
-		case TrueCondition:
+	case TrueCondition:
 		return true
 	}
 	return false

@@ -8,6 +8,8 @@ unitInterface:
       type: int
     store:
       descr: Database field
+      valueCompleter:
+        completerRef: dbFieldCompleter
 privateProperties:
   value: Array of subcomponents data
 body: |
@@ -21,8 +23,10 @@ body: |
     </td>
     </tr>
   {{end}}
+  {{range $child := $.Children}}{{linearContext $.This $child $.nrRows | dropSubComp}}{{end}}
     <tr>
     <td>
+    {{generateComp $.This "buttonRemove" "X" nil}}
     {{generateComp $.This "buttonAdd" "X" nil}}
     </td>
     </tr>
@@ -33,6 +37,7 @@ eventHandlers:
       var value = CompCtx().GetProp("value");
       if(value && value.length > 0) {
           CompCtx().SetProp("nrRows", value.length);
+          CompCtx().RemoveProp("value");
       }
 autoInclude:
   - compType: button
@@ -43,7 +48,19 @@ autoInclude:
         action: |
           var parent = CompCtx().GetParentComp();
           var nrRows = parent.GetProp("nrRows");
-          Api().Logger().Info("nrRows:", nrRows);
           nrRows++;
+          parent.SetProp("nrRows", nrRows);
+          parent.Refresh();
+  - compType: button
+    text: "-"
+    cr: buttonRemove
+    eventHandlers:
+      onclick:
+        action: |
+          var parent = CompCtx().GetParentComp();
+          var nrRows = parent.GetProp("nrRows");
+          if(nrRows > 0) {
+            nrRows--;
+          }
           parent.SetProp("nrRows", nrRows);
           parent.Refresh();

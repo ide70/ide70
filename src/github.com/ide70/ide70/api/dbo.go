@@ -8,16 +8,29 @@ type DataBaseObjectKey struct {
 	Value int64
 }
 
+type ForeignKey struct {
+	foreignDBO *DataBaseObject
+	columnName string
+}
+
 type DataBaseObject struct {
-	Data      map[string]interface{}
-	TableName string
-	Key       *DataBaseObjectKey
-	dbCtx     *DatabaseContext
+	Data        map[string]interface{}
+	TableName   string
+	Key         *DataBaseObjectKey
+	dbCtx       *DatabaseContext
+	foreignKeys []*ForeignKey
 	// TODO: changed flag
+	saveOrder int
+	toDelete  bool
 }
 
 func (dbCtx *DatabaseContext) CreateDBO(data map[string]interface{}, tableName string) *DataBaseObject {
 	dbo := &DataBaseObject{dbCtx: dbCtx, Data: data, TableName: tableName}
+	return dbo
+}
+
+func (dbCtx *DatabaseContext) CreateNewDBO(tableName string) *DataBaseObject {
+	dbo := &DataBaseObject{dbCtx: dbCtx, Data: map[string]interface{}{}, TableName: tableName}
 	return dbo
 }
 
@@ -30,8 +43,30 @@ func (dbCtx *DatabaseContext) FindDBO(tableName string, key int64) *DataBaseObje
 	return dbo
 }
 
-func (dbo *DataBaseObject) GetData() SIMap{
+type ColumnCriteria struct {
+	column string
+	value  int64
+}
+
+func (dbCtx *DatabaseContext) FindDBObyCriteria(tableName string, criterias ...*ColumnCriteria) *DataBaseObject {
+	data := dbCtx.CRUDGenFindbyCriteria(tableName, criterias...)
+	if data == nil {
+		return nil
+	}
+	dbo := &DataBaseObject{dbCtx: dbCtx, Data: data, TableName: tableName, Key: &DataBaseObjectKey{Value: data["_id"].(int64)}}
+	return dbo
+}
+
+func (dbo *DataBaseObject) GetData() SIMap {
 	return dbo.Data
+}
+
+func (dbo *DataBaseObject) MarkToDelete() {
+	dbo.toDelete = true
+}
+
+func (dbo *DataBaseObject) IsMarkedToDelete() bool {
+	return dbo.toDelete
 }
 
 func (dbo *DataBaseObject) UpdateData(data map[string]interface{}) {
@@ -39,7 +74,20 @@ func (dbo *DataBaseObject) UpdateData(data map[string]interface{}) {
 	// TODO: - detect real changes
 }
 
+func (dbo *DataBaseObject) UpdateForeignKeys() {
+	for _, foreignKey := range dbo.foreignKeys {
+		dbo.Data[foreignKey.columnName] = foreignKey.foreignDBO.Key.Value
+	}
+}
+
+func (dbo *DataBaseObject) addForeignKey(foreignKey *ForeignKey) {
+	dbo.foreignKeys = append(dbo.foreignKeys, foreignKey)
+}
+
 func (dbo *DataBaseObject) Save() {
+	if dbo.toDelete {
+		return
+	}
 	if dbo.Key == nil {
 		// new dbo
 		logger.Info("save dbo")

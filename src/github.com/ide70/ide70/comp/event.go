@@ -166,6 +166,7 @@ func (ra *ResponseAction) Encode() string {
 	if len(ra.compsToRefresh) > 0 {
 		addSep(&sb, "|")
 		sb.WriteString(fmt.Sprintf("%d,%s", eraDirtyComps, strings.Join(ra.compsToRefresh, ",")))
+		logger.Info("REFRESH:",strings.Join(ra.compsToRefresh, ","));
 	}
 
 	if len(ra.attrsToRefresh) > 0 {
@@ -237,6 +238,10 @@ func (ra *ResponseAction) SetForwardEvent(comp *CompRuntime, eventType string) {
 	ra.forward = append(ra.forward, &EventForward{To: comp, EventType: eventType, Params: map[string]interface{}{}})
 }
 
+func (ra *ResponseAction) SetForwardEventFirst(comp *CompRuntime, eventType string) {
+	ra.forward = append([]*EventForward{&EventForward{To: comp, EventType: eventType, Params: map[string]interface{}{}}}, ra.forward...)
+}
+
 func (ra *ResponseAction) AddForwardEventParam(key string, value interface{}) {
 	last := len(ra.forward) - 1
 	if last >= 0 {
@@ -306,6 +311,9 @@ type CompCtx struct {
 func (cSW *CompCtx) SetProp(key string, value interface{}) *CompCtx {
 	cSW.c.State[key] = value
 	eventLogger.Info("property", key, "set to", value)
+	if eventType, has := cSW.c.CompDef.Triggers[key]; has {
+		cSW.ForwardEventFirst(eventType)
+	}
 	return cSW
 }
 
@@ -379,6 +387,15 @@ func (cSW *CompCtx) ForwardEvent(eventType string) *CompCtx {
 	}
 	logger.Info("cSW.c", cSW.c.ChildRefId())
 	cSW.event.ResponseAction.SetForwardEvent(cSW.c, eventType)
+	return cSW
+}
+
+func (cSW *CompCtx) ForwardEventFirst(eventType string) *CompCtx {
+	if eventType == "" {
+		eventType = cSW.event.TypeCode
+	}
+	logger.Info("cSW.c", cSW.c.ChildRefId())
+	cSW.event.ResponseAction.SetForwardEventFirst(cSW.c, eventType)
 	return cSW
 }
 
@@ -623,6 +640,9 @@ func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 		} else {
 			if prefix := dataxform.SIMapGetByKeyAsString(event.Comp.State, "crPrefix"); prefix != "" {
 				c = unit.CompByChildRefId[prefix+childRefId]
+				if c == nil {
+					logger.Warning("NOT FOUND BY PREFIX:", prefix+childRefId)
+				}
 			}
 			if c == nil {
 				c = unit.CompByChildRefId[childRefId]
@@ -692,7 +712,7 @@ func (esh *CompDefEventsHandler) AddHandler(eventType string, handler *EventHand
 
 func ProcessCompEvent(e *EventRuntime) {
 	for {
-		logger.Info("compDef.eh:", e.Comp.CompDef.EventsHandler)
+		logger.Debug("compDef.eh:", e.Comp.CompDef.EventsHandler)
 		e.Comp.CompDef.EventsHandler.ProcessEvent(e)
 		if len(e.ResponseAction.forward) > 0 {
 			logger.Info("event forward to type:" + e.ResponseAction.forward[0].EventType)

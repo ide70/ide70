@@ -19,13 +19,19 @@ unitInterface:
         fileNameCompleter:
           folderPrefix: dcfg/schema
           trimSuffix: .yaml
-    dataObject:
-      descr: Data object when updating data
+    updateSet:
+      descr: Data object set when updating data
+privateProperties:
+  initializatonFinished:
+    descr: Initializaton finished flag. No component data initialization if ture
+    default: false
 injectToUnit:
   initialEventList:
     - onDBOLoad
     - onDataLoad
     - onUnitCreate
+  postRenderEventList:
+    - onRenderFinished
 injectToComp:
   - filter:
       hasProp: store
@@ -35,9 +41,11 @@ injectToComp:
           action: |
             var crDbHelper = CompCtx().GetUnit().GetProp("crDbHelper");
             var dbHelper = CompByCr(crDbHelper);
-            var dbo = dbHelper.GetPropToCast("dataObject").AsDBO();
-            if(dbo) {
-                CompCtx().InitializeStored(dbo.GetData());
+            var updateSet = dbHelper.GetPropToCast("updateSet").AsUpdateSet();
+            var initializatonFinished = dbHelper.GetProp("initializatonFinished");
+            if(!updateSet.IsNew() && !initializatonFinished) {
+                var storeKey = CompCtx().GetProp("store");
+                CompCtx().SetProp("value", updateSet.DataLookup(storeKey));
             }
 copyPropertyToUnit:
   - srcProp: cr
@@ -50,25 +58,37 @@ eventHandlers:
       Api().Logger().Info("passParams", Event().GetUnit().GetPassParams());
       var dbId = Event().GetUnit().GetPassParams().Get(dbIdInputName);
       Api().Logger().Info("dbId", dbId);
+      var dbo = null;
       if(dbId) {
-            var dbo = Event().DBCtx().FindDBO(dbTableName, dbId);
-            if(dbo) {
-                //Event().GetUnit().InitializeStored(dbo.GetData());
-                CompCtx().SetProp("dataObject", dbo);
-            }
+        dbo = Event().DBCtx().FindDBO(dbTableName, dbId);
       }
+      if(!dbo) {
+          dbo = Event().DBCtx().CreateNewDBO(dbTableName);
+      }
+      var updateSet = Event().DBCtx().CreateDBOUpdateSet(dbo);
+      CompCtx().SetProp("updateSet", updateSet);
+  onRenderFinished:
+    action: |
+      CompCtx().SetProp("initializatonFinished", true);
   saveData:
     action: |
       var formData = Event().GetUnit().CollectStored();
-      var dbo = CompCtx().GetPropToCast("dataObject").AsDBO();
       var dbTableName = CompCtx().GetProp("tableName");
+      var updateSet = CompCtx().GetPropToCast("updateSet").AsUpdateSet();
+      updateSet.UpdateWithData(formData);
+      updateSet.Save();
+      CompCtx().ForwardEvent("afterSaveData");
+      
+      /* var formData = Event().GetUnit().CollectStored();
+      var dbTableName = CompCtx().GetProp("tableName");
+      var dbo = CompCtx().GetPropToCast("dataObject").AsDBO();
       if(dbo) {
         dbo.UpdateData(formData);
       } else {
         dbo = Event().DBCtx().CreateDBO(formData, dbTableName);
       }
       dbo.Save();
-      CompCtx().ForwardEvent("afterSaveData");
+      CompCtx().ForwardEvent("afterSaveData"); */
   afterSaveData:
     action: |
       "";

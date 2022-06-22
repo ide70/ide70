@@ -2,7 +2,7 @@ table.labeled-table {
     border-collapse: collapse;
 }
 
-table.labeled-table td, .labeled-table th {
+.labeled-table > tbody > tr > td, .labeled-table tbody > tr > th {
     text-align: left;
     padding: 2mm;
 }

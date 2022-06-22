@@ -187,6 +187,7 @@ func createTemplate(body, name string, appParams *AppParams, bodyConsts map[stri
 		"numRangeOpenEnd":     numRangeOpenEnd,
 		"linearContext":       LinearContext,
 		"generateSubComp":     GenerateSubComp,
+		"dropSubComp":     DropSubComp,
 		"app": func() *AppParams {
 			return appParams
 		},
@@ -303,13 +304,13 @@ func GenerateEventHandlerWithKey(comp *CompRuntime, eventTypeCli, eventTypeSvr, 
 }
 
 type GenerationContext struct {
-	index            int
-	key              string
-	parentComp       *CompRuntime
-	childRef         string
-	generateChildRef func(gc *GenerationContext, childRef string) string
+	index                  int
+	key                    string
+	parentComp             *CompRuntime
+	childRef               string
+	generateChildRef       func(gc *GenerationContext, childRef string) string
 	generateChildRefPrefix func(gc *GenerationContext) string
-	generateStoreKey func(gc *GenerationContext, child *CompRuntime) string
+	generateStoreKey       func(gc *GenerationContext, child *CompRuntime) string
 }
 
 func LinearContext(parentComp *CompRuntime, childRefIf interface{}, indexIf interface{}) *GenerationContext {
@@ -348,12 +349,12 @@ func GenerateSubComp(gc *GenerationContext) string {
 	gc.parentComp.State["keepExistingGenChildren"] = true
 
 	comp := gc.parentComp.GenChildren[genChildRefId]
-	
+
 	logger.Info("comp is new:", (comp == nil))
 
 	if comp == nil {
 		logger.Info("genRuntimeRef", genChildRefId)
-		srcCompDef := gc.parentComp.Unit.UnitDef.CompsMap[gc.childRef]
+		srcCompDef := gc.parentComp.Unit.UnitDef.CompsMap[childRefLastTag(gc.childRef)]
 		if srcCompDef == nil {
 			logger.Warning("source component not found:", gc.childRef)
 			return ""
@@ -370,7 +371,7 @@ func GenerateSubComp(gc *GenerationContext) string {
 		}
 
 		gc.parentComp.GenChildren[genChildRefId] = comp
-		
+
 	}
 
 	e := NewEventRuntime(nil, gc.parentComp.Unit, comp, EvtBeforeCompRefresh, "")
@@ -381,6 +382,27 @@ func GenerateSubComp(gc *GenerationContext) string {
 	sb := &strings.Builder{}
 	comp.Render(sb)
 	return sb.String()
+}
+
+func DropSubComp(gc *GenerationContext) string {
+	logger.Info("DropSubComp:", gc)
+	genChildRefId := gc.generateChildRef(gc, gc.childRef)
+	
+	comp := gc.parentComp.GenChildren[genChildRefId]
+
+	logger.Info("comp exist:", (comp != nil))
+
+	if comp != nil {
+		delete(gc.parentComp.GenChildren,genChildRefId)
+		comp.Drop()
+	}
+
+	return ""
+}
+
+func childRefLastTag(childRef string) string {
+	tags := strings.Split(childRef, ".")
+	return tags[len(tags)-1]
 }
 
 func GenerateComp(parentComp *CompRuntime, sourceChildRef string, genRuntimeRefIf interface{}, context interface{}) string {

@@ -1,0 +1,17 @@
+---
+unitInterface:
+  descr: Single row with labeled sub-components
+body: |
+  <table class="labeled-row">
+  <tr>
+  {{range .Children}}
+  <td>{{if .GetProp "label"}}{{.GetProp "label"}}:{{end}}</td>
+  <td>
+  {{evalComp .}}
+  </td>
+  {{end}}
+  </tr>
+  </table>
+injectRootComp:
+  css:
+    - name: comp/labeledRow.css

@@ -246,3 +246,8 @@ func (unit *UnitDef) getInitialEventCodes() []string{
 	}
 	return eventCodeList
 }
+
+func (unit *UnitDef) getPostRenderEventCodes() []string{
+	eventCodeList := dataxform.IArrToStringArr(dataxform.SIMapGetByKeyAsList(unit.Props, "postRenderEventList"))
+	return eventCodeList
+}

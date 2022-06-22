@@ -80,6 +80,14 @@ methods:
           templateCompleter:
             filters:
               type: GenerationContext
+  dropSubComp:
+    descr: Remove existing sub-component
+    params:
+      - descr: Component Generation Context
+        valueCompleter:
+          templateCompleter:
+            filters:
+              type: GenerationContext
   linearContext:
     descr: Creates context for linear sub component generation
     type: GenerationContext

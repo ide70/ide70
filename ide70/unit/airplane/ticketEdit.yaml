@@ -1,12 +1,19 @@
 ---
+#        - cnrLabeledRow2:
+#          - inPrefixSuggestSeat
+#          - inSelectionClass
 - compType: page
   tree:
     - ticketHeader:
       - textboxTicketCode
     - cnrRepeat:
       - labeledTable:
-        - inPrefixSuggestFlight
-        - inPrefixSuggestSeat
+        - cnrLabeledRow:
+          - inPrefixSuggestFlight
+          - inSelectionDestination
+          - inTimestampDepart
+        - cnrLabeledRow2:
+          - inPrefixSuggestSeat
     - buttonSave
   inputs:
     ticketId: Id of ticket database entity
@@ -14,6 +21,10 @@
   tableName: ticket
   dbIdInputName: ticketId
   cr: hlpDbhelper
+  eventHandlers:
+    afterSaveData:
+      action: |
+        Event().LoadParent();
 - compType: labeledTable
   cr: ticketHeader
 - compType: textbox
@@ -22,9 +33,15 @@
   cr: textboxTicketCode
 - compType: cnr/repeat
   cr: cnrRepeat
-  store: reservations
+  store: reservationConn
 - compType: labeledTable
   cr: labeledTable
+- compType: cnr/labeledRow
+  cr: cnrLabeledRow
+  label: Flight
+- compType: cnr/labeledRow
+  cr: cnrLabeledRow2
+  label: Seat
 - compType: in/prefixSuggest
   eventHandlers:
     filter: 
@@ -35,23 +52,36 @@
         q.From(flight).Select(flight._id,flight.flight_id,flight.destination,flight.departure).
         Where(flight.destination.Like("%"+searchText+"%")).
         AscendingBy(flight.departure).List();
-    initDescr:
+    lookupSelectedData:
       action: |
         var dataKey = Event().GetParam("dataKey");
         var q = CompCtx().DBCtx().QueryCtx();
         var flight = q.Table("flight");
-        q.From(flight).Select(flight.flight_id).
-        Where(flight._id.Equals(dataKey)).OneRow().
-        GetOneColumnForConvert().AsString();
+        q.From(flight).Select(flight.flight_id, flight.destination, flight.departure).
+        Where(flight._id.Equals(dataKey)).OneRow();
   searchResultDisplayColumns:
     - flight_id
     - destination
     - departure
   descrColumn: flight_id
   keyColumn: id
-  label: Flight
+  additionalFields: 
+    - cr: inSelectionDestination
+      columnName: destination
+    - cr: inTimestampDepart
+      columnName: departure
   store: flight
   cr: inPrefixSuggestFlight
+- compType: in/selection
+  dictionaryFile: airport
+  label: Destination
+  cr: inSelectionDestination
+  readonly: yes
+  allowEmpty: yes
+- compType: in/timestamp
+  label: Depart
+  cr: inTimestampDepart
+  readonly: yes
 - compType: in/prefixSuggest
   eventHandlers:
     filter: 
@@ -65,12 +95,12 @@
         q.From(airplane).Select(seat._id, seat.code, seat.class, seat.window).
         Where(flight._id.Equals(flightId).And(seat.code.Like('%'+searchText+'%').OrEmpty(searchText))).
         AscendingBy(seat.code).List();
-    initDescr:
+    lookupSelectedData:
       action: |
         var q = CompCtx().DBCtx().QueryCtx();
         var dataKey = Event().GetParam("dataKey");
         var seat = q.Table("seat");
-        q.From(seat).Select(seat.code).Where(seat._id.Equals(dataKey)).OneRow().GetOneColumnForConvert().AsString();
+        q.From(seat).Select(seat.code, seat.class).Where(seat._id.Equals(dataKey)).OneRow();
   searchResultDisplayColumns:
     - code
     - class
@@ -78,9 +108,24 @@
   descrColumn: code
   keyColumn: id
   minPrefixLength: 0
-  label: Seat
   store: seat
   cr: inPrefixSuggestSeat
+  additionalFields:
+    - cr: inSelectionClass
+      columnName: class
+- compType: textbox
+  store: note
+  cr: textboxNote
+- compType: cnr/repeat
+  label: Special Notes
+  store: specNotes
+  cr: cnrRepeatSpecialNotes
+- compType: in/selection
+  dictionaryFile: seatClass
+  label: Class
+  cr: inSelectionClass
+  readonly: yes
+  allowEmpty: yes
 - compType: button
   text: Save
   eventHandlers:

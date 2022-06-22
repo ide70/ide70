@@ -2,9 +2,9 @@ package dataxform
 
 import (
 	"fmt"
-	"strings"
 	"github.com/ide70/ide70/util/log"
 	"reflect"
+	"strings"
 )
 
 var logger = log.Logger{"datxform"}
@@ -35,9 +35,9 @@ func InterfaceMapToStringMap(m map[interface{}]interface{}) map[string]interface
 	return dm
 }
 
-func IArrToStringArr(list []interface{}) []string{
+func IArrToStringArr(list []interface{}) []string {
 	listS := []string{}
-	for _,item := range list {
+	for _, item := range list {
 		listS = append(listS, IAsString(item))
 	}
 	return listS
@@ -155,6 +155,26 @@ func IAsInt(i interface{}) int {
 	return 0
 }
 
+func IAsInt64(i interface{}) int64 {
+	if i == nil {
+		return 0
+	}
+	switch iT := i.(type) {
+	case int:
+		return int64(iT)
+	case int64:
+		return iT
+	case float64:
+		return int64(iT)
+	case string:
+		var iC int64 = 0
+		fmt.Sscanf(iT, "%d", &iC)
+		return iC
+	}
+	logger.Warning("IAsInt unknown type:", reflect.TypeOf(i))
+	return 0
+}
+
 func IAsBool(i interface{}) bool {
 	if i == nil {
 		return false
@@ -185,7 +205,7 @@ func IAsSIMap(i interface{}) map[string]interface{} {
 	if i == nil {
 		return map[string]interface{}{}
 	}
-	
+
 	switch iT := i.(type) {
 	case map[string]interface{}:
 		return iT
@@ -380,8 +400,8 @@ func IApplyFnToNodes(i interface{}, f func(entry CollectionEntry)) {
 	}
 }
 
-func IArrApplyFn(a []interface{}, f func(entry CollectionEntry)) {
-	iArrApplyFn(a, f, nil)
+func IArrApplyFnLinear(a []interface{}, f func(entry CollectionEntry)) {
+	iArrApplyFnLinear(a, f, nil)
 }
 
 func SIMapApplyFn(m map[string]interface{}, f func(entry CollectionEntry)) {
@@ -392,8 +412,22 @@ func IArrApplyFnToNodes(a []interface{}, f func(entry CollectionEntry)) {
 	iArrApplyFnToNodes(a, f, nil)
 }
 
+func IArrApplyFn(a []interface{}, f func(entry CollectionEntry)) {
+	iArrApplyFnToNodes(a, f, nil)
+}
+
 func SIMapApplyFnToNodes(m map[string]interface{}, f func(entry CollectionEntry)) {
 	sIMapApplyFnToNodes(m, f, nil)
+}
+
+func iArrApplyFnLinear(a []interface{}, f func(entry CollectionEntry), parentEntry CollectionEntry) {
+	for i, v := range a {
+		entry := &ArrayEntry{parent: parentEntry, a: a, i: i, v: v}
+		f(entry)
+		if entry.stop {
+			return
+		}
+	}
 }
 
 func iArrApplyFn(a []interface{}, f func(entry CollectionEntry), parentEntry CollectionEntry) {
@@ -546,7 +580,7 @@ func tst1() {
 }
 */
 
-func tokenizeKeyExpr(keyExpr string) []string {
+func TokenizeKeyExpr(keyExpr string) []string {
 	if strings.Contains(keyExpr, "[") {
 		keyExpr = strings.Replace(keyExpr, "[", ".[", -1)
 		keyExpr = strings.Replace(keyExpr, "]", "", -1)
@@ -557,8 +591,36 @@ func tokenizeKeyExpr(keyExpr string) []string {
 	return strings.Split(keyExpr, ".")
 }
 
+func UnTokenizeKeyExpr(tokenizedKey []string) string {
+	var key strings.Builder
+	for idx,token := range tokenizedKey {
+		if strings.HasPrefix(token, "[") {
+			key.WriteString(token)
+			key.WriteString("]")
+		} else {
+			if idx>0 {
+				key.WriteString(".")
+			}
+			key.WriteString(token)
+		}
+	}
+	return key.String()
+}
+
+func KeyExprToken(tokenizedKey []string, idx int) string {
+	if idx >= len(tokenizedKey) {
+		return ""
+	}
+	return tokenizedKey[idx]
+}
+
+func KeyExprTokenArrIdx(tokenizedKey []string, idx int) int {
+	token := KeyExprToken(tokenizedKey, idx)
+	return getIndexOfToken(token)
+}
+
 func SICollGetNode(keyExpr string, collection interface{}) interface{} {
-	keyTokens := tokenizeKeyExpr(keyExpr)
+	keyTokens := TokenizeKeyExpr(keyExpr)
 	return sIMapGetNodeLevel(keyTokens, collection)
 }
 
@@ -617,7 +679,7 @@ func SIMapLightCopy(sm map[string]interface{}) map[string]interface{} {
 }
 
 func SIMapUpdateValue(keyExpr string, value interface{}, m map[string]interface{}, removeEmpty bool) {
-	keyTokens := tokenizeKeyExpr(keyExpr)
+	keyTokens := TokenizeKeyExpr(keyExpr)
 	collection := interface{}(m)
 
 	if removeEmpty && IsEmpty(value) {
@@ -658,14 +720,14 @@ func sIMapAddValueLevel(keyTokens []string, value interface{}, pCollection *inte
 }
 
 func SIArrRemoveValue(keyExpr string, c *[]interface{}) {
-	keyTokens := tokenizeKeyExpr(keyExpr)
+	keyTokens := TokenizeKeyExpr(keyExpr)
 	collection := interface{}(*c)
 	sIMapRemoveValueLevel(keyTokens, &collection)
 	*c = collection.([]interface{})
 }
 
 func SIMapRemoveValue(keyExpr string, pM *interface{}) {
-	keyTokens := tokenizeKeyExpr(keyExpr)
+	keyTokens := TokenizeKeyExpr(keyExpr)
 	sIMapRemoveValueLevel(keyTokens, pM)
 }
 
@@ -766,7 +828,7 @@ func GetOnlyEntry(m map[string]interface{}) (string, interface{}) {
 
 func StringListToSet(list []string) map[string]bool {
 	m := map[string]bool{}
-	for _, e:= range list {
+	for _, e := range list {
 		m[e] = true
 	}
 	return m

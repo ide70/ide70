@@ -310,7 +310,7 @@ type CompCtx struct {
 
 func (cSW *CompCtx) SetProp(key string, value interface{}) *CompCtx {
 	cSW.c.State[key] = value
-	eventLogger.Info("property", key, "set to", value)
+	eventLogger.Info("cr", cSW.c.ChildRefId() , "property", key, "set to", value)
 	if eventType, has := cSW.c.CompDef.Triggers[key]; has {
 		cSW.ForwardEventFirst(eventType)
 	}

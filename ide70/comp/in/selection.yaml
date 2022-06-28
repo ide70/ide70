@@ -52,6 +52,7 @@ eventHandlers:
         items = items.Change().RowToInsert().AddCol("code", "").AddCol("descr", "-").InsertAt0().Finalize();
       }
       Event().CurrentComp().SetProp("dictionary", items);
+      Api().Logger().Info("i1234:" + Event().CurrentComp().Comp().ChildRefId() + " " + Event().CurrentComp().GetProp("value"));
       if(!Event().CurrentComp().HasProp("value")) {
             Event().CurrentComp().SetProp("value", items[0].code);
       }

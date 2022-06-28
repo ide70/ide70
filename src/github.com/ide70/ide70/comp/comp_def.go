@@ -22,7 +22,8 @@ func ParseCompDef(def map[string]interface{}, context *UnitDefContext) *CompDef 
 	compDef.Props = def
 
 	// TODO: lista merge nem az igazi
-	dataxform.SIMapInjectDefaults(compDef.CompType.AccessibleDef, compDef.Props)
+	accDefCopy := dataxform.IAsSIMap(dataxform.SIMapCopy(compDef.CompType.AccessibleDef))
+	dataxform.SIMapInjectDefaults(accDefCopy, compDef.Props)
 
 	logger.Info("ParseCompDef id before")
 	if def["cr"] == nil {
@@ -119,6 +120,7 @@ func ParseEventHandlers(def map[string]interface{}, superEventsHandler *CompDefE
 	}
 	
 	eventHandlers := dataxform.SIMapGetByKeyAsMap(def, "eventHandlers")
+	logger.Info("ehs:", eventHandlers)
 	if superEventsHandler != nil {
 		for eventType, handler := range superEventsHandler.Handlers {
 			if initEventCodeList[eventType] {

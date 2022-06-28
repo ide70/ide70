@@ -55,11 +55,21 @@ func (updateSet *DboUpdateSet) updateDBO(setId string, tableName string, data ma
 
 func (updateSet *DboUpdateSet) addDBO(dbo *DataBaseObject, setId string, saveOrder int) {
 	logger.Info("addDBO", setId)
+	if dbo == nil {
+		return
+	}
 	dbo.saveOrder = saveOrder
 	updateSet.dbos[setId] = dbo
 	for key, dbo := range updateSet.dbos {
 		logger.Info("adbo", key, dbo)
 	}
+}
+
+func (updateSet *DboUpdateSet) hasDBO(setId string) bool {
+	for key, dbo := range updateSet.dbos {
+		logger.Info("kdbo", key, dbo)
+	}
+	return updateSet.dbos[setId] != nil
 }
 
 func (updateSet *DboUpdateSet) update(tableName string, data map[string]interface{}, setIdPrefix string, baseSaveOrder int) *DataBaseObject {
@@ -94,6 +104,21 @@ func (updateSet *DboUpdateSet) update(tableName string, data map[string]interfac
 						dboForeign.addForeignKey(&ForeignKey{columnName: conn.foreignColumn.name, foreignDBO: dboRoot})
 					}
 					dataKeysToDelete[entry.Parent().LinearKey()] = true
+				case *dataxform.MapEntry:
+					if conn.mxTableName == "" {
+						setIdForeign := setIdPrefix + entry.Parent().LinearKey() + ".F"
+						logger.Info("S setId:", setIdForeign)
+						if updateSet.updatedDBOs[setIdForeign] {
+							return
+						}
+						logger.Info("S entry.LinearKey():", entry.LinearKey())
+						logger.Info("S conn:", conn)
+						logger.Info("S entry:", reflect.TypeOf(entry.Value()))
+
+						dboForeign := updateSet.update(conn.foreignTable.name, dataxform.IAsSIMap(entry.Parent().Value()), setIdForeign, baseSaveOrder+1)
+						dboForeign.addForeignKey(&ForeignKey{columnName: conn.foreignColumn.name, foreignDBO: dboRoot})
+					}
+					dataKeysToDelete[entry.Parent().LinearKey()] = true
 				}
 			}
 		}
@@ -112,6 +137,9 @@ func (updateSet *DboUpdateSet) DataLookup(key string) interface{} {
 
 func (updateSet *DboUpdateSet) dataLookupFromDBO(dboRoot *DataBaseObject, tokenizedKey []string, baseSaveOrder int) interface{} {
 	logger.Info("DataLookupFromDBO, key:", tokenizedKey)
+	if dboRoot == nil {
+		return nil
+	}
 	tableStruct := getTableStruct(dboRoot.TableName)
 	if conn, has := tableStruct.connections[dataxform.KeyExprToken(tokenizedKey, 0)]; has {
 		logger.Info("connectedKey")
@@ -141,8 +169,9 @@ func (updateSet *DboUpdateSet) dataLookupFromDBO(dboRoot *DataBaseObject, tokeni
 		if dataxform.KeyExprTokenArrIdx(tokenizedKey, 1) >= 0 {
 			setIdDboForeign := dataxform.UnTokenizeKeyExpr(tokenizedKey[:2]) + ".F"
 			dboForeign := updateSet.dbos[setIdDboForeign]
-			if dboForeign == nil {
-				if conn.mxTableName != "" {
+
+			if conn.mxTableName != "" {
+				if dboForeign == nil {
 					keyIndex := dataxform.KeyExprTokenArrIdx(tokenizedKey, 1)
 					dboMx := updateSet.dbCtx.FindDBObyCriteria(conn.mxTableName, &ColumnCriteria{column: "id_" + dboRoot.TableName, value: dboRoot.Key.Value},
 						&ColumnCriteria{column: "ord", value: int64(keyIndex)})
@@ -151,16 +180,27 @@ func (updateSet *DboUpdateSet) dataLookupFromDBO(dboRoot *DataBaseObject, tokeni
 					dboForeign = updateSet.dbCtx.FindDBO(conn.foreignTable.name, dataxform.IAsInt64(dboMx.Data["id_"+conn.foreignTable.name]))
 					logger.Info("dboForeign", dboForeign)
 					updateSet.addDBO(dboForeign, setIdDboForeign, baseSaveOrder)
-					return updateSet.dataLookupFromDBO(dboForeign, tokenizedKey[2:], baseSaveOrder)
-				} else {
+				}
+				return updateSet.dataLookupFromDBO(dboForeign, tokenizedKey[2:], baseSaveOrder)
+			} else {
+				if dboForeign == nil {
 					keyIndex := dataxform.KeyExprTokenArrIdx(tokenizedKey, 1)
-					dboForeign := updateSet.dbCtx.FindDBObyCriteria(dboRoot.TableName, &ColumnCriteria{column: conn.foreignColumn.name, value: dboRoot.Key.Value},
+					dboForeign = updateSet.dbCtx.FindDBObyCriteria(conn.foreignTable.name, &ColumnCriteria{column: conn.foreignColumn.name, value: dboRoot.Key.Value},
 						&ColumnCriteria{column: "_ord", value: int64(keyIndex)})
 					logger.Info("dboForeign", dboForeign)
 					updateSet.addDBO(dboForeign, setIdDboForeign, baseSaveOrder+1)
-					return updateSet.dataLookupFromDBO(dboForeign, tokenizedKey[2:], baseSaveOrder+1)
 				}
+				return updateSet.dataLookupFromDBO(dboForeign, tokenizedKey[2:], baseSaveOrder+1)
 			}
+		} else { // single connecting object
+			setIdDboForeign := dataxform.UnTokenizeKeyExpr(tokenizedKey[:1]) + ".F"
+			dboForeign := updateSet.dbos[setIdDboForeign]
+			if dboForeign == nil {
+				dboForeign = updateSet.dbCtx.FindDBObyCriteria(conn.foreignTable.name, &ColumnCriteria{column: conn.foreignColumn.name, value: dboRoot.Key.Value})
+				logger.Info("dboForeign", dboForeign)
+				updateSet.addDBO(dboForeign, setIdDboForeign, baseSaveOrder+1)
+			}
+			return updateSet.dataLookupFromDBO(dboForeign, tokenizedKey[1:], baseSaveOrder+1)
 		}
 	}
 	return dataxform.SICollGetNode(dataxform.UnTokenizeKeyExpr(tokenizedKey), dboRoot.Data)

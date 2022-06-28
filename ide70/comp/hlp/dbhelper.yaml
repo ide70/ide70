@@ -39,12 +39,14 @@ injectToComp:
       eventHandlers:
         onDataLoad:
           action: |
+            Api().Logger().Info("odl:", CompCtx().Comp().ChildRefId());
             var crDbHelper = CompCtx().GetUnit().GetProp("crDbHelper");
             var dbHelper = CompByCr(crDbHelper);
             var updateSet = dbHelper.GetPropToCast("updateSet").AsUpdateSet();
             var initializatonFinished = dbHelper.GetProp("initializatonFinished");
             if(!updateSet.IsNew() && !initializatonFinished) {
                 var storeKey = CompCtx().GetProp("store");
+                Api().Logger().Info("storeKey:", storeKey);
                 CompCtx().SetProp("value", updateSet.DataLookup(storeKey));
             }
 copyPropertyToUnit:

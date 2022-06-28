@@ -14,6 +14,9 @@
           - inTimestampDepart
         - cnrLabeledRow2:
           - inPrefixSuggestSeat
+    - ticketFooter:
+      - textboxPrice
+      - inSelectionCurrency
     - buttonSave
   inputs:
     ticketId: Id of ticket database entity
@@ -27,6 +30,8 @@
         Event().LoadParent();
 - compType: labeledTable
   cr: ticketHeader
+- compType: labeledTable
+  cr: ticketFooter
 - compType: textbox
   label: Ticket code
   store: ticket_code
@@ -126,6 +131,16 @@
   cr: inSelectionClass
   readonly: yes
   allowEmpty: yes
+- compType: textbox
+  label: Price
+  cr: textboxPrice
+  store: priceConn.sum
+- compType: in/selection
+  dictionaryFile: currency
+  label: Currency
+  cr: inSelectionCurrency
+  store: priceConn.currency
+  allowEmpty: true
 - compType: button
   text: Save
   eventHandlers:

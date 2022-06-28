@@ -136,7 +136,7 @@ eventHandlers:
           var additionalFields = CompCtx().GetProp("additionalFields");
           Api().Logger().Info("additionalFields:"+additionalFields);
           additionalFields.forEach(function (additionalField) {
-            Api().Logger().Info("additionalField:"+ Event().CurrentComp().GetProp("crPrefix"));
+            Api().Logger().Info("additionalField:"+ additionalField.cr);
             CompByCr(additionalField.cr).SetProp("value", CompCtx().GetPropToCast("selectedRow").AsMap().Get(additionalField.columnName)).Refresh();
           });
       }

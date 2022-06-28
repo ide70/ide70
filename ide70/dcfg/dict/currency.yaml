@@ -1,0 +1,9 @@
+---
+descr: Currencies
+items:
+  - code: EUR
+    descr: Euro
+  - code: HUF
+    descr: Hungarian Forint
+  - code: USD
+    descr: US Dollars

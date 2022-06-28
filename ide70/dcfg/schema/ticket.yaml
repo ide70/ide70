@@ -9,3 +9,6 @@ connections:
   reservationConn:
     foreignTable: flightReservation
     foreignColumn: ticket_id
+  priceConn:
+    foreignTable: ticketPrice
+    foreignColumn: ticket_id

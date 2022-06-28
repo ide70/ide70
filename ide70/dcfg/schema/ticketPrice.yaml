@@ -1,0 +1,6 @@
+---
+descr: Ticket price
+columns:
+  - name: sum
+  - name: currency
+  - name: ticket_id

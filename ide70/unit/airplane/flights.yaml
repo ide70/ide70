@@ -21,6 +21,7 @@
     - header: Action
       items:
         - cr: buttonEdit
+        - cr: buttonPassengersList
   dbTableName: flight
   cr: flightsData
 - compType: button
@@ -30,3 +31,10 @@
       action: |
         CompCtx().LoadUnit("airplane/flightEdit").AddPassParam("flightId", CompCtx().ParentContext().AsMap().GetDbId());
   cr: buttonEdit
+- compType: button
+  text: Passengers List
+  eventHandlers:
+    onclick:
+      action: |
+        CompCtx().LoadUnit("airplane/passengersList").AddPassParam("flightId", CompCtx().ParentContext().AsMap().GetDbId());
+  cr: buttonPassengersList

@@ -6,6 +6,7 @@
   tree:
     - ticketHeader:
       - textboxTicketCode
+      - textboxPassengerName
     - cnrRepeat:
       - labeledTable:
         - cnrLabeledRow:
@@ -36,6 +37,10 @@
   label: Ticket code
   store: ticket_code
   cr: textboxTicketCode
+- compType: textbox
+  label: Passenger Name
+  store: passenger_name
+  cr: textboxPassengerName
 - compType: cnr/repeat
   cr: cnrRepeat
   store: reservationConn
@@ -75,7 +80,7 @@
       columnName: destination
     - cr: inTimestampDepart
       columnName: departure
-  store: flight
+  store: flight_id
   cr: inPrefixSuggestFlight
 - compType: in/selection
   dictionaryFile: airport
@@ -113,7 +118,7 @@
   descrColumn: code
   keyColumn: id
   minPrefixLength: 0
-  store: seat
+  store: seat_id
   cr: inPrefixSuggestSeat
   additionalFields:
     - cr: inSelectionClass

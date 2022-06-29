@@ -1,0 +1,23 @@
+---
+- compType: page
+  tree: 
+    - passengersList
+  inputs:
+    flightId: Id of flight
+- compType: datalist
+  columns:
+    - header: Seat
+      key: code
+    - header: Name
+      key: passenger_name
+  eventHandlers:
+    filterQuery:
+      action: |
+        var flightId = CompCtx().GetUnit().GetPassParam("flightId");
+        var q = CompCtx().DBCtx().QueryCtx();
+        var ticket = q.Table("ticket");
+        var flightRes = ticket.JoinedTable("reservationConn");
+        var seat = flightRes.JoinedTable("seatConn");
+        q.From(ticket).Select(ticket.passenger_name, seat.code).
+        Where(flightRes.flight_id.Equals(flightId)).AscendingBy(ticket.passenger_name).List();
+  cr: passengersList

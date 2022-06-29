@@ -231,6 +231,9 @@ func (st SchemaTable) JoinedTable(connectionName string) SchemaTable {
 		conn := dataxform.IAsSIMap(connIf)
 		logger.Info("conn:", conn)
 		localColumnName := dataxform.SIMapGetByKeyAsString(conn, "column")
+		if localColumnName == "" {
+			localColumnName = idFieldName
+		}
 		foreignTableName := dataxform.SIMapGetByKeyAsString(conn, "foreignTable")
 		foreignColumnName := dataxform.SIMapGetByKeyAsString(conn, "foreignColumn")
 		if foreignColumnName == "" {

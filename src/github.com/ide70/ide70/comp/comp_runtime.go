@@ -65,11 +65,15 @@ func InstantiateComp(compDef *CompDef, unit *UnitRuntime, gc *GenerationContext)
 
 	if gc != nil {
 		// override fixed cr and store by generation context
-		comp.State["cr"] = gc.generateChildRef(gc, comp.ChildRefId())
+		comp.State["parentContext"] = gc
+		comp.State["parentComp"] = gc.parentComp
+		cr := gc.generateChildRef(gc, comp.ChildRefId())
+		comp.State["cr"] = cr
 		comp.State["crPrefix"] = gc.generateChildRefPrefix(gc)
 		if _, has := comp.State["store"]; has {
 			comp.State["store"] = gc.generateStoreKey(gc, comp)
 		}
+		gc.parentComp.GenChildren[cr] = comp
 	}
 
 	unit.registerComp(comp)

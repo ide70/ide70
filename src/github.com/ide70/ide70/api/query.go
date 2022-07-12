@@ -12,6 +12,8 @@ import (
 const schemaTableReferenceKey = "__tableReference"
 const idFieldName = "_id"
 const dataFieldName = "data"
+const joinJoin = "join"
+const joinLeftOuter = "left outer join"
 
 type QueryCtx struct {
 	dbCtx *DatabaseContext
@@ -45,10 +47,16 @@ type SchemaTableReference struct {
 	parentConnection *SchemaConnection
 }
 
+type JoinedTable struct {
+	t        *SchemaTable
+	tableRef *SchemaTableReference
+}
+
 type SchemaConnection struct {
 	parentTableRef *SchemaTableReference
-	joinCondition  QueryCondition
+	joinCondition  *QueryConditionWrapper
 	uniqueId       string
+	joinType       string
 }
 
 type SchemaCol struct {
@@ -77,7 +85,7 @@ func (col *SchemaCol) columnSQL(tableName, dataTypeConv string) string {
 		return "count(*)"
 	}
 	if dataTypeConv != "" {
-		return "(" + tableName + "." + dataFieldName + "->'" + col.name + "')::" + dataTypeConv
+		return "(" + tableName + "." + dataFieldName + "->>'" + col.name + "')::" + dataTypeConv
 	}
 	return tableName + "." + dataFieldName + "->>'" + col.name + "'"
 }
@@ -105,6 +113,20 @@ type Equals struct {
 	right     interface{}
 }
 
+type IsNull struct {
+	schemaCol *SchemaCol
+}
+
+type Gt struct {
+	schemaCol *SchemaCol
+	right     interface{}
+}
+
+type Lt struct {
+	schemaCol *SchemaCol
+	right     interface{}
+}
+
 func (equals Equals) toSQL() string {
 	if equals.right == nil {
 		return "1 = 1"
@@ -113,12 +135,38 @@ func (equals Equals) toSQL() string {
 	return equals.schemaCol.toSQLWithConversion(dc1) + " = " + schemaColOrConstToSQL(equals.right, dc2)
 }
 
+func (isNull IsNull) toSQL() string {
+	return isNull.schemaCol.toSQLWithConversion("") + " is null"
+}
+
+func (gt Gt) toSQL() string {
+	if gt.right == nil {
+		return "1 = 1"
+	}
+	dc1, dc2 := autoSQLDataTypeConversion(gt.schemaCol, gt.right)
+	return gt.schemaCol.toSQLWithConversion(dc1) + " > " + schemaColOrConstToSQL(gt.right, dc2)
+}
+
+func (lt Lt) toSQL() string {
+	if lt.right == nil {
+		return "1 = 1"
+	}
+	dc1, dc2 := autoSQLDataTypeConversion(lt.schemaCol, lt.right)
+	return lt.schemaCol.toSQLWithConversion(dc1) + " < " + schemaColOrConstToSQL(lt.right, dc2)
+}
+
 func autoSQLDataTypeConversion(col1, col2 interface{}) (string, string) {
 	if isNumeric(col1) && !isNumeric(col2) {
 		return "", "numeric"
 	}
 	if !isNumeric(col1) && isNumeric(col2) {
 		return "numeric", ""
+	}
+	if isTime(col1) && !isTime(col2) {
+		return "", "timestamp"
+	}
+	if !isTime(col1) && isTime(col2) {
+		return "timestamp", ""
 	}
 	return "", ""
 }
@@ -132,6 +180,8 @@ func schemaColOrConstToSQL(i interface{}, dataTypeConversion string) string {
 	case string:
 		return sqlStringConst(it)
 	case time.Time:
+		return "TIMESTAMP " + sqlStringConst(it.Format("2006-01-02 15:04:05"))
+	case *time.Time:
 		return "TIMESTAMP " + sqlStringConst(it.Format("2006-01-02 15:04:05"))
 	case *SchemaCol:
 		return it.toSQLWithConversion(dataTypeConversion)
@@ -151,6 +201,14 @@ func isNumeric(i interface{}) bool {
 		return false
 	case *SchemaCol:
 		return it.idField
+	}
+	return false
+}
+
+func isTime(i interface{}) bool {
+	switch i.(type) {
+	case time.Time, *time.Time:
+		return true
 	}
 	return false
 }
@@ -184,11 +242,11 @@ func (qc *QueryCtx) Table(tableName string) SchemaTable {
 	return newSchemaTable(tableName)
 }
 
-func (qc *QueryCtx) mxTable(mxTableName,tableName1,tableName2 string) SchemaTable {
+func (qc *QueryCtx) mxTable(mxTableName, tableName1, tableName2 string) SchemaTable {
 	table := SchemaTable{}
 	ref := &SchemaTableReference{tableName: mxTableName}
-	table["id_"+tableName1] = &SchemaCol{name: "id_"+tableName1, tableRef: ref}
-	table["id_"+tableName2] = &SchemaCol{name: "id_"+tableName2, tableRef: ref}
+	table["id_"+tableName1] = &SchemaCol{name: "id_" + tableName1, tableRef: ref}
+	table["id_"+tableName2] = &SchemaCol{name: "id_" + tableName2, tableRef: ref}
 	table["ord"] = &SchemaCol{name: "ord", tableRef: ref}
 	table[idFieldName] = &SchemaCol{name: "id", tableRef: ref, idField: true}
 	table[schemaTableReferenceKey] = &SchemaCol{tableRef: ref}
@@ -211,6 +269,31 @@ func newSchemaTable(tableName string) SchemaTable {
 	table[idFieldName] = &SchemaCol{name: "id", tableRef: ref, idField: true}
 	table[schemaTableReferenceKey] = &SchemaCol{tableRef: ref}
 	return table
+}
+
+func (st SchemaTable) GetJoin() *JoinedTable {
+	jt := &JoinedTable{}
+	jt.t = &st
+	jt.tableRef = st[schemaTableReferenceKey].tableRef
+	return jt
+}
+
+func (jt *JoinedTable) Table() SchemaTable {
+	return *jt.t
+}
+
+func (jt *JoinedTable) JoinTypeLeftOuter() *JoinedTable {
+	jt.tableRef.parentConnection.joinType = joinLeftOuter
+	return jt
+}
+
+func (jt *JoinedTable) GetJoinCodition() *QueryConditionWrapper {
+	return jt.tableRef.parentConnection.joinCondition
+}
+
+func (jt *JoinedTable) ReplacejoinCondition(c *QueryConditionWrapper) *JoinedTable {
+	jt.tableRef.parentConnection.joinCondition = c
+	return jt
 }
 
 func (st SchemaTable) JoinedTable(connectionName string) SchemaTable {
@@ -246,7 +329,7 @@ func (st SchemaTable) JoinedTable(connectionName string) SchemaTable {
 			parentUniqueId = parentRef.parentConnection.uniqueId
 		}
 		condition := Equals{schemaCol: st[localColumnName], right: table[foreignColumnName]}
-		ref.parentConnection = &SchemaConnection{parentTableRef: parentRef, joinCondition: condition, uniqueId: parentUniqueId + "." + connectionName}
+		ref.parentConnection = &SchemaConnection{parentTableRef: parentRef, joinType: joinJoin, joinCondition: &QueryConditionWrapper{condition: condition, conditionColumns: []*SchemaCol{}}, uniqueId: parentUniqueId + "." + connectionName}
 		break
 	}
 	logger.Info("JoinedTable:", table)
@@ -333,6 +416,33 @@ func (qd *QueryDef) OneRow() SIMap {
 	return resultTable[0]
 }
 
+func (ref *SchemaTableReference) _generateJoin(done map[*SchemaTableReference]bool) string {
+	s := ""
+	if done[ref] {
+		logger.Info("already done:", ref.tableName)
+		return s
+	}
+	done[ref] = true
+	logger.Info("gen:", ref.tableName, ref.parentConnection)
+	for _, sc := range ref.parentConnection.joinCondition.conditionColumns {
+		s += sc.tableRef._generateJoin(done)
+	}
+	s += ref.toJoinSQL()
+	return s
+}
+
+func (qd *QueryDef) _generateJoins() string {
+	var sb strings.Builder
+	// generate joins
+	done := map[*SchemaTableReference]bool{}
+	for _, join := range qd.connections {
+		logger.Info("generating join:", join)
+		sb.WriteString(join._generateJoin(done))
+	}
+	logger.Info("joins generated")
+	return sb.String()
+}
+
 func (qd *QueryDef) _toSQL() string {
 	aliasIdx := 1
 	qd.from.generateAlias(aliasIdx)
@@ -356,12 +466,7 @@ func (qd *QueryDef) _toSQL() string {
 	sb.WriteString(" from ")
 	sb.WriteString(qd.from.toTableSQL())
 
-	// generate joins
-	for _, join := range qd.connections {
-		logger.Info("generating join:", join)
-		sb.WriteString(join.toJoinSQL())
-	}
-	logger.Info("joins generated")
+	sb.WriteString(qd._generateJoins())
 
 	if qd.condition != nil {
 		sb.WriteString(" where ")
@@ -419,9 +524,8 @@ func (schemaCol *SchemaCol) Like(likeExpr string) *QueryConditionWrapper {
 	return &QueryConditionWrapper{condition: like, conditionColumns: []*SchemaCol{schemaCol}}
 }
 
-func (schemaCol *SchemaCol) Equals(right interface{}) *QueryConditionWrapper {
-	like := Equals{schemaCol: schemaCol, right: right}
-	qcw := &QueryConditionWrapper{condition: like}
+func binaryCondition(schemaCol *SchemaCol, right interface{}, condition QueryCondition) *QueryConditionWrapper {
+	qcw := &QueryConditionWrapper{condition: condition}
 	conditionColumns := []*SchemaCol{schemaCol}
 	switch rightT := right.(type) {
 	case *SchemaCol:
@@ -429,6 +533,26 @@ func (schemaCol *SchemaCol) Equals(right interface{}) *QueryConditionWrapper {
 	}
 	qcw.conditionColumns = conditionColumns
 	return qcw
+}
+
+func unaryCondition(schemaCol *SchemaCol, condition QueryCondition) *QueryConditionWrapper {
+	return &QueryConditionWrapper{condition: condition, conditionColumns: []*SchemaCol{schemaCol}}
+}
+
+func (schemaCol *SchemaCol) Equals(right interface{}) *QueryConditionWrapper {
+	return binaryCondition(schemaCol, right, Equals{schemaCol: schemaCol, right: right})
+}
+
+func (schemaCol *SchemaCol) IsNull() *QueryConditionWrapper {
+	return unaryCondition(schemaCol, IsNull{schemaCol: schemaCol})
+}
+
+func (schemaCol *SchemaCol) Gt(right interface{}) *QueryConditionWrapper {
+	return binaryCondition(schemaCol, right, Gt{schemaCol: schemaCol, right: right})
+}
+
+func (schemaCol *SchemaCol) Lt(right interface{}) *QueryConditionWrapper {
+	return binaryCondition(schemaCol, right, Lt{schemaCol: schemaCol, right: right})
 }
 
 func (c *QueryConditionWrapper) OrEmpty(right interface{}) *QueryConditionWrapper {
@@ -487,11 +611,11 @@ func (str *SchemaTableReference) toTableSQL() string {
 }
 
 func (str *SchemaTableReference) toJoinSQL() string {
-	sql := " JOIN "
+	sql := " " + str.parentConnection.joinType + " "
 	sql += str.toTableSQL()
 	logger.Info("str.parentConnection:", str.parentConnection)
 	sql += " ON "
-	sql += str.parentConnection.joinCondition.toSQL()
+	sql += str.parentConnection.joinCondition.condition.toSQL()
 	return sql
 }
 

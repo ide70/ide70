@@ -7,12 +7,15 @@
     - ticketHeader:
       - textboxTicketCode
       - textboxPassengerName
+      - inSelectionStartFrom
+      - inTimestampStartDate
     - cnrRepeat:
       - labeledTable:
         - cnrLabeledRow:
           - inPrefixSuggestFlight
           - inSelectionDestination
           - inTimestampDepart
+          - inTimestampArrival
         - cnrLabeledRow2:
           - inPrefixSuggestSeat
     - ticketFooter:
@@ -41,6 +44,20 @@
   label: Passenger Name
   store: passenger_name
   cr: textboxPassengerName
+- compType: in/selection
+  dictionaryFile: airport
+  label: Start from
+  cr: inSelectionStartFrom
+  store: startFrom
+- compType: in/timestamp
+  label: Start date
+  cr: inTimestampStartDate
+  store: startDate
+  startYear: 2022
+  endYear: 2026
+  value:
+    calc: |
+      Api().DateCtx().Now();
 - compType: cnr/repeat
   cr: cnrRepeat
   store: reservationConn
@@ -56,18 +73,28 @@
   eventHandlers:
     filter: 
       action: |
+        var repeatIndex = CompCtx().RepeatIdx();
+        var fromComp = (repeatIndex == 0) ? CompByCr("inSelectionStartFrom"):
+        CompCtx().CompByIndexAndCrInRepeat(repeatIndex-1, "inSelectionDestination");
+        var startDateComp = (repeatIndex == 0) ? CompByCr("inTimestampStartDate"):
+        CompCtx().CompByIndexAndCrInRepeat(repeatIndex-1, "inTimestampArrival");
+        Api().Logger().Info("fromComp:",fromComp);
+        var from = fromComp.GetProp("value");
+        Api().Logger().Info("from:",from);
+        var startDate = startDateComp.GetProp("value");
+        Api().Logger().Info("startDate:",startDate);
         var q = CompCtx().DBCtx().QueryCtx();
         var flight = q.Table("flight");
         var searchText = Event().GetParam("searchPrefix");
-        q.From(flight).Select(flight._id,flight.flight_id,flight.destination,flight.departure).
-        Where(flight.destination.Like("%"+searchText+"%")).
+        q.From(flight).Select(flight._id,flight.flight_id,flight.destination,flight.departure,flight.arrival).
+        Where(flight.destination.Like("%"+searchText+"%").And(flight.from.Equals(from)).And(flight.departure.Gt(startDate))).
         AscendingBy(flight.departure).List();
     lookupSelectedData:
       action: |
         var dataKey = Event().GetParam("dataKey");
         var q = CompCtx().DBCtx().QueryCtx();
         var flight = q.Table("flight");
-        q.From(flight).Select(flight.flight_id, flight.destination, flight.departure).
+        q.From(flight).Select(flight.flight_id, flight.destination, flight.departure, flight.arrival).
         Where(flight._id.Equals(dataKey)).OneRow();
   searchResultDisplayColumns:
     - flight_id
@@ -80,6 +107,8 @@
       columnName: destination
     - cr: inTimestampDepart
       columnName: departure
+    - cr: inTimestampArrival
+      columnName: arrival
   store: flight_id
   cr: inPrefixSuggestFlight
 - compType: in/selection
@@ -92,6 +121,10 @@
   label: Depart
   cr: inTimestampDepart
   readonly: yes
+- compType: in/timestamp
+  label: Arrival
+  cr: inTimestampArrival
+  readonly: yes
 - compType: in/prefixSuggest
   eventHandlers:
     filter: 
@@ -101,9 +134,13 @@
         var airplane = q.Table("airplane");
         var flight = airplane.JoinedTable("flightMConn");
         var seat = airplane.JoinedTable("seatMConn");
+        var reserv = flight.JoinedTable("flightReservationMConn");
+        var reservJoin = reserv.GetJoin().JoinTypeLeftOuter();
+        var reservCond = reservJoin.GetJoinCodition().And(seat._id.Equals(reserv.seat_id));
+        reservJoin.ReplacejoinCondition(reservCond);
         var searchText = Event().GetParam("searchPrefix");
         q.From(airplane).Select(seat._id, seat.code, seat.class, seat.window).
-        Where(flight._id.Equals(flightId).And(seat.code.Like('%'+searchText+'%').OrEmpty(searchText))).
+        Where(flight._id.Equals(flightId).And(reserv.seat_id.IsNull()).And(seat.code.Like('%'+searchText+'%').OrEmpty(searchText))).
         AscendingBy(seat.code).List();
     lookupSelectedData:
       action: |

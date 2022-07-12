@@ -15,3 +15,5 @@ items:
     descr: Stockholm Arlanda
   - code: JFK
     descr: New York City, John F. Kennedy
+  - code: DXB
+    descr: Dubai International Airport

@@ -19,6 +19,7 @@
 .menu-item {
     padding: 1mm 3mm 1mm 3mm;
     margin: 0mm 1mm 0mm 1mm;
+    cursor: context-menu;
 }
 
 .menu-item:hover {

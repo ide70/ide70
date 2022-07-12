@@ -2,10 +2,15 @@
 descr: Flights
 columns:
   - name: flight_id
+  - name: from
   - name: destination
   - name: departure
+  - name: arrival
   - name: airplane_id
 connections:
   airplaneConn:
     column: airplane_id
     foreignTable: airplane
+  flightReservationMConn:
+    foreignTable: flightReservation
+    foreignColumn: flight_id

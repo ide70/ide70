@@ -3,9 +3,10 @@
   tree:
     - labeledTable:
       - textboxFlightID
-      - inSelectionDestination
+      - inSelectionFrom
       - inTimestampDeparture
-      - textboxDummyForTesting
+      - inSelectionDestination
+      - inTimestampArrival
       - inPrefixSuggestAirplaneType
       - buttonSave
   inputs:
@@ -30,6 +31,12 @@
   label: Destination
   cr: inSelectionDestination
   store: destination
+- compType: in/selection
+  dictionaryFile: airport
+  allowEmpty: yes
+  label: From
+  store: from
+  cr: inSelectionFrom
 - compType: in/timestamp
   label: Departure
   cr: inTimestampDeparture
@@ -38,6 +45,14 @@
       2020 + 1
   endYear: 2033
   store: departure
+- compType: in/timestamp
+  label: Arrival
+  cr: inTimestampArrival
+  startYear:
+    calc: |
+      2022
+  endYear: 2033
+  store: arrival
 - compType: in/prefixSuggest
   eventHandlers:
     filter: 
@@ -61,9 +76,6 @@
   store: airplane_id
   label: Airplane type
   cr: inPrefixSuggestAirplaneType
-- compType: textbox
-  label: Dummy for testing
-  cr: textboxDummyForTesting
 - compType: button
   text: Save
   eventHandlers:

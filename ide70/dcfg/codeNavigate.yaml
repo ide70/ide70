@@ -6,6 +6,10 @@ comp:
   - pathExpr: "injectRootComp.js.name"
     fileName: value
     addPrefix: "js/"
+  - pathExpr: "autoInclude.compType"
+    fileName: value
+    addPrefix: "comp/"
+    addSuffix: ".yaml"
 unit:
   - pathExpr: "compType.tree.*"
     navigateTo: "[%].cr:value"

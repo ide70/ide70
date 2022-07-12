@@ -187,7 +187,7 @@ func createTemplate(body, name string, appParams *AppParams, bodyConsts map[stri
 		"numRangeOpenEnd":     numRangeOpenEnd,
 		"linearContext":       LinearContext,
 		"generateSubComp":     GenerateSubComp,
-		"dropSubComp":     DropSubComp,
+		"dropSubComp":         DropSubComp,
 		"app": func() *AppParams {
 			return appParams
 		},
@@ -304,13 +304,14 @@ func GenerateEventHandlerWithKey(comp *CompRuntime, eventTypeCli, eventTypeSvr, 
 }
 
 type GenerationContext struct {
-	index                  int
-	key                    string
-	parentComp             *CompRuntime
-	childRef               string
-	generateChildRef       func(gc *GenerationContext, childRef string) string
-	generateChildRefPrefix func(gc *GenerationContext) string
-	generateStoreKey       func(gc *GenerationContext, child *CompRuntime) string
+	index                     int
+	key                       string
+	parentComp                *CompRuntime
+	childRef                  string
+	generateChildRef          func(gc *GenerationContext, childRef string) string
+	generateChildRefWithIndex func(gc *GenerationContext, childRef string, index interface{}) string
+	generateChildRefPrefix    func(gc *GenerationContext) string
+	generateStoreKey          func(gc *GenerationContext, child *CompRuntime) string
 }
 
 func LinearContext(parentComp *CompRuntime, childRefIf interface{}, indexIf interface{}) *GenerationContext {
@@ -323,13 +324,18 @@ func LinearContext(parentComp *CompRuntime, childRefIf interface{}, indexIf inte
 		childRef = dataxform.IAsString(childRefIf)
 	}
 	index := dataxform.IAsInt(indexIf)
-	gc := &GenerationContext{index: index, parentComp: parentComp, childRef: childRef, generateChildRef: generateChildRefLinear, generateStoreKey: generateStoreKeyLinear, generateChildRefPrefix: generateChildRefPrefixLinear}
+	gc := &GenerationContext{index: index, parentComp: parentComp, childRef: childRef, generateChildRef: generateChildRefLinear, generateStoreKey: generateStoreKeyLinear, generateChildRefPrefix: generateChildRefPrefixLinear, generateChildRefWithIndex: generateChildRefLinearWithIndex}
 	logger.Info("GenerationContext:", gc)
 	return gc
 }
 
 func generateChildRefLinear(gc *GenerationContext, childRef string) string {
 	return fmt.Sprintf("%s_%d.%s", gc.parentComp.ChildRefId(), gc.index, childRef)
+}
+
+func generateChildRefLinearWithIndex(gc *GenerationContext, childRef string, indexIf interface{}) string {
+	index := dataxform.IAsInt(indexIf)
+	return fmt.Sprintf("%s_%d.%s", gc.parentComp.ChildRefId(), index, childRef)
 }
 
 func generateChildRefPrefixLinear(gc *GenerationContext) string {
@@ -360,8 +366,6 @@ func GenerateSubComp(gc *GenerationContext) string {
 			return ""
 		}
 		comp = gc.parentComp.Unit.InstantiateGeneratedComp(srcCompDef, gc)
-		comp.State["parentContext"] = gc
-		comp.State["parentComp"] = gc.parentComp
 
 		rootCompIf := gc.parentComp.State["rootCompSt"]
 		if rootCompIf == nil {
@@ -387,13 +391,13 @@ func GenerateSubComp(gc *GenerationContext) string {
 func DropSubComp(gc *GenerationContext) string {
 	logger.Info("DropSubComp:", gc)
 	genChildRefId := gc.generateChildRef(gc, gc.childRef)
-	
+
 	comp := gc.parentComp.GenChildren[genChildRefId]
 
 	logger.Info("comp exist:", (comp != nil))
 
 	if comp != nil {
-		delete(gc.parentComp.GenChildren,genChildRefId)
+		delete(gc.parentComp.GenChildren, genChildRefId)
 		comp.Drop()
 	}
 

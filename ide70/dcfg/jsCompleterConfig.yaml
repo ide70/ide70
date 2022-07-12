@@ -15,6 +15,16 @@ functions:
     CompCtx:
       descr: Retrns current component context
   "*comp.CompCtx":
+    CompByIndexAndCrInRepeat:
+      descr: Returns component by its index and reference
+      params:
+        - name: "repeat index"
+        - name: compReference
+          valueCompleter:
+            yamlPathCompleter:
+              self: yes
+              pathExpr: "[%].cr:value"
+              quote: '"'
     LoadUnit:
       descr: Loads an unit
       params:
@@ -194,6 +204,17 @@ functions:
   "api.SchemaTable":
     JoinedTable:
       descr: Create joined table object for querydsl table
+      params:
+        - name: "Connection name"
+          valueCompleter:
+            yamlPathCompleter:
+              folderPrefix: dcfg/schema
+              fileNameFromAutoProperty: table
+              pathExpr: "connections.%$"
+              pathNodes: yes
+              quote: '"'
+    JoinOf:
+      descr: Create complex joined table object for querydsl table
       params:
         - name: "Connection name"
           valueCompleter:

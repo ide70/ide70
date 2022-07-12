@@ -9,3 +9,6 @@ connections:
   airplaneConn:
     column: airplane_id
     foreignTable: airplane
+  reservationMConn:
+    foreignTable: flightReservation
+    foreignColumn: seat_id

@@ -88,6 +88,8 @@
     title: Move File
   - key: rename_file
     title: Rename File
+  - key: close
+    title: Close
   eventHandlers:
     menu_del_file:
       action: |

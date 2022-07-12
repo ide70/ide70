@@ -166,7 +166,7 @@ func (ra *ResponseAction) Encode() string {
 	if len(ra.compsToRefresh) > 0 {
 		addSep(&sb, "|")
 		sb.WriteString(fmt.Sprintf("%d,%s", eraDirtyComps, strings.Join(ra.compsToRefresh, ",")))
-		logger.Info("REFRESH:",strings.Join(ra.compsToRefresh, ","));
+		logger.Info("REFRESH:", strings.Join(ra.compsToRefresh, ","))
 	}
 
 	if len(ra.attrsToRefresh) > 0 {
@@ -310,7 +310,7 @@ type CompCtx struct {
 
 func (cSW *CompCtx) SetProp(key string, value interface{}) *CompCtx {
 	cSW.c.State[key] = value
-	eventLogger.Info("cr", cSW.c.ChildRefId() , "property", key, "set to", value)
+	eventLogger.Info("cr", cSW.c.ChildRefId(), "property", key, "set to", value)
 	if eventType, has := cSW.c.CompDef.Triggers[key]; has {
 		cSW.ForwardEventFirst(eventType)
 	}
@@ -342,6 +342,30 @@ func (cSW *CompCtx) Props() api.SIMap {
 
 func (cSW *CompCtx) DBCtx() *api.DatabaseContext {
 	return cSW.c.Unit.Application.Connectors.MainDB
+}
+
+func (cSW *CompCtx) RepeatIdx() int {
+	switch pc := cSW.c.State["parentContext"].(type) {
+	case *GenerationContext:
+		return pc.index
+	}
+	return -1
+}
+
+func (cSW *CompCtx) CompByIndexAndCrInRepeat(idx interface{}, cr string) *CompCtx {
+	switch pc := cSW.c.State["parentContext"].(type) {
+	case *GenerationContext:
+		genChildRefId := pc.generateChildRefWithIndex(pc, cr, idx)
+		logger.Info("genChildRefId:", genChildRefId)
+		logger.Info("pc.parentComp.GenChildren:",pc.parentComp.GenChildren)
+		comp := pc.parentComp.GenChildren[genChildRefId]
+		logger.Info("CompByIndexAndCrInRepeat comp:", comp, "idx:", idx, "cr:",cr)
+		if comp == nil {
+			return nil
+		}
+		return &CompCtx{c: comp, event: cSW.event}
+	}
+	return nil
 }
 
 func (c *CompRuntime) GetProp(key string) interface{} {

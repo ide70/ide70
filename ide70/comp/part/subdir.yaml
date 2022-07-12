@@ -5,7 +5,8 @@ body: |
   <div id="{{.sid}}" class="grp">
   {{if index .rootCompSt.open .parentContext.path}}
   <i class="fas fa-folder-open fa-fw"{{template "eventHandlers" .}}></i>
-  <span class="fs-dir open"{{eventHandler $.This "onclick" "onclick_dirname"}}>{{.parentContext.name}}</span>
+  <i class="fas fa-bars"{{eventHandler $.This "onclick" "onclick_dirname"}}></i>
+  <span class="fs-dir open">{{.parentContext.name}}</span>
   <ul>
   {{range $i, $entry := .parentContext.Files}}
   <li>
@@ -19,7 +20,7 @@ body: |
   </ul>
   {{else}}
   <i class="fas fa-folder fa-fw"{{eventHandler $.This "onclick"}}></i>
-  <span class="fs-dir"{{eventHandler $.This "onclick" "onclick_dirname"}}>{{.parentContext.name}}</span>
+  <span class="fs-dir">{{.parentContext.name}}</span>
   {{end}}
   </div>
 eventHandlers:

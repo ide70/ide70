@@ -48,6 +48,10 @@ unitInterface:
         cr:
           descr: Cr of field
           listHead: true
+          valueCompleter:
+            yamlPathCompleter:
+              self: yes
+              pathExpr: "[%].cr:value"
         columnName:
           Result column name to load into this field
 privateProperties:

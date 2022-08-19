@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"io"
 	"github.com/ide70/ide70/dataxform"
+	"github.com/ide70/ide70/api"
 )
 
 // a component instance
@@ -16,6 +17,7 @@ type CompRuntime struct {
 	// on-the-fly generated sub-components
 	GenChildren map[string]*CompRuntime
 	Unit        *UnitRuntime
+	FileUpload *api.FileUpload
 }
 
 func init() {

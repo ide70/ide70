@@ -9,7 +9,8 @@ var _pMouseY='my';
 var _pMouseBtn='mb';
 var _pModKeys='mk';
 var _pKeyCode='kc'; 
-var _pScrollTop='sctp'; 
+var _pScrollTop='sctp';
+var _pUpload='upl';
 
 // Modifier key masks
 var _modKeyAlt=1; 
@@ -28,6 +29,7 @@ var _eraApplyToParent=6;
 var _eraScrollDownComp=7;
 var _eraExecuteCompFunc=8;
 var _eraForwardToParent=9;
+var _eraTimer=10;
 
 function createXmlHttp() {
 	if (window.XMLHttpRequest) // IE7+, Firefox, Chrome, Opera, Safari
@@ -49,6 +51,7 @@ function seFile(xhr, etype, compId, fd) {
 		fd.append(_pCompId, compId);
 	if (document.activeElement.id != null)
 		fd.append(_pFocCompId, document.activeElement.id);
+	fd.append(_pUpload, 'y');
 		
 	xhr.send(fd);
 }
@@ -187,6 +190,9 @@ function procEresp(actions) {
 		case _eraForwardToParent:
 		    window.parent.se(null, n[1], n[2])
 		    continue;
+		case _eraTimer:
+		    setupTimer(n[1], function(){se(null, n[3], n[1], null);}, n[2], false, true, false);
+		    continue;
 		default:
 			window.alert("Unknown response code:" + n[0]);
 			break;
@@ -266,26 +272,6 @@ function selIdxs(select) {
 			selected += i + ",";
 	
 	return selected;
-}
-
-// Get and update switch button value
-function sbtnVal(event, onBtnId, offBtnId) {
-	var onBtn = document.getElementById(onBtnId);
-	var offBtn = document.getElementById(offBtnId);
-	
-	if (onBtn == null)
-		return false;
-	
-	var value = onBtn == document.elementFromPoint(event.clientX, event.clientY);
-	if (value) {
-		onBtn.className = "gwu-SwitchButton-On-Active";
-		offBtn.className = "gwu-SwitchButton-Off-Inactive";
-	} else {
-		onBtn.className = "gwu-SwitchButton-On-Inactive";
-		offBtn.className = "gwu-SwitchButton-Off-Active";
-	}
-	
-	return value;
 }
 
 function focusComp(compId) {

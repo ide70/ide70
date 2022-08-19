@@ -1,0 +1,141 @@
+---
+unitInterface:
+  descr: Multiselect from dictionary using two lists
+  properties:
+    value:
+      descr: map of selected dictonary items
+      type: map
+    dict:
+      descr: map of all dictonary items
+      type: map
+    dictionaryFile:
+      descr: Dictionary contatinig the selectable options
+      valueCompleter:
+        fileNameCompleter:
+          folderPrefix: dcfg/dict
+          trimSuffix: .yaml
+    store:
+      descr: Persistence key
+      valueCompleter:
+        completerRef: dbFieldCompleter
+privateProperties:
+  leftSelected:
+    descr: selected elements on left side
+    type: map
+  rightSelected:
+    descr: selected elements on left side
+    type: map
+subParts:
+  left: left list
+  right: right list
+body: |
+  <table class="multiSelectList" id="{{.sid}}">
+  <tr>
+  <td id="{{.sid}}left"><div class="lists">
+  {{range $k,$v := $.dict}}
+  <div {{if hasIndex $.leftSelected $k}}class="selected" {{end}}{{eventHandlerWithKey $.This "onclick" "onSelectLeft" $k}}>{{if hasIndex $.value $k | not}}{{$v}}{{end}}</div>{{end}}
+  </td></div>
+  <td>
+  {{generateComp $.This "buttonAllToRight" "X" nil}}<div/>
+  {{generateComp $.This "buttonToRight" "X" nil}}<div/>
+  {{generateComp $.This "buttonToLeft" "X" nil}}<div/>
+  {{generateComp $.This "buttonAllToLeft" "X" nil}}
+  </td>
+  <td id="{{.sid}}right"><div class="lists rightlist">
+  {{range $k,$v := $.dict}}
+  <div {{if hasIndex $.rightSelected $k}}class="selected" {{end}}{{eventHandlerWithKey $.This "onclick" "onSelectRight" $k}}>{{if hasIndex $.value $k}}{{$v}}{{end}}</div>
+  {{end}}
+  </td></div>
+  </tr>
+  </table>
+eventHandlers:
+  onUnitCreate:
+    action: |
+      var dictionaryFile = CompCtx().GetProp("dictionaryFile");
+      CompCtx().SetProp("dict", Api().LoadCtx().LoadDictAsMap(dictionaryFile));
+      var value = CompCtx().GetProp("value");
+      if (!value) {
+        value = Api().Arrays().NewSIMap();
+        CompCtx().SetProp("value", value);
+      }
+      CompCtx().SetProp("leftSelected", Api().Arrays().NewSIMap());
+      CompCtx().SetProp("rightSelected", Api().Arrays().NewSIMap());
+  onSelectLeft:
+    action: |
+      var key = Event().EventKey();
+      var leftSelected = CompCtx().GetPropToCast("leftSelected").AsMap();
+      var selected = leftSelected.HasKey(key);
+      if(selected) {
+          leftSelected.Delete(key);
+      } else {
+          leftSelected.Put(key, true);
+      }
+      CompCtx().RefreshSubComp("left");
+  onSelectRight:
+    action: |
+      var key = Event().EventKey();
+      var rightSelected = CompCtx().GetPropToCast("rightSelected").AsMap();
+      var selected = rightSelected.HasKey(key);
+      if(selected) {
+          rightSelected.Delete(key);
+      } else {
+          rightSelected.Put(key, true);
+      }
+      CompCtx().RefreshSubComp("right");
+autoInclude:
+  - compType: button
+    text: ">>|"
+    cr: buttonAllToRight
+    eventHandlers:
+      onclick:
+        action: |
+          var parent = CompCtx().GetParentComp();
+          var dict = parent.GetPropToCast("dict").AsMap();
+          var allSelectedKeys = dict.KeyList();
+          var value = parent.GetPropToCast("value").AsMap();
+          value.AppendMap(dict.NewMapByKeys(allSelectedKeys));
+          parent.GetPropToCast("leftSelected").AsMap().Clear();
+          parent.Refresh();
+  - compType: button
+    text: "|<<"
+    cr: buttonAllToLeft
+    eventHandlers:
+      onclick:
+        action: |
+          var parent = CompCtx().GetParentComp();
+          var value = parent.GetPropToCast("value").AsMap();
+          value.Clear();
+          parent.GetPropToCast("rightSelected").AsMap().Clear();
+          parent.Refresh();
+  - compType: button
+    text: ">>"
+    cr: buttonToRight
+    eventHandlers:
+      onclick:
+        action: |
+          var parent = CompCtx().GetParentComp();
+          var leftSelected = parent.GetPropToCast("leftSelected").AsMap();
+          var leftSelectedKeys = leftSelected.KeyList();
+          var value = parent.GetPropToCast("value").AsMap();
+          var dict = parent.GetPropToCast("dict").AsMap();
+          value.AppendMap(dict.NewMapByKeys(leftSelectedKeys));
+          leftSelected.Clear();
+          parent.Refresh();
+  - compType: button
+    text: "<<"
+    cr: buttonToLeft
+    eventHandlers:
+      onclick:
+        action: |
+          var parent = CompCtx().GetParentComp();
+          var rightSelected = parent.GetPropToCast("rightSelected").AsMap();
+          var rightSelectedKeys = rightSelected.KeyList();
+          var value = parent.GetPropToCast("value").AsMap();
+          var dict = parent.GetPropToCast("dict").AsMap();
+          value.DeleteKeys(rightSelectedKeys)
+          rightSelected.Clear();
+          parent.Refresh();
+injectRootComp:
+  css:
+    - name: comp/multiSelectList.css
+  

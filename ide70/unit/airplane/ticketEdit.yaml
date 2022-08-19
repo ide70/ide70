@@ -21,6 +21,8 @@
     - ticketFooter:
       - textboxPrice
       - inSelectionCurrency
+      - inMultiSelectListExtraServices
+      - document
     - buttonSave
   inputs:
     ticketId: Id of ticket database entity
@@ -183,6 +185,14 @@
   cr: inSelectionCurrency
   store: priceConn.currency
   allowEmpty: true
+- compType: in/multiSelectList
+  label: Extra services
+  dictionaryFile: extraServices
+  cr: inMultiSelectListExtraServices
+  store: extra_services
+- compType: in/file
+  cr: document
+  label: Document
 - compType: button
   text: Save
   eventHandlers:

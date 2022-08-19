@@ -1,0 +1,15 @@
+---
+descr: Extra services for flight
+items:
+  - code: SPECMEAL
+    descr: Special diet/meal
+  - code: ATT
+    descr: Attendant
+  - code: PET
+    descr: Accompanying pet
+  - code: OFFICIAL
+    descr: Official person
+  - code: INS
+    descr: Insurance
+  - code: PRIO
+    descr: Priority borading

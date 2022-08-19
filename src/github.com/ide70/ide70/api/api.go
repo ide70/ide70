@@ -25,6 +25,10 @@ func (a *API) DateCtx() *DateCtx {
 	return &DateCtx{}
 }
 
+func (a *API) LoadCtx() *LoadContext {
+	return &LoadContext{}
+}
+
 type SIMap map[string]interface{}
 
 type IArray []interface{}

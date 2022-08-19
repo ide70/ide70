@@ -7,6 +7,7 @@ import (
 	"time"
 	//	"net/url"
 	"fmt"
+	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/app"
 	"github.com/ide70/ide70/codecomplete"
 	"github.com/ide70/ide70/comp"
@@ -49,6 +50,8 @@ const (
 	paramModKeys       = "mk"   // Modifier key states
 	paramKeyCode       = "kc"   // Key code
 	paramScrollTop     = "sctp" // Scroll top
+	paramUpload        = "upl"  // File upload
+	paramDownload      = "dl"  // File upload
 )
 
 const sessidCookieName = "ide70-sessid"
@@ -106,7 +109,7 @@ func (s *AppServer) Start() error {
 	mux.HandleFunc(s.App.Path+pathCodeComplete, func(w http.ResponseWriter, r *http.Request) {
 		s.serveCodeComplete(w, r)
 	})
-	
+
 	mux.HandleFunc(s.App.Path+pathCodeNavigate, func(w http.ResponseWriter, r *http.Request) {
 		s.serveCodeNavigate(w, r)
 	})
@@ -310,11 +313,6 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *AppServer) handleEvent(sess *comp.Session, unit *comp.UnitRuntime, wr http.ResponseWriter, r *http.Request) {
-	/*focCompID, err := AtoID(r.FormValue(paramFocusedCompID))
-	if err == nil {
-		win.SetFocusedCompID(focCompID)
-	}*/
-
 	compId, err := strconv.ParseInt(r.FormValue(paramCompID), 10, 64)
 	if err != nil {
 		logger.Error("Invalid component id")
@@ -338,6 +336,16 @@ func (s *AppServer) handleEvent(sess *comp.Session, unit *comp.UnitRuntime, wr h
 	}
 	logger.Info("Event from comp:", compId, " event:", etype)
 
+	isUpload := r.FormValue(paramUpload)
+	if isUpload == "y" {
+		// previous upload
+		if c.FileUpload != nil {
+			c.FileUpload.Stop()
+		}
+		c.FileUpload = api.NewFileUpload(r)
+		c.FileUpload.Start()
+	}
+
 	evalue := r.FormValue(paramCompValue)
 	logger.Info("event,value:", evalue)
 
@@ -351,9 +359,10 @@ func (s *AppServer) handleEvent(sess *comp.Session, unit *comp.UnitRuntime, wr h
 	//c.CompDef.EventsHandler.ProcessEvent(e)
 	comp.ProcessCompEvent(e)
 
-	wr.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	logger.Info("act result:", e.ResponseAction.Encode())
-	wr.Write([]byte(e.ResponseAction.Encode()))
+	e.ResponseAction.Write(wr)
+	//wr.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	//logger.Info("act result:", e.ResponseAction.Encode())
+	//wr.Write([]byte(e.ResponseAction.Encode()))
 
 	/*event := newEventImpl(EventType(etype), comp, s, sess, wr, r)
 	shared := event.shared
@@ -442,7 +451,7 @@ func (s *AppServer) handleEvent(sess *comp.Session, unit *comp.UnitRuntime, wr h
 func (s *AppServer) renderComp(unit *comp.UnitRuntime, w http.ResponseWriter, r *http.Request) {
 	compIdStr := r.FormValue(paramCompID)
 	//compIdStrs := strings.Split(r.FormValue(paramCompID), "-")
-	
+
 	subpartName := strings.TrimLeft(compIdStr, "0123456789")
 	if subpartName != "" {
 		compIdStr = strings.TrimSuffix(compIdStr, subpartName)
@@ -462,7 +471,7 @@ func (s *AppServer) renderComp(unit *comp.UnitRuntime, w http.ResponseWriter, r 
 	}
 
 	logger.Info("event, component found:", c.ChildRefId())
-	
+
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8") // We send it as text!
 	if subpartName == "" {
 		c.Render(w)

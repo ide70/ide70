@@ -1,0 +1,11 @@
+.progess-holder {
+    width: 10em;
+    height: 1em;
+    border: 0.5mm solid lightgreen;
+    display: table-cell;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: lightgreen;
+}

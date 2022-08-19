@@ -37,6 +37,35 @@ methods:
           dictCompleter:
             dictName: htmlJsValueExamples
             quote: '"'
+  eventHandlerFileUpload:
+    descr: Attach upload event handler to HTML element
+    params:
+      - descr: Current component
+        fixedValue: "$.This"
+      - descr: JS event name
+        valueCompleter:
+          dictCompleter:
+            dictName: htmlEvents
+            quote: '"'
+      - descr: Event handler event name (optional)
+        valueCompleter:
+          yamlPathCompleter:
+            self: yes
+            pathExpr: "eventHandlers.%$"
+            pathNodes: yes
+            quote: '"'
+  eventHandlerFileDownload:
+    descr: Attach event handler to HTML file input element
+    params:
+      - descr: Current component
+        fixedValue: "$.This"
+      - descr: Event handler event name
+        valueCompleter:
+          yamlPathCompleter:
+            self: yes
+            pathExpr: "eventHandlers.%$"
+            pathNodes: yes
+            quote: '"'
   eventHandlerWithKey:
     descr: Attach event handler to HTML element
     params:
@@ -63,9 +92,14 @@ methods:
         fixedValue: "$.This"
       - descr: Source component reference
         valueCompleter:
-          templateCompleter:
-            filters:
-              type: string
+          union:
+            - templateCompleter:
+                filters:
+                  type: string
+            - yamlPathCompleter:
+                self: yes
+                pathExpr: "[%].cr:value"
+                quote: '"'
       - descr: Unique id among sub components
         valueCompleter:
           templateCompleter:
@@ -126,6 +160,28 @@ methods:
             - templateCompleter:
                 filters:
                   type: map
+  hasIndex:
+    descr: check if given element of map or array exists
+    type: boolean
+    params:
+      - descr: map or array
+        valueCompleter:
+          union:
+            - templateCompleter:
+                filters:
+                  type: array
+            - templateCompleter:
+                filters:
+                  type: map
+      - descr: key or index
+        valueCompleter:
+          union:
+            - templateCompleter:
+                filters:
+                  type: int
+            - templateCompleter:
+                filters:
+                  type: string
   if:
     closeTag: end
     descr: conditional block

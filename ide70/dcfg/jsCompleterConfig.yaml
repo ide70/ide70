@@ -98,6 +98,7 @@ functions:
               self: yes
               pathExpr: "subParts.%$"
               quote: '"'
+              pathNodes: true
     AddForwardParam:
       descr: Attaches parameter to forwarded event for the receiver event handler
       params:
@@ -127,6 +128,31 @@ functions:
                   pathExpr: "[%].eventHandlers.%$|eventHandlers.%$"
                   quote: '"'
                   pathNodes: yes
+    Timer:
+      descr: On timeout fire client side event
+      params:
+        - name: Interval in milliseconds
+        - name: Event name
+          valueCompleter:
+            firstOf:
+              - yamlPathCompleter:
+                  fileNameRegex: 'CompByCr\("([\w\/]+)"\)'
+                  fileNameRegexCrToCompType: yes
+                  fileNameExprCond: "cr"
+                  folderPrefix: comp
+                  pathExpr: "unitInterface.events.%$"
+                  quote: '"'
+                  pathNodes: yes
+              - yamlPathCompleter:
+                  self: yes
+                  pathExpr: "[%].eventHandlers.%$|eventHandlers.%$"
+                  quote: '"'
+                  pathNodes: yes
+    SetBinaryResponse:
+      descr: Send binary data as response
+      params:
+        - name: Content type
+        - name: Data as byte array
   "*comp.EventRuntime":
     ReloadUnit:
       descr: Reloads current unit

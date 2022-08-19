@@ -8,6 +8,7 @@ import "text/template"
 import "strings"
 import "gopkg.in/yaml.v2"
 import "github.com/ide70/ide70/dataxform"
+import "github.com/ide70/ide70/api"
 import "regexp"
 import "reflect"
 import "errors"
@@ -174,20 +175,23 @@ func parseDefaultValues(def map[string]interface{}, dest map[string]interface{})
 
 func createTemplate(body, name string, appParams *AppParams, bodyConsts map[string]interface{}) *template.Template {
 	templ, err := template.New(name).Funcs(template.FuncMap{
-		"passRoot":            passRoot,
-		"htmlId":              htmlId,
-		"printVar":            printVar,
-		"dict":                dict,
-		"evalComp":            EvalComp,
-		"generateComp":        GenerateComp,
-		"eventHandler":        GenerateEventHandler,
-		"eventHandlerJs":      GenerateEventHandlerJs,
-		"eventHandlerWithKey": GenerateEventHandlerWithKey,
-		"numRange":            numRange,
-		"numRangeOpenEnd":     numRangeOpenEnd,
-		"linearContext":       LinearContext,
-		"generateSubComp":     GenerateSubComp,
-		"dropSubComp":         DropSubComp,
+		"passRoot":                 passRoot,
+		"htmlId":                   htmlId,
+		"printVar":                 printVar,
+		"dict":                     dict,
+		"hasIndex":                 hasIndex,
+		"evalComp":                 EvalComp,
+		"generateComp":             GenerateComp,
+		"eventHandler":             GenerateEventHandler,
+		"eventHandlerJs":           GenerateEventHandlerJs,
+		"eventHandlerWithKey":      GenerateEventHandlerWithKey,
+		"eventHandlerFileUpload":   GnearateEventHandlerFileUpload,
+		"eventHandlerFileDownload": GnearateEventHandlerFileDownload,
+		"numRange":                 numRange,
+		"numRangeOpenEnd":          numRangeOpenEnd,
+		"linearContext":            LinearContext,
+		"generateSubComp":          GenerateSubComp,
+		"dropSubComp":              DropSubComp,
 		"app": func() *AppParams {
 			return appParams
 		},
@@ -249,6 +253,24 @@ func numRangeOpenEnd(startI, endI interface{}) (stream chan int) {
 	return
 }
 
+func hasIndex(maparrIf interface{}, indexIf interface{}) bool {
+	switch maparrT := maparrIf.(type) {
+	case api.SIMap:
+		index := dataxform.IAsString(indexIf)
+		logger.Info(index)
+		_, has := maparrT[index]
+		return has
+	case map[string]interface{}:
+		index := dataxform.IAsString(indexIf)
+		_, has := maparrT[index]
+		return has
+	case []interface{}:
+		index := dataxform.IAsInt(indexIf)
+		return index >= 0 && index < len(maparrT) && maparrT[index] != nil
+	}
+	return false
+}
+
 func htmlId(sI interface{}) string {
 	logger.Info("htmlId")
 	s := dataxform.IAsString(sI)
@@ -275,6 +297,18 @@ func EvalComp(comp *CompRuntime) string {
 	sb := &strings.Builder{}
 	comp.Render(sb)
 	return sb.String()
+}
+
+func GnearateEventHandlerFileUpload(comp *CompRuntime, eventTypeCli string, eventTypeSvrOpt ...string) string {
+	eventTypeSvr := eventTypeCli
+	if len(eventTypeSvrOpt) >= 1 {
+		eventTypeSvr = eventTypeSvrOpt[0]
+	}
+	return GenerateEventHandler(comp, eventTypeCli, eventTypeSvr, "wrapFormFileInput(this)")
+}
+
+func GnearateEventHandlerFileDownload(comp *CompRuntime, eventType string) string {
+	return comp.Unit.Application.Path + "e/" + comp.Unit.getID() + "?et=" + eventType + "&cid=" + fmt.Sprintf("%d", comp.Sid()) + "&dl=y"
 }
 
 func GenerateEventHandler(comp *CompRuntime, eventTypeCli string, eventTypeSvrOpt ...string) string {

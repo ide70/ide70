@@ -2,6 +2,7 @@ package comp
 
 import (
 	"fmt"
+	"net/http"
 	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/dataxform"
 	"github.com/ide70/ide70/util/file"
@@ -27,6 +28,7 @@ const (
 	eraScrollDownComp
 	eraCompFuncExecute
 	eraForwardToParent
+	eraTimer
 )
 
 const EvtUnitPrefix = "onUnit"
@@ -106,6 +108,12 @@ type LoadUnit struct {
 	targetCr   string
 }
 
+type Timer struct {
+	SID       string
+	interval  int
+	eventCode string
+}
+
 type SessionWrapper interface {
 	SetAuthUser(userName string)
 	SetAuthRole(role string)
@@ -126,6 +134,11 @@ func NewEventRuntime(sess *Session, unit *UnitRuntime, comp *CompRuntime, typeCo
 	return er
 }
 
+type BinaryResponse struct {
+	data *[]byte
+	contentType string
+}
+
 type ResponseAction struct {
 	compsToRefresh     []string
 	attrsToRefresh     map[string][]Attr
@@ -135,6 +148,8 @@ type ResponseAction struct {
 	forward            []*EventForward
 	applyToParent      bool
 	parentForward      []*ParentForward
+	timer              *Timer
+	binaryResponse     *BinaryResponse
 }
 
 func newResponseAction() *ResponseAction {
@@ -148,6 +163,17 @@ func addSep(sb *strings.Builder, sep string) {
 	if sb.Len() > 0 {
 		sb.WriteString(sep)
 	}
+}
+
+func (ra *ResponseAction) Write(wr http.ResponseWriter) {
+	if ra.binaryResponse != nil {
+		wr.Header().Set("Content-Type", ra.binaryResponse.contentType)
+		wr.Write(*ra.binaryResponse.data)
+		return
+	}
+	wr.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	logger.Info("act result:", ra.Encode())
+	wr.Write([]byte(ra.Encode()))
 }
 
 func (ra *ResponseAction) Encode() string {
@@ -198,6 +224,11 @@ func (ra *ResponseAction) Encode() string {
 				sb.WriteString(fmt.Sprintf(",%s", arg))
 			}
 		}
+	}
+
+	if ra.timer != nil {
+		addSep(&sb, "|")
+		sb.WriteString(fmt.Sprintf("%d,%s,%d,%s", eraTimer, ra.timer.SID, ra.timer.interval, ra.timer.eventCode))
 	}
 
 	for _, parentForward := range ra.parentForward {
@@ -280,6 +311,11 @@ func (ra *ResponseAction) SetSubCompFuncExecute(comp *CompRuntime, idPostfix, fu
 	ra.compFuncsToExecute = append(ra.compFuncsToExecute, JSFuncCall{Comp: id, FuncName: funcName, Args: args})
 }
 
+func (ra *ResponseAction) SetTimer(comp *CompRuntime, interval int, eventeCode string) {
+	id := strconv.FormatInt(comp.Sid(), 10)
+	ra.timer = &Timer{SID: id, interval: interval, eventCode: eventeCode}
+}
+
 func (ra *ResponseAction) initLoadUnit() {
 	if ra.loadUnit == nil {
 		ra.loadUnit = &LoadUnit{passParams: map[string]interface{}{}}
@@ -303,6 +339,13 @@ func (ra *ResponseAction) AddLoadUnitParam(key string, value interface{}) {
 	ra.loadUnit.passParams[key] = value
 }
 
+func (ra *ResponseAction) SetBinaryResponse(contentType string, data *[]byte) {
+	br := &BinaryResponse{}
+	br.contentType = contentType
+	br.data = data
+	ra.binaryResponse = br
+}
+
 type CompCtx struct {
 	c     *CompRuntime
 	event *EventRuntime
@@ -310,7 +353,7 @@ type CompCtx struct {
 
 func (cSW *CompCtx) SetProp(key string, value interface{}) *CompCtx {
 	cSW.c.State[key] = value
-	eventLogger.Info("cr", cSW.c.ChildRefId(), "property", key, "set to", value)
+	//eventLogger.Info("cr", cSW.c.ChildRefId(), "property", key, "set to", value)
 	if eventType, has := cSW.c.CompDef.Triggers[key]; has {
 		cSW.ForwardEventFirst(eventType)
 	}
@@ -344,6 +387,13 @@ func (cSW *CompCtx) DBCtx() *api.DatabaseContext {
 	return cSW.c.Unit.Application.Connectors.MainDB
 }
 
+func (cSW *CompCtx) UploadCtx() *api.UploadCtx {
+	if cSW.c.FileUpload == nil {
+		return nil
+	}
+	return &api.UploadCtx{U: cSW.c.FileUpload}
+}
+
 func (cSW *CompCtx) RepeatIdx() int {
 	switch pc := cSW.c.State["parentContext"].(type) {
 	case *GenerationContext:
@@ -357,9 +407,9 @@ func (cSW *CompCtx) CompByIndexAndCrInRepeat(idx interface{}, cr string) *CompCt
 	case *GenerationContext:
 		genChildRefId := pc.generateChildRefWithIndex(pc, cr, idx)
 		logger.Info("genChildRefId:", genChildRefId)
-		logger.Info("pc.parentComp.GenChildren:",pc.parentComp.GenChildren)
+		logger.Info("pc.parentComp.GenChildren:", pc.parentComp.GenChildren)
 		comp := pc.parentComp.GenChildren[genChildRefId]
-		logger.Info("CompByIndexAndCrInRepeat comp:", comp, "idx:", idx, "cr:",cr)
+		logger.Info("CompByIndexAndCrInRepeat comp:", comp, "idx:", idx, "cr:", cr)
 		if comp == nil {
 			return nil
 		}
@@ -471,6 +521,12 @@ func (cSW *CompCtx) SubCompFuncExecute(idPrefix, funcName string, args ...string
 	return cSW
 }
 
+func (cSW *CompCtx) Timer(intervalIf interface{}, eventCode string) *CompCtx {
+	interval := dataxform.IAsInt(intervalIf)
+	cSW.event.ResponseAction.SetTimer(cSW.c, interval, eventCode)
+	return cSW
+}
+
 func (cSW *CompCtx) Refresh() {
 	cSW.event.ResponseAction.SetCompRefresh(cSW.c)
 }
@@ -549,6 +605,11 @@ func (cSW *CompCtx) LoadUnit(unitName string) *CompCtx {
 
 func (cSW *CompCtx) AddPassParam(key string, value interface{}) *CompCtx {
 	cSW.event.ResponseAction.AddLoadUnitParam(key, value)
+	return cSW
+}
+
+func (cSW *CompCtx) SetBinaryResponse(contentType string, data *api.BinaryData) *CompCtx {
+	cSW.event.ResponseAction.SetBinaryResponse(contentType, data.GetData())
 	return cSW
 }
 
@@ -701,6 +762,16 @@ func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 		result, _ := vm.ToValue(api.ApiInst)
 		return result
 	})
+
+	/*vm.Set("ForEach", func(call otto.FunctionCall) otto.Value {
+			arg0 := call.Argument(0)
+		logger.Info("is fn:", arg0.IsFunction());
+		val, _ := call.Otto.ToValue("hello")
+		valThis, _ := call.Otto.ToValue(nil)
+		arg0.Call(val, val)
+		return valThis
+	})*/
+
 	eventsHandler.exMutex = &sync.RWMutex{}
 	eventsHandler.Vm = vm
 

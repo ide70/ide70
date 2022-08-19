@@ -1,0 +1,57 @@
+---
+unitInterface:
+  descr: File upload
+  properties:
+    value:
+      descr: File data
+      type: map
+subParts: 
+  file:
+    descr: File details
+privateProperties:
+  fileName:
+    descr: File Name
+  progress:
+    descr: upload progress
+    default: 0
+body: |
+  <div id="{{.sid}}">
+    <input type="file" class="upload" {{eventHandlerFileUpload $.This "onchange" "fileUpload"}}>
+    <span id="{{.sid}}file">File: {{.fileName}}
+      <div class="progess-holder">
+        <div class="progress-bar" style="width: {{.progress}}%"></div>
+      </div>
+      {{if $.value}}<a href="{{eventHandlerFileDownload $.This "download"}}">Download</a>{{end}}
+    </span>
+  </div>
+eventHandlers:
+  fileUpload:
+    action: |
+      Api().Logger().Info("upl.");
+      if(CompCtx().UploadCtx()) {
+          CompCtx().SetProp("fileName", CompCtx().UploadCtx().GetFileName());
+      }
+      CompCtx().Timer(500, "uploadProgress").RefreshSubComp("file");
+  uploadProgress:
+    action: |
+      Api().Logger().Info("progress.");
+      CompCtx().SetProp("progress", CompCtx().UploadCtx().GetPercent()).RefreshSubComp("file");
+      if(!CompCtx().UploadCtx().Finished()) {
+          CompCtx().Timer(500, "uploadProgress")
+      } else {
+          var upload = Api().Arrays().NewSIMap();
+          upload.Put("data", CompCtx().UploadCtx().GetData());
+          upload.Put("mimeType", CompCtx().UploadCtx().GetMimeType());
+          upload.Put("fileName", CompCtx().UploadCtx().GetFileName());
+          CompCtx().SetProp("value", upload);
+      }
+  download:
+    action: |
+      Api().Logger().Info("download");
+      var value = CompCtx().GetPropToCast("value").AsMap();
+      Api().Logger().Info("download1");
+      CompCtx().SetBinaryResponse(value.Get("mimeType"), value.Get("data"));
+      Api().Logger().Info("send response as", value.Get("mimeType"));
+injectRootComp:
+  css:
+    - name: comp/file.css

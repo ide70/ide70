@@ -1,0 +1,13 @@
+.multiSelectList .selected {
+    background-color: lightblue;
+}
+
+.multiSelectList .lists {
+    width: 14em;
+    height: 5em;
+    overflow: auto;
+}
+
+.multiSelectList .rightList {
+    border: 1px solid lightgreen;
+}

@@ -4,6 +4,8 @@ import (
 "github.com/ide70/ide70/dataxform"
 	"regexp"
 	"strings"
+	//"github.com/robertkrimen/otto"
+	//"reflect"
 )
 
 type Arrays struct {
@@ -35,6 +37,10 @@ func (as *Arrays) NewITableW() *ITableW {
 	return &ITableW{t: ITable{}}
 }
 
+func (as *Arrays) NewSIMap() SIMap {
+	return SIMap{}
+}
+
 func (t ITable) Change() *ITableW {
 	return &ITableW{t: t}
 }
@@ -53,6 +59,49 @@ func (tw *ITableW) AddEmptyRow() *ITableW {
 func (tw *ITableW) RowToInsert() *RowToInsert {
 	return &RowToInsert{itablew: tw, row: SIMap{}}
 }
+
+func (m SIMap) HasKey(keyIf interface{}) bool {
+	key := dataxform.IAsString(keyIf)
+	_,has := m[key]
+	return has
+}
+
+func (m SIMap) DeleteKeys(keys IArray) {
+	for _,key := range keys {
+		m.Delete(dataxform.IAsString(key))
+	}
+}
+
+func (m SIMap) NewMapByKeys(keys IArray) SIMap{
+	nm := SIMap{}
+	for _,keyI := range keys {
+		key := dataxform.IAsString(keyI)
+		nm[key] = m[key]
+	}
+	return nm
+}
+
+func (m SIMap) Clear() SIMap{
+	for k,_ := range m {
+		delete(m,k)
+	}
+	return m
+}
+
+func (m SIMap) AppendMap(am SIMap) SIMap{
+	for k,v := range am {
+		m[k] = v
+	}
+	return m
+}
+
+/*func (m SIMap) ForEach(f otto.FunctionCall) {
+	arg0 := call.Argument(0)
+	logger.Info("is fn:", arg0.IsFunction());
+	val, _ := call.Otto.ToValue("hello")
+	valThis, _ := call.Otto.ToValue(nil)
+	arg0.Call(valThis, val)
+}*/
 
 func (r *RowToInsert) AddCol(col string, v interface{}) *RowToInsert {
 	r.row[col] = v

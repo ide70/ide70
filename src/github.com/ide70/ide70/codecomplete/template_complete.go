@@ -2,7 +2,7 @@ package codecomplete
 
 import (
 	//"fmt"
-	"github.com/ide70/ide70/dataxform"
+	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/loader"
 )
 
@@ -12,23 +12,23 @@ func templateCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 
 	selfAsTemplatedYaml := loader.ConvertTemplatedYaml([]byte(edContext.content), "self")
 	selfData := selfAsTemplatedYaml.Def
-	unitInterfaceData := dataxform.SIMapGetByKeyAsMap(selfData, "unitInterface")
-	ppData := dataxform.SIMapGetByKeyAsMap(selfData, "privateProperties")
-	propertyData := dataxform.SIMapGetByKeyAsMap(unitInterfaceData, "properties")
+	unitInterfaceData := api.SIMapGetByKeyAsMap(selfData, "unitInterface")
+	ppData := api.SIMapGetByKeyAsMap(selfData, "privateProperties")
+	propertyData := api.SIMapGetByKeyAsMap(unitInterfaceData, "properties")
 	propMap := map[string]interface{}{}
 	procPropertyData(ppData, propMap)
 	procPropertyData(propertyData, propMap)
 	propMap["sid"] = "Components unique ID"
 	propMap["Children"] = map[string]interface{}{"descr":"Child components", "type": "array"}
 	
-	filterData := dataxform.SIMapGetByKeyAsMap(configData, "filters")
+	filterData := api.SIMapGetByKeyAsMap(configData, "filters")
 	
 	for name, propDataIf := range propMap {
-		propData := dataxform.IAsSIMap(propDataIf)
+		propData := api.IAsSIMap(propDataIf)
 		filterMatch := true
 		for key, vIf := range filterData {
-			value := dataxform.SIMapGetByKeyAsString(propData, key)
-			if value != dataxform.IAsString(vIf) {
+			value := api.SIMapGetByKeyAsString(propData, key)
+			if value != api.IAsString(vIf) {
 				filterMatch = false
 				break
 			}
@@ -37,7 +37,7 @@ func templateCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 			continue
 		}
 		
-		propDescr := dataxform.SIMapGetByKeyAsString(propData, "descr")
+		propDescr := api.SIMapGetByKeyAsString(propData, "descr")
 		compl = addValueCompletion("$."+name, propDescr, edContext, configData, compl)
 		//compl = append(compl, newCompletion("."+name, "."+name, propDescr))
 	}
@@ -48,14 +48,14 @@ func templateCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 		return compl
 	}
 	templateConfig := fileAsTemplatedYaml.Def
-	methodsMap := dataxform.SIMapGetByKeyAsMap(templateConfig, "methods")
+	methodsMap := api.SIMapGetByKeyAsMap(templateConfig, "methods")
 	for methodName, methodDataIf := range methodsMap {
-		methodData := dataxform.IAsSIMap(methodDataIf)
+		methodData := api.IAsSIMap(methodDataIf)
 
 		filterMatch := true
 		for key, vIf := range filterData {
-			value := dataxform.SIMapGetByKeyAsString(methodData, key)
-			if value != dataxform.IAsString(vIf) {
+			value := api.SIMapGetByKeyAsString(methodData, key)
+			if value != api.IAsString(vIf) {
 				filterMatch = false
 				break
 			}
@@ -64,8 +64,8 @@ func templateCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 			continue
 		}
 
-		//wrapTag := dataxform.SIMapGetByKeyAsString(methodData, "wrapTag")
-		methodDescr := dataxform.SIMapGetByKeyAsString(methodData, "descr")
+		//wrapTag := api.SIMapGetByKeyAsString(methodData, "wrapTag")
+		methodDescr := api.SIMapGetByKeyAsString(methodData, "descr")
 
 		//compl = append(compl, newCompletion(methodName, methodName, methodDescr))
 		compl = addValueCompletion(methodName, methodDescr, edContext, configData, compl)

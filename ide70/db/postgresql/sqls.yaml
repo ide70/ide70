@@ -1,5 +1,0 @@
----
-sqls:
-  - statement: crudAutoInsert
-    sql: |
-        TEMPLATE insert into {{table}} (data) values($1) returning id;

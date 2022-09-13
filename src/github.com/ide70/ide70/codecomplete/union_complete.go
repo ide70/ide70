@@ -2,15 +2,15 @@ package codecomplete
 
 import (
 	//"fmt"
-	"github.com/ide70/ide70/dataxform"
+	"github.com/ide70/ide70/api"
 )
 
 func unionCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
 	logger.Info("unionCompleter configData:", configData)
-	subCompleters := dataxform.SIMapGetByKeyAsList(configData, "paramsList")
-	completerType := dataxform.SIMapGetByKeyAsString(configData, "completerType")
-	descrPostfix := dataxform.SIMapGetByKeyAsString(configData, "descrPostfix")
-	firstNonemptyOnly := dataxform.SIMapGetByKeyAsBoolean(configData, "firstNonemptyOnly")
+	subCompleters := api.SIMapGetByKeyAsList(configData, "paramsList")
+	completerType := api.SIMapGetByKeyAsString(configData, "completerType")
+	descrPostfix := api.SIMapGetByKeyAsString(configData, "descrPostfix")
+	firstNonemptyOnly := api.SIMapGetByKeyAsBoolean(configData, "firstNonemptyOnly")
 	completerKey := completerType + "Completer"
 	for _,subCompleterIf := range subCompleters {
 		topLevelConfig := map[string]interface{}{}

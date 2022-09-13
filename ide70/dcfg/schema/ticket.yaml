@@ -13,3 +13,5 @@ connections:
   priceConn:
     foreignTable: ticketPrice
     foreignColumn: ticket_id
+  documentConn:
+    foreignTable: document

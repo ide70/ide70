@@ -7,8 +7,8 @@ import "io/ioutil"
 import "text/template"
 import "strings"
 import "gopkg.in/yaml.v2"
-import "github.com/ide70/ide70/dataxform"
 import "github.com/ide70/ide70/api"
+import "github.com/ide70/ide70/dataxform"
 import "regexp"
 import "reflect"
 import "errors"
@@ -61,9 +61,9 @@ func loadCompModule(name string) *CompModule {
 		return nil
 	}
 
-	module.Body = dataxform.SIMapGetByKeyAsString(compIfMap, "body")
-	module.BodyConsts = dataxform.SIMapGetByKeyAsMap(compIfMap, "bodyConsts")
-	includes := dataxform.SIMapGetByKeyAsList(compIfMap, "include")
+	module.Body = api.SIMapGetByKeyAsString(compIfMap, "body")
+	module.BodyConsts = api.SIMapGetByKeyAsMap(compIfMap, "bodyConsts")
+	includes := api.SIMapGetByKeyAsList(compIfMap, "include")
 	for _, includeItemIf := range includes {
 		module.Includes = append(module.Includes, includeItemIf.(string))
 	}
@@ -141,8 +141,8 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 		}
 	}
 
-	parseDefaultValues(dataxform.SIMapGetByKeyChainAsMap(module.Def, "unitInterface.properties"), comp.AccessibleDef)
-	parseDefaultValues(dataxform.SIMapGetByKeyAsMap(module.Def, "privateProperties"), comp.AccessibleDef)
+	parseDefaultValues(api.SIMapGetByKeyChainAsMap(module.Def, "unitInterface.properties"), comp.AccessibleDef)
+	parseDefaultValues(api.SIMapGetByKeyAsMap(module.Def, "privateProperties"), comp.AccessibleDef)
 
 	// TODO: list of non-accessible definitions
 	/*comp.AccessibleDef["eventHandlers"] = module.Def["eventHandlers"]
@@ -164,10 +164,10 @@ func parseCompType(name string, appParams *AppParams) *CompType {
 }
 
 func parseDefaultValues(def map[string]interface{}, dest map[string]interface{}) {
-	dataxform.IApplyFnToNodes(def, func(entry dataxform.CollectionEntry) {
+	api.IApplyFnToNodes(def, func(entry api.CollectionEntry) {
 		if entry.Key() == "default" {
 			parentKey := entry.Parent().LinearKey()
-			dataxform.SIMapUpdateValue(parentKey, entry.Value(), dest, false)
+			api.SIMapUpdateValue(parentKey, entry.Value(), dest, false)
 			logger.Warning("default value", parentKey, entry.Value())
 		}
 	})
@@ -227,8 +227,8 @@ func passRoot(current, root interface{}) map[string]interface{} {
 
 func numRange(startI, endI interface{}) (stream chan int) {
 	stream = make(chan int)
-	start := dataxform.IAsInt(startI)
-	end := dataxform.IAsInt(endI)
+	start := api.IAsInt(startI)
+	end := api.IAsInt(endI)
 
 	go func() {
 		for i := start; i <= end; i++ {
@@ -241,8 +241,8 @@ func numRange(startI, endI interface{}) (stream chan int) {
 
 func numRangeOpenEnd(startI, endI interface{}) (stream chan int) {
 	stream = make(chan int)
-	start := dataxform.IAsInt(startI)
-	end := dataxform.IAsInt(endI)
+	start := api.IAsInt(startI)
+	end := api.IAsInt(endI)
 
 	go func() {
 		for i := start; i < end; i++ {
@@ -256,16 +256,16 @@ func numRangeOpenEnd(startI, endI interface{}) (stream chan int) {
 func hasIndex(maparrIf interface{}, indexIf interface{}) bool {
 	switch maparrT := maparrIf.(type) {
 	case api.SIMap:
-		index := dataxform.IAsString(indexIf)
+		index := api.IAsString(indexIf)
 		logger.Info(index)
 		_, has := maparrT[index]
 		return has
 	case map[string]interface{}:
-		index := dataxform.IAsString(indexIf)
+		index := api.IAsString(indexIf)
 		_, has := maparrT[index]
 		return has
 	case []interface{}:
-		index := dataxform.IAsInt(indexIf)
+		index := api.IAsInt(indexIf)
 		return index >= 0 && index < len(maparrT) && maparrT[index] != nil
 	}
 	return false
@@ -273,7 +273,7 @@ func hasIndex(maparrIf interface{}, indexIf interface{}) bool {
 
 func htmlId(sI interface{}) string {
 	logger.Info("htmlId")
-	s := dataxform.IAsString(sI)
+	s := api.IAsString(sI)
 	logger.Info("htmlId", s)
 	s = strings.ReplaceAll(s, "/", "_")
 	return s
@@ -328,7 +328,7 @@ func GenerateEventHandlerJs(comp *CompRuntime, eventType, valueJs string) string
 }
 
 func GenerateEventHandlerWithKey(comp *CompRuntime, eventTypeCli, eventTypeSvr, keyIf interface{}) string {
-	key := dataxform.IAsString(keyIf)
+	key := api.IAsString(keyIf)
 	/*logger.Info("GenerateEventHandlerWithKey")
 	logger.Info(comp)
 	logger.Info(eventTypeCli)
@@ -355,9 +355,9 @@ func LinearContext(parentComp *CompRuntime, childRefIf interface{}, indexIf inte
 	case *CompRuntime:
 		childRef = childRefT.ChildRefId()
 	default:
-		childRef = dataxform.IAsString(childRefIf)
+		childRef = api.IAsString(childRefIf)
 	}
-	index := dataxform.IAsInt(indexIf)
+	index := api.IAsInt(indexIf)
 	gc := &GenerationContext{index: index, parentComp: parentComp, childRef: childRef, generateChildRef: generateChildRefLinear, generateStoreKey: generateStoreKeyLinear, generateChildRefPrefix: generateChildRefPrefixLinear, generateChildRefWithIndex: generateChildRefLinearWithIndex}
 	logger.Info("GenerationContext:", gc)
 	return gc
@@ -368,7 +368,7 @@ func generateChildRefLinear(gc *GenerationContext, childRef string) string {
 }
 
 func generateChildRefLinearWithIndex(gc *GenerationContext, childRef string, indexIf interface{}) string {
-	index := dataxform.IAsInt(indexIf)
+	index := api.IAsInt(indexIf)
 	return fmt.Sprintf("%s_%d.%s", gc.parentComp.ChildRefId(), index, childRef)
 }
 
@@ -445,7 +445,7 @@ func childRefLastTag(childRef string) string {
 
 func GenerateComp(parentComp *CompRuntime, sourceChildRef string, genRuntimeRefIf interface{}, context interface{}) string {
 	logger.Info("GenerateComp", sourceChildRef)
-	genRuntimeRef := dataxform.IAsString(genRuntimeRefIf)
+	genRuntimeRef := api.IAsString(genRuntimeRefIf)
 	genChildRefId := fmt.Sprintf("%s.%s_%s", parentComp.ChildRefId(), sourceChildRef, genRuntimeRef)
 	comp := parentComp.GenChildren[genChildRefId]
 

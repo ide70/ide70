@@ -7,6 +7,12 @@ import (
 	"strings"
 )
 
+const (
+	TABLETYPE_JSONB = "jsonb"
+	TABLETYPE_BLOB = "blob"
+)
+
+
 var modSql *loader.TemplatedYaml
 
 func loadDefs() {
@@ -46,7 +52,7 @@ func (dbCtx *DatabaseContext) SQLGetValue(sql string, sqlParams ...interface{}) 
 }
 
 func (dbCtx *DatabaseContext) CRUDGenInsert(tableName string, data string) int64 {
-	ensureTable(dbCtx, tableName)
+	ensureTable(dbCtx, tableName, TABLETYPE_JSONB)
 	db := dbCtx.getConnection()
 	defer db.Close()
 
@@ -54,6 +60,22 @@ func (dbCtx *DatabaseContext) CRUDGenInsert(tableName string, data string) int64
 	logger.Info("sql:", sql)
 	var id int64
 	err := db.QueryRow(sql, data).Scan(&id)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return id
+}
+
+func (dbCtx *DatabaseContext) CRUDGenInsertBlob(tableName string, data *BinaryData) int64 {
+	ensureTable(dbCtx, tableName, TABLETYPE_BLOB)
+	db := dbCtx.getConnection()
+	defer db.Close()
+
+	sql := "insert into " + tableName + " (data) values($1) returning id;"
+	logger.Info("sql:", sql)
+	var id int64
+	err := db.QueryRow(sql, *data.data).Scan(&id)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -83,7 +105,7 @@ func criteriasToArgs(criterias...*ColumnCriteria) []interface{}{
 }
 
 func (dbCtx *DatabaseContext) CRUDGenFindbyCriteria(tableName string, criterias...*ColumnCriteria) map[string]interface{} {
-	ensureTable(dbCtx, tableName)
+	ensureTable(dbCtx, tableName, TABLETYPE_JSONB)
 	db := dbCtx.getConnection()
 	defer db.Close()
 
@@ -122,7 +144,7 @@ func (dbCtx *DatabaseContext) CRUDGenFindbyCriteria(tableName string, criterias.
 }
 
 func (dbCtx *DatabaseContext) CRUDGenFind(tableName string, id int64) map[string]interface{} {
-	ensureTable(dbCtx, tableName)
+	ensureTable(dbCtx, tableName, TABLETYPE_JSONB)
 	db := dbCtx.getConnection()
 	defer db.Close()
 
@@ -156,14 +178,57 @@ func (dbCtx *DatabaseContext) CRUDGenFind(tableName string, id int64) map[string
 	return nil
 }
 
+func (dbCtx *DatabaseContext) GenLoadBlob(tableName string, id int64) *[]byte {
+	ensureTable(dbCtx, tableName, TABLETYPE_BLOB)
+	db := dbCtx.getConnection()
+	defer db.Close()
+
+	sql := "select data from " + tableName + " where id = $1;"
+
+	rows, err := db.Query(sql, id)
+
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+
+	if rows.Next() {
+		var data []byte
+
+		err := rows.Scan(&data)
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+
+		return &data
+	}
+
+	return nil
+}
+
 func (dbCtx *DatabaseContext) CRUDGenUpdate(tableName string, id int64, data string) error {
-	ensureTable(dbCtx, tableName)
+	ensureTable(dbCtx, tableName, TABLETYPE_JSONB)
 	db := dbCtx.getConnection()
 	defer db.Close()
 
 	sql := "update " + tableName + " set data = $2 where id = $1;"
 
 	_, err := db.Exec(sql, id, data)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
+func (dbCtx *DatabaseContext) CRUDGenUpdateBlob(tableName string, id int64, data *BinaryData) error {
+	ensureTable(dbCtx, tableName, TABLETYPE_BLOB)
+	db := dbCtx.getConnection()
+	defer db.Close()
+
+	sql := "update " + tableName + " set data = $2 where id = $1;"
+
+	_, err := db.Exec(sql, id, *data.data)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -182,7 +247,7 @@ func (dbCtx *DatabaseContext) SQLExec(sql string, sqlParams ...interface{}) erro
 }
 
 func (dbCtx *DatabaseContext) CRUDGenDelete(tableName string, id int64) error {
-	ensureTable(dbCtx, tableName)
+	ensureTable(dbCtx, tableName, TABLETYPE_JSONB)
 	db := dbCtx.getConnection()
 	defer db.Close()
 
@@ -238,7 +303,7 @@ type FilterGroup struct {
 
 //func (dbCtx *DatabaseContext) WorksheetFindItemsPage(tableName string, allFilters map[string]*FilterTag, offset, pageSize int, orders []*ColumnOrder) []interface{} {
 func (dbCtx *DatabaseContext) WorksheetFindItemsPage(tableName string, offset, pageSize int) ITable {
-	ensureTable(dbCtx, tableName)
+	ensureTable(dbCtx, tableName, TABLETYPE_JSONB)
 	//	filters := getFilterGroups(allFilters)
 	db := dbCtx.getConnection()
 	defer db.Close()
@@ -292,7 +357,7 @@ func (dbCtx *DatabaseContext) WorksheetFindItemsPage(tableName string, offset, p
 }
 
 func (dbCtx *DatabaseContext) RunQueryDef(qd *QueryDef) ITable {
-	ensureTable(dbCtx, qd.from.tableName)
+	ensureTable(dbCtx, qd.from.tableName, TABLETYPE_JSONB)
 	
 	db := dbCtx.getConnection()
 	defer db.Close()

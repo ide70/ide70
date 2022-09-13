@@ -1,7 +1,6 @@
 package api
 
 import (
-"github.com/ide70/ide70/dataxform"
 	"regexp"
 	"strings"
 	//"github.com/robertkrimen/otto"
@@ -61,21 +60,21 @@ func (tw *ITableW) RowToInsert() *RowToInsert {
 }
 
 func (m SIMap) HasKey(keyIf interface{}) bool {
-	key := dataxform.IAsString(keyIf)
+	key := IAsString(keyIf)
 	_,has := m[key]
 	return has
 }
 
 func (m SIMap) DeleteKeys(keys IArray) {
 	for _,key := range keys {
-		m.Delete(dataxform.IAsString(key))
+		m.Delete(IAsString(key))
 	}
 }
 
 func (m SIMap) NewMapByKeys(keys IArray) SIMap{
 	nm := SIMap{}
 	for _,keyI := range keys {
-		key := dataxform.IAsString(keyI)
+		key := IAsString(keyI)
 		nm[key] = m[key]
 	}
 	return nm
@@ -147,7 +146,7 @@ func (as *Arrays) Like(like string) TableCriterion {
 }
 
 func (l TableLike) isTrue(i interface{}) bool {
-	s := dataxform.IAsString(i)
+	s := IAsString(i)
 	return l.re.MatchString(s)
 }
 

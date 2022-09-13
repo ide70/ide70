@@ -1,7 +1,7 @@
 package codecomplete
 
 import (
-	"github.com/ide70/ide70/dataxform"
+	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/loader"
 	"strings"
 )
@@ -10,8 +10,8 @@ import (
 // key1.*
 
 func idCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
-	srcExpr1 := dataxform.SIMapGetByKeyAsString(configData, "srcExpr1")
-	srcExpr2 := dataxform.SIMapGetByKeyAsString(configData, "srcExpr2")
+	srcExpr1 := api.SIMapGetByKeyAsString(configData, "srcExpr1")
+	srcExpr2 := api.SIMapGetByKeyAsString(configData, "srcExpr2")
 	fileAsTemplatedYaml := loader.ConvertTemplatedYaml([]byte(edContext.content), "self")
 
 	if fileAsTemplatedYaml != nil {
@@ -49,7 +49,7 @@ func splitCapitalize(s, by string) string {
 func firstMatchValue(expr string, yamlPos *YamlPosition, data interface{}) string {
 	value := ""
 	re, isValue := convertYamlpathToRegex(expr, yamlPos)
-	dataxform.IApplyFn(data, func(entry dataxform.CollectionEntry) {
+	api.IApplyFn(data, func(entry api.CollectionEntry) {
 		logger.Info("leaf:", entry.LinearKey())
 		if re.MatchString(entry.LinearKey()) {
 			logger.Info("match")

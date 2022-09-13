@@ -1,7 +1,7 @@
 package codecomplete
 
 import (
-	"github.com/ide70/ide70/dataxform"
+	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/loader"
 	"regexp"
 )
@@ -9,10 +9,10 @@ import (
 // `([\.#][_A-Za-z0-9\-]+)[^}]*{`
 
 func fileContentCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
-	folderPrefix := dataxform.SIMapGetByKeyAsString(configData, "folderPrefix")
-	fileNameExpr := dataxform.SIMapGetByKeyAsString(configData, "fileNameExpr")
-	searchExpr := dataxform.SIMapGetByKeyAsString(configData, "searchExpr")
-	self := dataxform.SIMapGetByKeyAsBoolean(configData, "self")
+	folderPrefix := api.SIMapGetByKeyAsString(configData, "folderPrefix")
+	fileNameExpr := api.SIMapGetByKeyAsString(configData, "fileNameExpr")
+	searchExpr := api.SIMapGetByKeyAsString(configData, "searchExpr")
+	self := api.SIMapGetByKeyAsBoolean(configData, "self")
 
 	reSearch, err := regexp.Compile(searchExpr)
 	if err != nil {
@@ -29,11 +29,11 @@ func fileContentCompleter(yamlPos *YamlPosition, edContext *EditorContext, confi
 			selfData := selfAsTemplatedYaml.IDef
 			logger.Info("fileNameExpr:", fileNameExpr)
 			rePath, _ := convertYamlpathToRegex(fileNameExpr, yamlPos)
-			dataxform.IApplyFn(selfData, func(entry dataxform.CollectionEntry) {
+			api.IApplyFn(selfData, func(entry api.CollectionEntry) {
 				logger.Info("sleaf:", entry.LinearKey())
 				if rePath.MatchString(entry.LinearKey()) {
 					logger.Info("match")
-					fileName := dataxform.IAsString(entry.Value())
+					fileName := api.IAsString(entry.Value())
 					logger.Info("fileName:" + fileName)
 					fileContents := loader.LoadFileContents(fileName, "ide70/"+folderPrefix+"/")
 					compl = scanContents(fileContents, reSearch, compl)

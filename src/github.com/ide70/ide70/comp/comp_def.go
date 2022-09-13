@@ -1,7 +1,7 @@
 package comp
 
 import (
-	"github.com/ide70/ide70/dataxform"
+	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/loader"
 )
 
@@ -22,8 +22,8 @@ func ParseCompDef(def map[string]interface{}, context *UnitDefContext) *CompDef 
 	compDef.Props = def
 
 	// TODO: lista merge nem az igazi
-	accDefCopy := dataxform.IAsSIMap(dataxform.SIMapCopy(compDef.CompType.AccessibleDef))
-	dataxform.SIMapInjectDefaults(accDefCopy, compDef.Props)
+	accDefCopy := api.IAsSIMap(api.SIMapCopy(compDef.CompType.AccessibleDef))
+	api.SIMapInjectDefaults(accDefCopy, compDef.Props)
 
 	logger.Info("ParseCompDef id before")
 	if def["cr"] == nil {
@@ -50,31 +50,31 @@ func (compDef *CompDef) ParseEventHandlers(context *UnitDefContext) {
 
 func parseTriggerDefs(def map[string]interface{}, compDef *CompDef) {
 	compDef.Triggers = map[string]string{}
-	setTriggers := dataxform.SIMapGetByKeyAsMap(def, "setTriggers")
+	setTriggers := api.SIMapGetByKeyAsMap(def, "setTriggers")
 	for propertyKey, eventTypeIf := range setTriggers {
-		compDef.Triggers[propertyKey] = dataxform.IAsString(eventTypeIf)
+		compDef.Triggers[propertyKey] = api.IAsString(eventTypeIf)
 	}
 }
 
 func parseUnitRelatedDefs(def map[string]interface{}, context *UnitDefContext) {
-	unitRelatedMap := dataxform.SIMapGetByKeyAsMap(def, "injectToUnit")
+	unitRelatedMap := api.SIMapGetByKeyAsMap(def, "injectToUnit")
 	if len(unitRelatedMap) > 0 {
-		dataxform.SIMapInjectDefaults(unitRelatedMap, context.unitDef.Props)
+		api.SIMapInjectDefaults(unitRelatedMap, context.unitDef.Props)
 	}
-	copyList := dataxform.SIMapGetByKeyAsList(def, "copyPropertyToUnit")
+	copyList := api.SIMapGetByKeyAsList(def, "copyPropertyToUnit")
 	for _, copyItemIf := range copyList {
-		copyitem := dataxform.AsSIMap(copyItemIf)
-		srcProp := dataxform.SIMapGetByKeyAsString(copyitem, "srcProp")
-		dstProp := dataxform.SIMapGetByKeyAsString(copyitem, "dstProp")
+		copyitem := api.AsSIMap(copyItemIf)
+		srcProp := api.SIMapGetByKeyAsString(copyitem, "srcProp")
+		dstProp := api.SIMapGetByKeyAsString(copyitem, "dstProp")
 		context.unitDef.Props[dstProp] = def[srcProp]
 		logger.Info("unit poperty:", dstProp, context.unitDef.Props[dstProp])
 	}
 }
 
 func parseCalcs(def map[string]interface{}, context *UnitDefContext, compDef *CompDef) {
-	dataxform.IApplyFnToNodes(def, func(entry dataxform.CollectionEntry) {
+	api.IApplyFnToNodes(def, func(entry api.CollectionEntry) {
 		if entry.Key() == "calc" {
-			value := dataxform.IAsString(entry.Value())
+			value := api.IAsString(entry.Value())
 			if value != "" {
 				calc := &Calc{Comp: compDef, PropertyKey: entry.Parent().Key(), jsCode: value}
 				logger.Info("calc added:", *calc)
@@ -85,15 +85,15 @@ func parseCalcs(def map[string]interface{}, context *UnitDefContext, compDef *Co
 }
 
 func parseExternalReferences(def map[string]interface{}, context *UnitDefContext, compDef *CompDef) {
-	dataxform.IApplyFnToNodes(def, func(entry dataxform.CollectionEntry) {
+	api.IApplyFnToNodes(def, func(entry api.CollectionEntry) {
 		if entry.Key() == "externalReference" {
-			props := dataxform.IAsSIMap(entry.Value())
+			props := api.IAsSIMap(entry.Value())
 			if len(props) != 0 {
-				fileName := dataxform.SIMapGetByKeyAsString(props, "fileName")
-				key := dataxform.SIMapGetByKeyAsString(props, "key")
+				fileName := api.SIMapGetByKeyAsString(props, "fileName")
+				key := api.SIMapGetByKeyAsString(props, "key")
 				// betölteni
 				extConfig := loader.GetTemplatedYaml(fileName, "ide70/dcfg/")
-				value := dataxform.SIMapGetByKeyChain(extConfig.Def, key)
+				value := api.SIMapGetByKeyChain(extConfig.Def, key)
 				logger.Info("external definition:", key, value)
 				entry.Parent().Update(value)
 			}
@@ -113,13 +113,13 @@ func ParseEventHandlers(def map[string]interface{}, superEventsHandler *CompDefE
 	if context != nil {
 		codeList := context.unitDef.getInitialEventCodes()
 		codeList = append(codeList, context.unitDef.getPostRenderEventCodes()...)
-		initEventCodeList = dataxform.StringListToSet(codeList)
+		initEventCodeList = api.StringListToSet(codeList)
 		
 	} else {
 		initEventCodeList = map[string]bool{}
 	}
 	
-	eventHandlers := dataxform.SIMapGetByKeyAsMap(def, "eventHandlers")
+	eventHandlers := api.SIMapGetByKeyAsMap(def, "eventHandlers")
 	logger.Info("ehs:", eventHandlers)
 	if superEventsHandler != nil {
 		for eventType, handler := range superEventsHandler.Handlers {
@@ -134,11 +134,11 @@ func ParseEventHandlers(def map[string]interface{}, superEventsHandler *CompDefE
 
 	//logger.Info("ParseEventHandlers def:", def)
 	for eventType, eventPropsIf := range eventHandlers {
-		eventProps := dataxform.AsSIMap(eventPropsIf)
-		eventAction := dataxform.SIMapGetByKeyAsString(eventProps, "action")
+		eventProps := api.AsSIMap(eventPropsIf)
+		eventAction := api.SIMapGetByKeyAsString(eventProps, "action")
 		eventHandler := newEventHandler()
 		eventHandler.JsCode = eventAction
-		eventHandler.PropertyKey = dataxform.SIMapGetByKeyAsString(eventProps, "propertyKey")
+		eventHandler.PropertyKey = api.SIMapGetByKeyAsString(eventProps, "propertyKey")
 		if initEventCodeList[eventType] {
 			logger.Info("add event to unit:"+eventType )
 			context.unitDef.EventsHandler.AddHandler(eventType, &CompEventHandler{CompDef: compDef, EventHandler: eventHandler})

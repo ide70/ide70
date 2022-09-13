@@ -23,9 +23,15 @@ type FileUpload struct {
 
 type BinaryData struct {
 	data         *[]byte
+	tableName	string
+	key			*DataBaseObjectKey
+	dbCtx          *DatabaseContext
 }
 
 func (bd *BinaryData) GetData() *[]byte {
+	if bd.data == nil && bd.dbCtx != nil && bd.key != nil{
+		bd.data = bd.dbCtx.GenLoadBlob(bd.tableName, bd.key.Value)
+	}
 	return bd.data
 }
 

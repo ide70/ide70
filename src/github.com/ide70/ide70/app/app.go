@@ -2,7 +2,6 @@ package app
 
 import (
 	"bytes"
-	"github.com/ide70/ide70/dataxform"
 	"github.com/ide70/ide70/user"
 	"github.com/ide70/ide70/util/file"
 	"github.com/ide70/ide70/util/log"
@@ -59,24 +58,24 @@ func LoadApplication(configFileName string) *Application {
 	switch tpUnitIf := unitIf.(type) {
 	case map[interface{}]interface{}:
 		app := &Application{}
-		app.Config = dataxform.InterfaceMapToStringMap(tpUnitIf)
-		app.Name = dataxform.SIMapGetByKeyAsString(app.Config, "name")
+		app.Config = api.InterfaceMapToStringMap(tpUnitIf)
+		app.Name = api.SIMapGetByKeyAsString(app.Config, "name")
 		app.Path = "/" + app.Name + "/"
-		loginUnitsArr := dataxform.SIMapGetByKeyAsList(app.Config, "loginUnits")
+		loginUnitsArr := api.SIMapGetByKeyAsList(app.Config, "loginUnits")
 		app.Access.LoginUnits = map[string]bool{}
 		for _, loginUnitIf := range loginUnitsArr {
-			loginUnitData := dataxform.IAsSIMap(loginUnitIf)
-			app.Access.LoginUnits[dataxform.IAsString(loginUnitData["path"])] = true
+			loginUnitData := api.IAsSIMap(loginUnitIf)
+			app.Access.LoginUnits[api.IAsString(loginUnitData["path"])] = true
 		}
-		connectors := dataxform.SIMapGetByKeyAsMap(app.Config, "connectors")
-		mainDB := dataxform.SIMapGetByKeyAsMap(connectors, "mainDB")
+		connectors := api.SIMapGetByKeyAsMap(app.Config, "connectors")
+		mainDB := api.SIMapGetByKeyAsMap(connectors, "mainDB")
 		if len(mainDB) > 0 {
 			app.Connectors.MainDB = &api.DatabaseContext{}
-			app.Connectors.MainDB.Host = dataxform.SIMapGetByKeyAsString(mainDB, "host")
-			app.Connectors.MainDB.Port = dataxform.SIMapGetByKeyAsInt(mainDB, "port")
-			app.Connectors.MainDB.DBName = dataxform.SIMapGetByKeyAsString(mainDB, "dbName")
-			app.Connectors.MainDB.User = dataxform.SIMapGetByKeyAsString(mainDB, "user")
-			app.Connectors.MainDB.Password = dataxform.SIMapGetByKeyAsString(mainDB, "password")
+			app.Connectors.MainDB.Host = api.SIMapGetByKeyAsString(mainDB, "host")
+			app.Connectors.MainDB.Port = api.SIMapGetByKeyAsInt(mainDB, "port")
+			app.Connectors.MainDB.DBName = api.SIMapGetByKeyAsString(mainDB, "dbName")
+			app.Connectors.MainDB.User = api.SIMapGetByKeyAsString(mainDB, "user")
+			app.Connectors.MainDB.Password = api.SIMapGetByKeyAsString(mainDB, "password")
 		}
 		app.Connectors.FileContext = &file.FileContext{}
 		app.Connectors.LoadContext = &api.LoadContext{}

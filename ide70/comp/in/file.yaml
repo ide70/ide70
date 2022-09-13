@@ -5,6 +5,10 @@ unitInterface:
     value:
       descr: File data
       type: map
+    blobConnection:
+      descr: Connection to blob table
+      valueCompleter:
+        completerRef: dbFieldCompleter
 subParts: 
   file:
     descr: File details
@@ -13,14 +17,14 @@ privateProperties:
     descr: File Name
   progress:
     descr: upload progress
-    default: 0
+    default: -1
 body: |
   <div id="{{.sid}}">
     <input type="file" class="upload" {{eventHandlerFileUpload $.This "onchange" "fileUpload"}}>
-    <span id="{{.sid}}file">File: {{.fileName}}
-      <div class="progess-holder">
+    <span id="{{.sid}}file">{{if .fileName}}File: {{.fileName}}{{end}}
+      {{if ne $.progress -1}}<div class="progess-holder">
         <div class="progress-bar" style="width: {{.progress}}%"></div>
-      </div>
+      </div>{{end}}
       {{if $.value}}<a href="{{eventHandlerFileDownload $.This "download"}}">Download</a>{{end}}
     </span>
   </div>
@@ -31,6 +35,7 @@ eventHandlers:
       if(CompCtx().UploadCtx()) {
           CompCtx().SetProp("fileName", CompCtx().UploadCtx().GetFileName());
       }
+      CompCtx().SetProp("progress", 0);
       CompCtx().Timer(500, "uploadProgress").RefreshSubComp("file");
   uploadProgress:
     action: |
@@ -40,18 +45,25 @@ eventHandlers:
           CompCtx().Timer(500, "uploadProgress")
       } else {
           var upload = Api().Arrays().NewSIMap();
-          upload.Put("data", CompCtx().UploadCtx().GetData());
+          upload.Put(CompCtx().GetProp("blobConnection"), CompCtx().UploadCtx().GetData());
           upload.Put("mimeType", CompCtx().UploadCtx().GetMimeType());
           upload.Put("fileName", CompCtx().UploadCtx().GetFileName());
           CompCtx().SetProp("value", upload);
+          CompCtx().SetProp("progress", 100);
       }
   download:
     action: |
       Api().Logger().Info("download");
       var value = CompCtx().GetPropToCast("value").AsMap();
-      Api().Logger().Info("download1");
-      CompCtx().SetBinaryResponse(value.Get("mimeType"), value.Get("data"));
+      Api().Logger().Info("download0", value);
+      CompCtx().SetBinaryResponse(value.Get("mimeType"), value.Get(CompCtx().GetProp("blobConnection")));
       Api().Logger().Info("send response as", value.Get("mimeType"));
+  onUnitCreate:
+    action: |
+      var value = CompCtx().GetPropToCast("value").AsMap();
+      if(value) {
+          CompCtx().SetProp("fileName", value.Get("fileName"));
+      }
 injectRootComp:
   css:
     - name: comp/file.css

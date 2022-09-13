@@ -7,8 +7,6 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"reflect"
-	"strings"
-	"text/template"
 )
 
 var logger = log.Logger{"loader"}
@@ -90,7 +88,7 @@ func ConvertTemplatedYaml(contentB []byte, name string) *TemplatedYaml {
 		logger.Error("Yaml module ", name, "yaml structure is not a map, but:", reflect.TypeOf(compIf))
 		return nil
 	}
-	dataxform.SIMapApplyFn(module.Def, func(entry dataxform.CollectionEntry) {
+	/*api.SIMapApplyFn(module.Def, func(entry api.CollectionEntry) {
 		switch vT := entry.Value().(type) {
 		case string:
 			if strings.HasPrefix(vT, "TEMPLATE ") {
@@ -104,7 +102,7 @@ func ConvertTemplatedYaml(contentB []byte, name string) *TemplatedYaml {
 			}
 		}
 	})
-	logger.Info("converted: ", module.Def)
+	logger.Info("converted: ", module.Def)*/
 
 	return module
 }

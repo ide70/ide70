@@ -3,7 +3,7 @@ package codecomplete
 import (
 	"bytes"
 	"fmt"
-	"github.com/ide70/ide70/dataxform"
+	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/loader"
 	"github.com/ide70/ide70/util/log"
 	"strings"
@@ -220,7 +220,7 @@ func CodeComplete(content string, row, col int, fileName string) []map[string]st
 		return compl
 	}
 
-	compDescrFt := dataxform.SIMapGetByKeyAsMap(complDescr, maxPrefix)
+	compDescrFt := api.SIMapGetByKeyAsMap(complDescr, maxPrefix)
 	edContext := &EditorContext{content: content, col: col, row: row, keyStartCol: nrOfBeginningSpaces(lines[row])}
 
 	if len(compDescrFt) > 0 {
@@ -260,17 +260,17 @@ func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map
 		matchingKeys, perfectMatch, anyMatch := getMatchingKeys(levelMap, yamlPos.keyPrefix)
 		logger.Info("pm:", perfectMatch, "am:", anyMatch, "mks:", matchingKeys)
 		if perfectMatch {
-			keyData := dataxform.IAsSIMap(levelMap[yamlPos.keyPrefix])
-			reference := dataxform.SIMapGetByKeyAsString(keyData, "reference")
+			keyData := api.IAsSIMap(levelMap[yamlPos.keyPrefix])
+			reference := api.SIMapGetByKeyAsString(keyData, "reference")
 			if reference != "" {
 				references[reference] = levelMap
 			}
 			if yamlPos.child != nil {
-				children := dataxform.SIMapGetByKeyAsMap(keyData, "children")
+				children := api.SIMapGetByKeyAsMap(keyData, "children")
 				if len(children) > 0 {
 					levelMap = children
 				} else {
-					childrenRef := dataxform.SIMapGetByKeyAsString(keyData, "childrenRef")
+					childrenRef := api.SIMapGetByKeyAsString(keyData, "childrenRef")
 					if childrenRef != "" {
 						levelMap = references[childrenRef]
 					} else {
@@ -283,11 +283,11 @@ func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map
 
 			if yamlPos.keyComplete {
 				logger.Info("-- complete key")
-				possibleValues := dataxform.SIMapGetByKeyAsMap(keyData, "possibleValues")
+				possibleValues := api.SIMapGetByKeyAsMap(keyData, "possibleValues")
 				if len(possibleValues) > 0 {
 					matchingKeys = []string{}
 					for value, descrIf := range possibleValues {
-						compl = addValueCompletion(value, dataxform.IAsString(descrIf), edContext, keyData, compl)
+						compl = addValueCompletion(value, api.IAsString(descrIf), edContext, keyData, compl)
 					}
 				}
 			}
@@ -295,16 +295,16 @@ func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map
 			completer, configData := lookupCompleter("value", keyData)
 			if completer != nil {
 				if keyData["descr"] != nil {
-					compl = append(compl, newHeader(dataxform.SIMapGetByKeyAsString(keyData,"descr")))
+					compl = append(compl, newHeader(api.SIMapGetByKeyAsString(keyData,"descr")))
 				}
 				compl = completer(yamlPos, edContext, configData, compl)
 				break
 			}
 		}
 		if anyMatch {
-			keyData := dataxform.SIMapGetByKeyAsMap(levelMap, "any")
+			keyData := api.SIMapGetByKeyAsMap(levelMap, "any")
 			logger.Info("kD:", keyData)
-			reference := dataxform.SIMapGetByKeyAsString(keyData, "reference")
+			reference := api.SIMapGetByKeyAsString(keyData, "reference")
 			if reference != "" {
 				references[reference] = levelMap
 			}
@@ -312,25 +312,25 @@ func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map
 			completer, configData := lookupCompleter("key", keyData)
 
 			// context switching completer, no children evaluation
-			if completer != nil && dataxform.SIMapGetByKeyAsBoolean(configData, "handleChildren") {
+			if completer != nil && api.SIMapGetByKeyAsBoolean(configData, "handleChildren") {
 				compl = completer(yamlPos, edContext, configData, compl)
 			}
 
 			if yamlPos.child == nil && completer == nil {
-				preventBlankKey := dataxform.SIMapGetByKeyAsBoolean(keyData, "preventBlankKey")
+				preventBlankKey := api.SIMapGetByKeyAsBoolean(keyData, "preventBlankKey")
 				if !preventBlankKey {
 					compl = addCompletion("___", edContext, keyData, compl)
 				}
 			}
 
 			if yamlPos.child != nil {
-				children := dataxform.SIMapGetByKeyAsMap(keyData, "children")
+				children := api.SIMapGetByKeyAsMap(keyData, "children")
 				if len(children) > 0 {
 					levelMap = children
 					yamlPos = yamlPos.child
 					continue
 				} else {
-					childrenRef := dataxform.SIMapGetByKeyAsString(keyData, "childrenRef")
+					childrenRef := api.SIMapGetByKeyAsString(keyData, "childrenRef")
 					if childrenRef == "self" {
 						logger.Info("childrenRef self")
 						yamlPos = yamlPos.child
@@ -360,13 +360,13 @@ func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map
 			keyPostfix := ": "
 			logger.Info("matchKey:", matchingKey)
 			// short form: key has only a description
-			if dataxform.SIMapGetByKeyIsString(levelMap, matchingKey) {
-				keyDescr := dataxform.SIMapGetByKeyAsString(levelMap, matchingKey)
+			if api.SIMapGetByKeyIsString(levelMap, matchingKey) {
+				keyDescr := api.SIMapGetByKeyAsString(levelMap, matchingKey)
 				compl = append(compl, newCompletion(keyPrefix+matchingKey+keyPostfix, matchingKey, keyDescr))
 				continue
 			}
 			// complex form: key has spearate descr and other complementary fileds
-			keyData := dataxform.SIMapGetByKeyAsMap(levelMap, matchingKey)
+			keyData := api.SIMapGetByKeyAsMap(levelMap, matchingKey)
 			compl = addCompletion(matchingKey, edContext, keyData, compl)
 		}
 
@@ -379,9 +379,9 @@ func addValueCompletion(value, descr string, edContext *EditorContext, keyData m
 	logger.Info("addValueCompletion:", value)
 	keyPrefix := ""
 	captionPostfix := ""
-	quote := dataxform.SIMapGetByKeyAsString(keyData, "quote")
-	descrPrefix := dataxform.SIMapGetByKeyAsString(keyData, "descrPrefix")
-	descrPostfix := dataxform.SIMapGetByKeyAsString(keyData, "descrPostfix")
+	quote := api.SIMapGetByKeyAsString(keyData, "quote")
+	descrPrefix := api.SIMapGetByKeyAsString(keyData, "descrPrefix")
+	descrPostfix := api.SIMapGetByKeyAsString(keyData, "descrPostfix")
 	keyPostfix := ""
 	if edContext.contextType != "template" && edContext.contextType != "js" {
 		keyPostfix = "\n" + strings.Repeat(" ", edContext.keyStartCol)
@@ -404,15 +404,15 @@ func addCompletion(value string, edContext *EditorContext, keyData map[string]in
 	keyPrefix := ""
 	keyPostfix := ": "
 	captionPostfix := ""
-	keyDescr := dataxform.SIMapGetByKeyAsString(keyData, "descr")
-	isListHead := dataxform.SIMapGetByKeyAsBoolean(keyData, "listHead")
-	isMapHead := dataxform.SIMapGetByKeyAsBoolean(keyData, "mapHead")
-	isSingleKey := dataxform.SIMapGetByKeyAsBoolean(keyData, "singleKey")
-	isValue := dataxform.SIMapGetByKeyAsBoolean(keyData, "value")
-	isMultilineValue := dataxform.SIMapGetByKeyAsBoolean(keyData, "multilineValue")
-	singleToMap := dataxform.SIMapGetByKeyAsBoolean(keyData, "singleToMap")
-	quote := dataxform.SIMapGetByKeyAsString(keyData, "quote")
-	subProperties := dataxform.SIMapGetByKeyAsList(keyData, "subProperties")
+	keyDescr := api.SIMapGetByKeyAsString(keyData, "descr")
+	isListHead := api.SIMapGetByKeyAsBoolean(keyData, "listHead")
+	isMapHead := api.SIMapGetByKeyAsBoolean(keyData, "mapHead")
+	isSingleKey := api.SIMapGetByKeyAsBoolean(keyData, "singleKey")
+	isValue := api.SIMapGetByKeyAsBoolean(keyData, "value")
+	isMultilineValue := api.SIMapGetByKeyAsBoolean(keyData, "multilineValue")
+	singleToMap := api.SIMapGetByKeyAsBoolean(keyData, "singleToMap")
+	quote := api.SIMapGetByKeyAsString(keyData, "quote")
+	subProperties := api.SIMapGetByKeyAsList(keyData, "subProperties")
 
 	if singleToMap {
 		captionPostfix = " :"
@@ -435,7 +435,7 @@ func addCompletion(value string, edContext *EditorContext, keyData map[string]in
 		keyPostfix = ": |\n" + strings.Repeat(" ", edContext.col+2)
 	}
 	for _, subPropertyIf := range subProperties {
-		subProperty := dataxform.IAsString(subPropertyIf)
+		subProperty := api.IAsString(subPropertyIf)
 		if subProperty != "" {
 			keyPostfix += "\n" + strings.Repeat(" ", edContext.keyStartCol+2) + subProperty + ": "
 		}
@@ -450,33 +450,33 @@ func addCompletion(value string, edContext *EditorContext, keyData map[string]in
 
 func lookupCompleter(completerType string, keyData map[string]interface{}) (ValueCompleter, map[string]interface{}) {
 	completerKey := completerType + "Completer"
-	completerMap := dataxform.SIMapGetByKeyAsMap(keyData, completerKey)
+	completerMap := api.SIMapGetByKeyAsMap(keyData, completerKey)
 	if len(completerMap) != 1 {
 		logger.Info("no completer / multiple completers")
 		logger.Info("completerType:", completerType)
 		return nil, nil
 	}
-	completerName, completerParamsIf := dataxform.GetOnlyEntry(completerMap)
+	completerName, completerParamsIf := api.GetOnlyEntry(completerMap)
 
 	if completerName == "completerRef" {
-		refValue := dataxform.IAsString(completerParamsIf)
+		refValue := api.IAsString(completerParamsIf)
 		fileAsTemplatedYaml := loader.GetTemplatedYaml("namedCompleters", "ide70/dcfg/")
 		namedCompleters := fileAsTemplatedYaml.Def
-		completerData := dataxform.SIMapGetByKeyAsMap(namedCompleters, refValue)
+		completerData := api.SIMapGetByKeyAsMap(namedCompleters, refValue)
 		if len(completerData) == 0 {
 			return nil, nil
 		}
-		completerDef := dataxform.SIMapGetByKeyAsMap(completerData, "definition")
-		completerName, completerParamsIf = dataxform.GetOnlyEntry(completerDef)
+		completerDef := api.SIMapGetByKeyAsMap(completerData, "definition")
+		completerName, completerParamsIf = api.GetOnlyEntry(completerDef)
 	}
 
-	completerParamsList := dataxform.IAsArr(completerParamsIf)
-	completerParams := dataxform.IAsSIMap(completerParamsIf)
+	completerParamsList := api.IAsArr(completerParamsIf)
+	completerParams := api.IAsSIMap(completerParamsIf)
 	if len(completerParamsList) > 0 {
 		completerParams["paramsList"] = completerParamsList
 		completerParams["completerType"] = completerType
 	}
-	configFile := dataxform.SIMapGetByKeyAsString(completerParams, "configFile")
+	configFile := api.SIMapGetByKeyAsString(completerParams, "configFile")
 	var configData map[string]interface{} = nil
 	if configFile != "" {
 		configData = loader.GetTemplatedYaml(configFile, "").Def
@@ -485,7 +485,7 @@ func lookupCompleter(completerType string, keyData map[string]interface{}) (Valu
 	}
 
 	if completerType == "key" {
-		dataxform.SIMapCopyKeys(keyData, configData, []string{"descr", "listHead", "mapHead", "singleKey", "multilineValue", "quote"})
+		api.SIMapCopyKeys(keyData, configData, []string{"descr", "listHead", "mapHead", "singleKey", "multilineValue", "quote"})
 	} else {
 		configData["value"] = true
 	}
@@ -494,7 +494,7 @@ func lookupCompleter(completerType string, keyData map[string]interface{}) (Valu
 	if len(completerParamsList) > 0 {
 		logger.Info("range completerParamsList")
 		for _,subCompleterIf := range completerParamsList {
-			key,_ := dataxform.GetOnlyEntry(dataxform.IAsSIMap(subCompleterIf))
+			key,_ := api.GetOnlyEntry(api.IAsSIMap(subCompleterIf))
 			logger.Info("key", key)
 			if key == "yamlDataCompleter" {
 				configData["handleChildren"] = true

@@ -1,13 +1,10 @@
-package dataxform
+package api
 
 import (
 	"fmt"
-	"github.com/ide70/ide70/util/log"
 	"reflect"
 	"strings"
 )
-
-var logger = log.Logger{"datxform"}
 
 func InterfaceReplaceMapKeyToString(i interface{}) interface{} {
 	switch itp := i.(type) {
@@ -434,6 +431,11 @@ func iArrApplyFn(a []interface{}, f func(entry CollectionEntry), parentEntry Col
 	for i, v := range a {
 		entry := &ArrayEntry{parent: parentEntry, a: a, i: i, v: v}
 		switch vT := v.(type) {
+		case SIMap:
+			sIMapApplyFn(vT, f, entry)
+			if entry.stop {
+				return
+			}
 		case map[string]interface{}:
 			sIMapApplyFn(vT, f, entry)
 			if entry.stop {
@@ -457,6 +459,12 @@ func iArrApplyFnToNodes(a []interface{}, f func(entry CollectionEntry), parentEn
 	for i, v := range a {
 		entry := &ArrayEntry{parent: parentEntry, a: a, i: i, v: v}
 		switch vT := v.(type) {
+		case SIMap:
+			f(entry)
+			if entry.stop {
+				return
+			}
+			sIMapApplyFnToNodes(vT, f, entry)
 		case map[string]interface{}:
 			f(entry)
 			if entry.stop {
@@ -483,6 +491,11 @@ func sIMapApplyFn(m map[string]interface{}, f func(entry CollectionEntry), paren
 	for k, v := range m {
 		entry := &MapEntry{parent: parentEntry, m: m, k: k, v: v}
 		switch vT := v.(type) {
+		case SIMap:
+			sIMapApplyFn(vT, f, entry)
+			if entry.stop {
+				return
+			}
 		case map[string]interface{}:
 			sIMapApplyFn(vT, f, entry)
 			if entry.stop {
@@ -506,6 +519,12 @@ func sIMapApplyFnToNodes(m map[string]interface{}, f func(entry CollectionEntry)
 	for k, v := range m {
 		entry := &MapEntry{parent: parentEntry, m: m, k: k, v: v}
 		switch vT := v.(type) {
+		case SIMap:
+			f(entry)
+			if entry.stop {
+				return
+			}
+			sIMapApplyFnToNodes(vT, f, entry)
 		case map[string]interface{}:
 			f(entry)
 			if entry.stop {
@@ -593,12 +612,12 @@ func TokenizeKeyExpr(keyExpr string) []string {
 
 func UnTokenizeKeyExpr(tokenizedKey []string) string {
 	var key strings.Builder
-	for idx,token := range tokenizedKey {
+	for idx, token := range tokenizedKey {
 		if strings.HasPrefix(token, "[") {
 			key.WriteString(token)
 			key.WriteString("]")
 		} else {
-			if idx>0 {
+			if idx > 0 {
 				key.WriteString(".")
 			}
 			key.WriteString(token)

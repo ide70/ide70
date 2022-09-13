@@ -3,7 +3,7 @@ package codecomplete
 import (
 	"fmt"
 	"github.com/ide70/ide70/comp"
-	"github.com/ide70/ide70/dataxform"
+	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/loader"
 	"reflect"
 	"regexp"
@@ -55,7 +55,7 @@ func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 		if tp == nil {
 			return compl
 		}
-		configDataForCompl := dataxform.SIMapLightCopy(configData)
+		configDataForCompl := api.SIMapLightCopy(configData)
 		configDataForCompl["firstConst"] = varAttributes["firstConst"]
 		configDataForCompl["table"] = varAttributes["table"]
 		logger.Info("firstConst:", varAttributes["firstConst"])
@@ -104,7 +104,7 @@ func yamlLookup(folderPrefix, fileName string, yamlExpr string) string {
 	value := ""
 	if reExpr != nil {
 		logger.Info("examine nodes")
-		dataxform.IApplyFnToNodes(fileAsTemplatedYaml.IDef, func(entry dataxform.CollectionEntry) {
+		api.IApplyFnToNodes(fileAsTemplatedYaml.IDef, func(entry api.CollectionEntry) {
 			logger.Info("lin key:", entry.LinearKey())
 			if reExpr.MatchString(entry.LinearKey()) {
 				value, _ = leafValDescr(entry, isFilterValue)
@@ -386,10 +386,10 @@ func findOpeningBracket(code string, pos int) int {
 func completionsOfType(tp reflect.Type, funcNameFilter string, yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}) []map[string]string {
 	compl := []map[string]string{}
 	numMethods := tp.NumMethod()
-	functionsData := dataxform.SIMapGetByKeyAsMap(configData, "functions")
-	typeBasedFunctionsData := dataxform.SIMapGetByKeyAsMap(functionsData, tp.String())
-	typesData := dataxform.SIMapGetByKeyAsMap(configData, "types")
-	typeBasedTypeData := dataxform.SIMapGetByKeyAsMap(typesData, tp.String())
+	functionsData := api.SIMapGetByKeyAsMap(configData, "functions")
+	typeBasedFunctionsData := api.SIMapGetByKeyAsMap(functionsData, tp.String())
+	typesData := api.SIMapGetByKeyAsMap(configData, "types")
+	typeBasedTypeData := api.SIMapGetByKeyAsMap(typesData, tp.String())
 
 	for i := 0; i < numMethods; i++ {
 		method := tp.Method(i)
@@ -398,9 +398,9 @@ func completionsOfType(tp reflect.Type, funcNameFilter string, yamlPos *YamlPosi
 		if funcNameFilter != "" && !strings.HasPrefix(method.Name, funcNameFilter) {
 			continue
 		}
-		functionData := dataxform.SIMapGetByKeyAsMap(typeBasedFunctionsData, method.Name)
-		functionDescr := dataxform.SIMapGetByKeyAsString(functionData, "descr")
-		functionParams := dataxform.SIMapGetByKeyAsList(functionData, "params")
+		functionData := api.SIMapGetByKeyAsMap(typeBasedFunctionsData, method.Name)
+		functionDescr := api.SIMapGetByKeyAsString(functionData, "descr")
+		functionParams := api.SIMapGetByKeyAsList(functionData, "params")
 		signature := method.Name + "("
 		sigValue := signature
 		for inIdx := 1; inIdx < methodTp.NumIn(); inIdx++ {
@@ -410,8 +410,8 @@ func completionsOfType(tp reflect.Type, funcNameFilter string, yamlPos *YamlPosi
 				sigValue += ", "
 			}
 			if inIdx <= len(functionParams) {
-				paramDescriptor := dataxform.AsSIMap(functionParams[inIdx-1])
-				paramName := dataxform.SIMapGetByKeyAsString(paramDescriptor, "name")
+				paramDescriptor := api.AsSIMap(functionParams[inIdx-1])
+				paramName := api.SIMapGetByKeyAsString(paramDescriptor, "name")
 				signature += paramName + ": "
 			}
 			signature += inV.Name()
@@ -430,7 +430,7 @@ func completionsOfType(tp reflect.Type, funcNameFilter string, yamlPos *YamlPosi
 		compl = append(compl, newCompletion(sigValue, signature, functionDescr))
 	}
 
-	fieldCompleter := dataxform.SIMapGetByKeyAsMap(typeBasedTypeData, "fieldCompleter")
+	fieldCompleter := api.SIMapGetByKeyAsMap(typeBasedTypeData, "fieldCompleter")
 	if len(fieldCompleter) == 1 {
 		logger.Info("fieldCompleter found for type:", tp.String())
 		completer, configDataCompleter := lookupCompleter("value", fieldCompleter)
@@ -452,16 +452,16 @@ func completionsOfFuncParam(tp reflect.Type, methodName string, paramNo int, yam
 		return compl
 	}
 	logger.Info("completionsOfFuncParam, base type:", tp.String())
-	functionsData := dataxform.SIMapGetByKeyAsMap(configData, "functions")
+	functionsData := api.SIMapGetByKeyAsMap(configData, "functions")
 
-	typeBasedFunctionsData := dataxform.SIMapGetByKeyAsMap(functionsData, tp.String())
-	functionData := dataxform.SIMapGetByKeyAsMap(typeBasedFunctionsData, methodName)
-	functionParams := dataxform.SIMapGetByKeyAsList(functionData, "params")
+	typeBasedFunctionsData := api.SIMapGetByKeyAsMap(functionsData, tp.String())
+	functionData := api.SIMapGetByKeyAsMap(typeBasedFunctionsData, methodName)
+	functionParams := api.SIMapGetByKeyAsList(functionData, "params")
 	if paramNo >= len(functionParams) {
 		return compl
 	}
 
-	paramDescriptor := dataxform.AsSIMap(functionParams[paramNo])
+	paramDescriptor := api.AsSIMap(functionParams[paramNo])
 	logger.Info("paramDescriptor:", paramDescriptor)
 
 	completer, configDataCompleter := lookupCompleter("value", paramDescriptor)

@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"github.com/ide70/ide70/dataxform"
 	"github.com/ide70/ide70/loader"
 	"time"
 	//	"regexp"
@@ -260,10 +259,10 @@ func newSchemaTable(tableName string) SchemaTable {
 	if fileAsTemplatedYaml == nil {
 		return table
 	}
-	columnList := dataxform.SIMapGetByKeyAsList(fileAsTemplatedYaml.Def, "columns")
+	columnList := SIMapGetByKeyAsList(fileAsTemplatedYaml.Def, "columns")
 	for _, columnIf := range columnList {
-		column := dataxform.IAsSIMap(columnIf)
-		columnName := dataxform.SIMapGetByKeyAsString(column, "name")
+		column := IAsSIMap(columnIf)
+		columnName := SIMapGetByKeyAsString(column, "name")
 		table[columnName] = &SchemaCol{name: columnName, tableRef: ref}
 	}
 	table[idFieldName] = &SchemaCol{name: "id", tableRef: ref, idField: true}
@@ -304,21 +303,21 @@ func (st SchemaTable) JoinedTable(connectionName string) SchemaTable {
 	if fileAsTemplatedYaml == nil {
 		return table
 	}
-	connMap := dataxform.SIMapGetByKeyAsMap(fileAsTemplatedYaml.Def, "connections")
+	connMap := SIMapGetByKeyAsMap(fileAsTemplatedYaml.Def, "connections")
 	logger.Info("connMap:", connMap)
 	for connName, connIf := range connMap {
 		if connName != connectionName {
 			continue
 		}
 		logger.Info("connName:", connName)
-		conn := dataxform.IAsSIMap(connIf)
+		conn := IAsSIMap(connIf)
 		logger.Info("conn:", conn)
-		localColumnName := dataxform.SIMapGetByKeyAsString(conn, "column")
+		localColumnName := SIMapGetByKeyAsString(conn, "column")
 		if localColumnName == "" {
 			localColumnName = idFieldName
 		}
-		foreignTableName := dataxform.SIMapGetByKeyAsString(conn, "foreignTable")
-		foreignColumnName := dataxform.SIMapGetByKeyAsString(conn, "foreignColumn")
+		foreignTableName := SIMapGetByKeyAsString(conn, "foreignTable")
+		foreignColumnName := SIMapGetByKeyAsString(conn, "foreignColumn")
 		if foreignColumnName == "" {
 			foreignColumnName = idFieldName
 		}
@@ -392,13 +391,13 @@ func (qd *QueryDef) DescendingBy(column *SchemaCol) *QueryDef {
 }
 
 func (qd *QueryDef) Limit(limitIf interface{}) *QueryDef {
-	limit := dataxform.IAsInt(limitIf)
+	limit := IAsInt(limitIf)
 	qd.limit = limit
 	return qd
 }
 
 func (qd *QueryDef) Offset(offsetIf interface{}) *QueryDef {
-	offset := dataxform.IAsInt(offsetIf)
+	offset := IAsInt(offsetIf)
 	qd.offset = offset
 	return qd
 }
@@ -556,7 +555,7 @@ func (schemaCol *SchemaCol) Lt(right interface{}) *QueryConditionWrapper {
 }
 
 func (c *QueryConditionWrapper) OrEmpty(right interface{}) *QueryConditionWrapper {
-	empty := dataxform.IsEmpty(right)
+	empty := IsEmpty(right)
 	if empty {
 		return &QueryConditionWrapper{condition: TrueCondition{}, conditionColumns: c.conditionColumns}
 	} else {

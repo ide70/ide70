@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"github.com/ide70/ide70/api"
-	"github.com/ide70/ide70/dataxform"
 	"github.com/ide70/ide70/util/file"
 	"github.com/ide70/ide70/util/log"
 	"github.com/robertkrimen/otto"
@@ -522,7 +521,7 @@ func (cSW *CompCtx) SubCompFuncExecute(idPrefix, funcName string, args ...string
 }
 
 func (cSW *CompCtx) Timer(intervalIf interface{}, eventCode string) *CompCtx {
-	interval := dataxform.IAsInt(intervalIf)
+	interval := api.IAsInt(intervalIf)
 	cSW.event.ResponseAction.SetTimer(cSW.c, interval, eventCode)
 	return cSW
 }
@@ -590,10 +589,10 @@ func (cSW *CompCtx) LoadUnitInto(unitName string) *CompCtx {
 
 func (cSW *CompCtx) InitializeStored(data map[string]interface{}) {
 	comp := cSW.c
-	storeKey := dataxform.SIMapGetByKeyAsString(comp.State, "store")
+	storeKey := api.SIMapGetByKeyAsString(comp.State, "store")
 	if storeKey != "" {
 		comp.State["value"] =
-			dataxform.SICollGetNode(storeKey, data)
+			api.SICollGetNode(storeKey, data)
 		log.Info("datamap v vt key:", comp.State["value"], reflect.TypeOf(comp.State["value"]), storeKey)
 	}
 }
@@ -723,7 +722,7 @@ func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 		if childRefId == "" {
 			c = event.Comp
 		} else {
-			if prefix := dataxform.SIMapGetByKeyAsString(event.Comp.State, "crPrefix"); prefix != "" {
+			if prefix := api.SIMapGetByKeyAsString(event.Comp.State, "crPrefix"); prefix != "" {
 				c = unit.CompByChildRefId[prefix+childRefId]
 				if c == nil {
 					logger.Warning("NOT FOUND BY PREFIX:", prefix+childRefId)

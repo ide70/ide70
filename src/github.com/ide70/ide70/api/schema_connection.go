@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/ide70/ide70/dataxform"
 	"github.com/ide70/ide70/loader"
 )
 
@@ -40,6 +39,7 @@ connections:
 
 type TableStruct struct {
 	name string
+	tableType string
 	columns     map[string]*TableColumn
 	connections map[string]*TableConnection
 }
@@ -70,13 +70,19 @@ func loadTableStruct(tableName string) *TableStruct {
 
 	fileAsTemplatedYaml := loader.GetTemplatedYaml(tableName, "ide70/dcfg/schema/")
 	if fileAsTemplatedYaml == nil {
+		table.tableType = TABLETYPE_JSONB
 		tableStructCache[tableName] = table
 		return table
 	}
-	columnList := dataxform.SIMapGetByKeyAsList(fileAsTemplatedYaml.Def, "columns")
+	tableType := SIMapGetByKeyAsString(fileAsTemplatedYaml.Def, "type")
+	if tableType == "" {
+		tableType = TABLETYPE_JSONB
+	}
+	table.tableType = tableType
+	columnList := SIMapGetByKeyAsList(fileAsTemplatedYaml.Def, "columns")
 	for _, columnIf := range columnList {
-		column := dataxform.IAsSIMap(columnIf)
-		columnName := dataxform.SIMapGetByKeyAsString(column, "name")
+		column := IAsSIMap(columnIf)
+		columnName := SIMapGetByKeyAsString(column, "name")
 		table.columns[columnName] = &TableColumn{name: columnName, idField: false}
 	}
 	table.columns[idFieldName] = &TableColumn{name: "id", idField: true}
@@ -84,17 +90,17 @@ func loadTableStruct(tableName string) *TableStruct {
 
 	// load connections
 
-	connMap := dataxform.SIMapGetByKeyAsMap(fileAsTemplatedYaml.Def, "connections")
+	connMap := SIMapGetByKeyAsMap(fileAsTemplatedYaml.Def, "connections")
 	logger.Info("connMap:", connMap)
 	for connName, connIf := range connMap {
 		logger.Info("connName:", connName)
 		tableConn := &TableConnection{}
-		conn := dataxform.IAsSIMap(connIf)
+		conn := IAsSIMap(connIf)
 		logger.Info("conn:", conn)
-		localColumnName := dataxform.SIMapGetByKeyAsString(conn, "column")
-		foreignTableName := dataxform.SIMapGetByKeyAsString(conn, "foreignTable")
-		foreignColumnName := dataxform.SIMapGetByKeyAsString(conn, "foreignColumn")
-		mxTableName := dataxform.SIMapGetByKeyAsString(conn, "mx")
+		localColumnName := SIMapGetByKeyAsString(conn, "column")
+		foreignTableName := SIMapGetByKeyAsString(conn, "foreignTable")
+		foreignColumnName := SIMapGetByKeyAsString(conn, "foreignColumn")
+		mxTableName := SIMapGetByKeyAsString(conn, "mx")
 		if foreignColumnName == "" {
 			foreignColumnName = idFieldName
 		}

@@ -2,7 +2,7 @@ package codecomplete
 
 import (
 	"fmt"
-	"github.com/ide70/ide70/dataxform"
+	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/loader"
 	"github.com/ide70/ide70/util/file"
 	"regexp"
@@ -27,20 +27,20 @@ func CodeNavigate(content string, row, col int, fileType string) *NavigationResu
 		return &NavigationResult{Success: false}
 	}
 	complDescr := complDescrTY.Def
-	patternList := dataxform.SIMapGetByKeyAsList(complDescr, fileType)
+	patternList := api.SIMapGetByKeyAsList(complDescr, fileType)
 	for _, patternIf := range patternList {
-		pattern := dataxform.AsSIMap(patternIf)
-		pathExpr := dataxform.SIMapGetByKeyAsString(pattern, "pathExpr")
+		pattern := api.AsSIMap(patternIf)
+		pathExpr := api.SIMapGetByKeyAsString(pattern, "pathExpr")
 		rePathExpr, _ := convertYamlpathToRegex(pathExpr, yamlPos)
 		if !rePathExpr.MatchString(yamlPos.getKey()) {
 			continue
 		}
 		logger.Info("navigation pathExpr matches:", pathExpr)
-		fileNameSrc := dataxform.SIMapGetByKeyAsString(pattern, "fileName")
+		fileNameSrc := api.SIMapGetByKeyAsString(pattern, "fileName")
 		fileName := ""
 		createFile := false
 		targetValue, preceeding := findTargetValue(lines[row], col)
-		preceedingRE := dataxform.SIMapGetByKeyAsString(pattern, "preceedingRE")
+		preceedingRE := api.SIMapGetByKeyAsString(pattern, "preceedingRE")
 		if preceedingRE != "" {
 			rePreceeding ,err := regexp.Compile(preceedingRE)
 			if err != nil {
@@ -61,8 +61,8 @@ func CodeNavigate(content string, row, col int, fileType string) *NavigationResu
 			}
 			logger.Info("navigation target value:", fileName)
 		}
-		addPrefix := dataxform.SIMapGetByKeyAsString(pattern, "addPrefix")
-		addSuffix := dataxform.SIMapGetByKeyAsString(pattern, "addSuffix")
+		addPrefix := api.SIMapGetByKeyAsString(pattern, "addPrefix")
+		addSuffix := api.SIMapGetByKeyAsString(pattern, "addSuffix")
 		if fileName != "" {
 			fileName = "ide70/" + addPrefix + fileName + addSuffix
 		}
@@ -77,7 +77,7 @@ func CodeNavigate(content string, row, col int, fileType string) *NavigationResu
 			}
 		}
 
-		navigateExpr := dataxform.SIMapGetByKeyAsString(pattern, "navigateTo")
+		navigateExpr := api.SIMapGetByKeyAsString(pattern, "navigateTo")
 		if navigateExpr != "" {
 			var fileAsTemplatedYaml *loader.TemplatedYaml
 			if fileName == "" {
@@ -96,7 +96,7 @@ func CodeNavigate(content string, row, col int, fileType string) *NavigationResu
 				if rePath != nil {
 					row := 0
 					col := 0
-					dataxform.IApplyFn(fileData, func(entry dataxform.CollectionEntry) {
+					api.IApplyFn(fileData, func(entry api.CollectionEntry) {
 						logger.Info("leaf:", entry.LinearKey())
 						if rePath.MatchString(entry.LinearKey()) {
 							logger.Info("match")

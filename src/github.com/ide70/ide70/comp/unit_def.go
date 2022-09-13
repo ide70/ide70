@@ -3,6 +3,7 @@ package comp
 import (
 	"bytes"
 	"fmt"
+	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/dataxform"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -74,7 +75,7 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 		compDef := ParseCompDef(unitIfTag, context)
 		logger.Info("after pcd")
 		if compDef.Props["autoInclude"] != nil {
-			unitIfArr = append(unitIfArr, dataxform.IAsArr(compDef.Props["autoInclude"])...)
+			unitIfArr = append(unitIfArr, api.IAsArr(compDef.Props["autoInclude"])...)
 			logger.Info("adding comps, new len:", len(unitIfArr))
 		}
 		// handle autoInclude
@@ -91,9 +92,9 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 		if comp.Props["injectRootComp"] == nil {
 			continue
 		}
-		defs := dataxform.AsSIMap(comp.Props["injectRootComp"])
+		defs := api.AsSIMap(comp.Props["injectRootComp"])
 		logger.Info("injectRootComp defs:", defs)
-		dataxform.SIMapInjectDefaults(defs, unit.RootComp.Props)
+		api.SIMapInjectDefaults(defs, unit.RootComp.Props)
 	}
 
 	for _, comp := range unit.CompsMap {
@@ -102,18 +103,18 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 			continue
 		}
 		logger.Info("injectToComp")
-		injectDefsArr := dataxform.IAsArr(comp.Props["injectToComp"])
+		injectDefsArr := api.IAsArr(comp.Props["injectToComp"])
 		logger.Info("injectDefsArr", injectDefsArr)
 		for _, injectDefIf := range injectDefsArr {
-			injectDef := dataxform.AsSIMap(injectDefIf)
+			injectDef := api.AsSIMap(injectDefIf)
 			logger.Info("injectDef", injectDef)
 
-			filter := dataxform.IAsSIMap(injectDef["filter"])
+			filter := api.IAsSIMap(injectDef["filter"])
 
 			targetCompList := evalFilter(filter, unit.CompsMap)
 
 			if len(targetCompList) == 0 {
-				cr := dataxform.IAsString(injectDef["cr"])
+				cr := api.IAsString(injectDef["cr"])
 				logger.Info("cr", cr)
 				targetComp := unit.CompsMap[cr]
 				logger.Info("targetComp", targetComp.ChildRefId())
@@ -123,26 +124,26 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 				targetCompList = append(targetCompList, targetComp)
 			}
 
-			defs := dataxform.IAsSIMap(injectDef["defs"])
+			defs := api.IAsSIMap(injectDef["defs"])
 			logger.Info("defs", defs)
-			toCopyArr := dataxform.IAsArr(injectDef["copy"])
+			toCopyArr := api.IAsArr(injectDef["copy"])
 			logger.Info("toCopyArr", toCopyArr)
 
 			for _, targetComp := range targetCompList {
 				if len(defs) > 0 {
 					logger.Info("adding defs: ", targetComp.ChildRefId(), defs)
 					logger.Info("before: ", targetComp.Props["eventHandlers"])
-					dataxform.SIMapInjectDefaults(defs, targetComp.Props)
+					api.SIMapInjectDefaults(defs, targetComp.Props)
 					logger.Info("after: ", targetComp.Props["eventHandlers"])
 				}
 
 				if toCopyArr != nil {
 					for _, toCopyIf := range toCopyArr {
-						toCopy := dataxform.IAsString(toCopyIf)
+						toCopy := api.IAsString(toCopyIf)
 						targetComp.Props[toCopy] = comp.Props[toCopy]
 						logger.Info("copying: ", toCopy, comp.Props[toCopy])
 					}
-					dataxform.SIMapInjectDefaults(defs, targetComp.Props)
+					api.SIMapInjectDefaults(defs, targetComp.Props)
 				}
 			}
 		}
@@ -187,7 +188,7 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 	childrenIf := unit.RootComp.Props["tree"]
 	logger.Info("tree scruct:", childrenIf)
 	if childrenIf != nil {
-		processCompTree(unit, unit.RootComp, dataxform.IAsArr(childrenIf), attachedCompMap)
+		processCompTree(unit, unit.RootComp, api.IAsArr(childrenIf), attachedCompMap)
 	}
 
 	for cr, comp := range unit.CompsMap {
@@ -202,9 +203,9 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 
 func evalFilter(filter map[string]interface{}, comps map[string]*CompDef) []*CompDef {
 	resComps := []*CompDef{}
-	propFilter := dataxform.SIMapGetByKeyAsString(filter, "hasProp")
+	propFilter := api.SIMapGetByKeyAsString(filter, "hasProp")
 	for _, comp := range comps {
-		if !dataxform.IsEmpty(comp.Props[propFilter]) {
+		if !api.IsEmpty(comp.Props[propFilter]) {
 			resComps = append(resComps, comp)
 		}
 	}
@@ -232,7 +233,7 @@ func processCompTree(unit *UnitDef, comp *CompDef, children []interface{}, attac
 			for childRef, subNode := range Tchild {
 				childComp := registerChild(unit, comp, childRef, attachedCompMap)
 				if childComp != nil {
-					processCompTree(unit, childComp, dataxform.IAsArr(subNode), attachedCompMap)
+					processCompTree(unit, childComp, api.IAsArr(subNode), attachedCompMap)
 				}
 			}
 		}
@@ -240,7 +241,7 @@ func processCompTree(unit *UnitDef, comp *CompDef, children []interface{}, attac
 }
 
 func (unit *UnitDef) getInitialEventCodes() []string{
-	eventCodeList := dataxform.IArrToStringArr(dataxform.SIMapGetByKeyAsList(unit.Props, "initialEventList"))
+	eventCodeList := api.IArrToStringArr(api.SIMapGetByKeyAsList(unit.Props, "initialEventList"))
 	if len(eventCodeList) == 0 {
 		eventCodeList = append(eventCodeList, EvtUnitCreate)
 	}
@@ -248,6 +249,6 @@ func (unit *UnitDef) getInitialEventCodes() []string{
 }
 
 func (unit *UnitDef) getPostRenderEventCodes() []string{
-	eventCodeList := dataxform.IArrToStringArr(dataxform.SIMapGetByKeyAsList(unit.Props, "postRenderEventList"))
+	eventCodeList := api.IArrToStringArr(api.SIMapGetByKeyAsList(unit.Props, "postRenderEventList"))
 	return eventCodeList
 }

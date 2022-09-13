@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"io"
-	"github.com/ide70/ide70/dataxform"
 	"github.com/ide70/ide70/api"
 )
 
@@ -30,7 +29,7 @@ func (comp *CompRuntime) Render(writer io.Writer) {
 	//buf := &bytes.Buffer{}
 	//comp.CompDef.CompType.Body.Execute(buf, comp.State)
 	//logger.Info(buf.String())
-	if len(comp.GenChildren) > 0 && !dataxform.SIMapGetByKeyAsBoolean(comp.State, "keepExistingGenChildren") {
+	if len(comp.GenChildren) > 0 && !api.SIMapGetByKeyAsBoolean(comp.State, "keepExistingGenChildren") {
 		comp.GenChildren = map[string]*CompRuntime{}
 	}
 	comp.CompDef.CompType.Body.Execute(writer, comp.State)

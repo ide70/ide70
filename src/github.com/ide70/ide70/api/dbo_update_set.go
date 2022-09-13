@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/ide70/ide70/dataxform"
 	"reflect"
 	//	"strings"
 )
@@ -21,6 +20,13 @@ func (dbCtx *DatabaseContext) CreateDBOUpdateSet(dboRoot *DataBaseObject) *DboUp
 
 func (updateSet *DboUpdateSet) UpdateWithData(data map[string]interface{}) *DboUpdateSet {
 	logger.Info("UpdateWithData:", data)
+	IApplyFnToNodes(data, func(entry CollectionEntry) {
+		switch siMap := entry.Value().(type) {
+		case SIMap:
+			logger.Info("auto converting key:", entry.LinearKey())
+			entry.Update(map[string]interface{}(siMap))
+		}
+	})
 	dboRoot := updateSet.dbos[""]
 	updateSet.update(dboRoot.TableName, data, "", 0)
 	for setId, dbo := range updateSet.dbos {
@@ -44,6 +50,24 @@ func (updateSet *DboUpdateSet) updateDBO(setId string, tableName string, data ma
 		updateSet.dbos[setId] = dbo
 	} else {
 		dbo.UpdateData(data)
+	}
+	for key, dbo := range updateSet.dbos {
+		logger.Info("udbo", key, dbo)
+	}
+	updateSet.updatedDBOs[setId] = true
+
+	return dbo
+}
+
+func (updateSet *DboUpdateSet) updateDBOBinary(setId string, tableName string, data *BinaryData, saveOrder int) *DataBaseObject {
+	logger.Info("updatedbo binary", setId, tableName)
+	dbo := updateSet.dbos[setId]
+	if dbo == nil {
+		dbo = updateSet.dbCtx.CreateBinaryDBO(data, tableName)
+		dbo.saveOrder = saveOrder
+		updateSet.dbos[setId] = dbo
+	} else {
+		dbo.UpdateBinaryData(data)
 	}
 	for key, dbo := range updateSet.dbos {
 		logger.Info("udbo", key, dbo)
@@ -77,11 +101,13 @@ func (updateSet *DboUpdateSet) update(tableName string, data map[string]interfac
 	dboRoot := updateSet.updateDBO(setIdPrefix, tableName, data, baseSaveOrder)
 	dataKeysToDelete := map[string]bool{}
 	logger.Info("update process loop")
-	dataxform.IApplyFnToNodes(data, func(entry dataxform.CollectionEntry) {
+	IApplyFnToNodes(data, func(entry CollectionEntry) {
+		logger.Info("--LK:", entry.LinearKey())
 		if entry.Parent() != nil {
+			logger.Info("--PK:", entry.Parent().Key())
 			if conn, has := tableStruct.connections[entry.Parent().LinearKey()]; has {
 				switch entryT := entry.(type) {
-				case *dataxform.ArrayEntry:
+				case *ArrayEntry:
 					if conn.mxTableName != "" {
 						logger.Info("entry.LinearKey():", entry.LinearKey())
 						logger.Info("conn:", conn)
@@ -92,19 +118,19 @@ func (updateSet *DboUpdateSet) update(tableName string, data map[string]interfac
 						// set new DBO to refresh by other's generated IDs
 						dboMx := updateSet.updateDBO(entry.LinearKey(), conn.mxTableName, mxData, baseSaveOrder+1)
 						dboMx.addForeignKey(&ForeignKey{columnName: "id_" + tableName, foreignDBO: dboRoot})
-						dboForeign := updateSet.update(conn.foreignTable.name, dataxform.IAsSIMap(entry.Value()), setIdPrefix+entry.LinearKey()+".F", baseSaveOrder)
+						dboForeign := updateSet.update(conn.foreignTable.name, IAsSIMap(entry.Value()), setIdPrefix+entry.LinearKey()+".F", baseSaveOrder)
 						dboMx.addForeignKey(&ForeignKey{columnName: "id_" + conn.foreignTable.name, foreignDBO: dboForeign})
 					} else {
 						logger.Info("E entry.LinearKey():", entry.LinearKey())
 						logger.Info("E conn:", conn)
 						logger.Info("E entry:", reflect.TypeOf(entry.Value()))
 
-						dboForeign := updateSet.update(conn.foreignTable.name, dataxform.IAsSIMap(entry.Value()), setIdPrefix+entry.LinearKey()+".F", baseSaveOrder+1)
+						dboForeign := updateSet.update(conn.foreignTable.name, IAsSIMap(entry.Value()), setIdPrefix+entry.LinearKey()+".F", baseSaveOrder+1)
 						dboForeign.Data["_ord"] = entryT.Index()
 						dboForeign.addForeignKey(&ForeignKey{columnName: conn.foreignColumn.name, foreignDBO: dboRoot})
 					}
 					dataKeysToDelete[entry.Parent().LinearKey()] = true
-				case *dataxform.MapEntry:
+				case *MapEntry:
 					if conn.mxTableName == "" {
 						setIdForeign := setIdPrefix + entry.Parent().LinearKey() + ".F"
 						logger.Info("S setId:", setIdForeign)
@@ -115,24 +141,35 @@ func (updateSet *DboUpdateSet) update(tableName string, data map[string]interfac
 						logger.Info("S conn:", conn)
 						logger.Info("S entry:", reflect.TypeOf(entry.Value()))
 
-						dboForeign := updateSet.update(conn.foreignTable.name, dataxform.IAsSIMap(entry.Parent().Value()), setIdForeign, baseSaveOrder+1)
+						dboForeign := updateSet.update(conn.foreignTable.name, IAsSIMap(entry.Parent().Value()), setIdForeign, baseSaveOrder+1)
 						dboForeign.addForeignKey(&ForeignKey{columnName: conn.foreignColumn.name, foreignDBO: dboRoot})
 					}
 					dataKeysToDelete[entry.Parent().LinearKey()] = true
 				}
 			}
+
+			if conn, has := tableStruct.connections[entry.Key()]; has {
+				switch valueT := entry.Value().(type) {
+				case *BinaryData:
+					logger.Info("B conn:", conn)
+					dboForeign := updateSet.updateDBOBinary(entry.LinearKey()+".F", conn.foreignTable.name, valueT, baseSaveOrder-1)
+					// update entry.Value() where dboForeign saves
+					dboRoot.addForeignKey(&ForeignKey{columnName: entry.LinearKey(), foreignDBO: dboForeign})
+				}
+			}
 		}
+
 	})
 	for dataKeyToDelete := range dataKeysToDelete {
 		var dataIf interface{} = data
-		dataxform.SIMapRemoveValue(dataKeyToDelete, &dataIf)
+		SIMapRemoveValue(dataKeyToDelete, &dataIf)
 	}
 	return dboRoot
 }
 
 func (updateSet *DboUpdateSet) DataLookup(key string) interface{} {
 	dboRoot := updateSet.dbos[""]
-	return updateSet.dataLookupFromDBO(dboRoot, dataxform.TokenizeKeyExpr(key), 0)
+	return updateSet.dataLookupFromDBO(dboRoot, TokenizeKeyExpr(key), 0)
 }
 
 func (updateSet *DboUpdateSet) dataLookupFromDBO(dboRoot *DataBaseObject, tokenizedKey []string, baseSaveOrder int) interface{} {
@@ -141,7 +178,7 @@ func (updateSet *DboUpdateSet) dataLookupFromDBO(dboRoot *DataBaseObject, tokeni
 		return nil
 	}
 	tableStruct := getTableStruct(dboRoot.TableName)
-	if conn, has := tableStruct.connections[dataxform.KeyExprToken(tokenizedKey, 0)]; has {
+	if conn, has := tableStruct.connections[KeyExprToken(tokenizedKey, 0)]; has {
 		logger.Info("connectedKey")
 		if len(tokenizedKey) == 1 {
 			if conn.mxTableName != "" {
@@ -166,25 +203,25 @@ func (updateSet *DboUpdateSet) dataLookupFromDBO(dboRoot *DataBaseObject, tokeni
 				return rv
 			}
 		}
-		if dataxform.KeyExprTokenArrIdx(tokenizedKey, 1) >= 0 {
-			setIdDboForeign := dataxform.UnTokenizeKeyExpr(tokenizedKey[:2]) + ".F"
+		if KeyExprTokenArrIdx(tokenizedKey, 1) >= 0 {
+			setIdDboForeign := UnTokenizeKeyExpr(tokenizedKey[:2]) + ".F"
 			dboForeign := updateSet.dbos[setIdDboForeign]
 
 			if conn.mxTableName != "" {
 				if dboForeign == nil {
-					keyIndex := dataxform.KeyExprTokenArrIdx(tokenizedKey, 1)
+					keyIndex := KeyExprTokenArrIdx(tokenizedKey, 1)
 					dboMx := updateSet.dbCtx.FindDBObyCriteria(conn.mxTableName, &ColumnCriteria{column: "id_" + dboRoot.TableName, value: dboRoot.Key.Value},
 						&ColumnCriteria{column: "ord", value: int64(keyIndex)})
 					logger.Info("dboMx", dboMx)
-					updateSet.addDBO(dboMx, dataxform.UnTokenizeKeyExpr(tokenizedKey[:2]), baseSaveOrder+1)
-					dboForeign = updateSet.dbCtx.FindDBO(conn.foreignTable.name, dataxform.IAsInt64(dboMx.Data["id_"+conn.foreignTable.name]))
+					updateSet.addDBO(dboMx, UnTokenizeKeyExpr(tokenizedKey[:2]), baseSaveOrder+1)
+					dboForeign = updateSet.dbCtx.FindDBO(conn.foreignTable.name, IAsInt64(dboMx.Data["id_"+conn.foreignTable.name]))
 					logger.Info("dboForeign", dboForeign)
 					updateSet.addDBO(dboForeign, setIdDboForeign, baseSaveOrder)
 				}
 				return updateSet.dataLookupFromDBO(dboForeign, tokenizedKey[2:], baseSaveOrder)
 			} else {
 				if dboForeign == nil {
-					keyIndex := dataxform.KeyExprTokenArrIdx(tokenizedKey, 1)
+					keyIndex := KeyExprTokenArrIdx(tokenizedKey, 1)
 					dboForeign = updateSet.dbCtx.FindDBObyCriteria(conn.foreignTable.name, &ColumnCriteria{column: conn.foreignColumn.name, value: dboRoot.Key.Value},
 						&ColumnCriteria{column: "_ord", value: int64(keyIndex)})
 					logger.Info("dboForeign", dboForeign)
@@ -193,7 +230,7 @@ func (updateSet *DboUpdateSet) dataLookupFromDBO(dboRoot *DataBaseObject, tokeni
 				return updateSet.dataLookupFromDBO(dboForeign, tokenizedKey[2:], baseSaveOrder+1)
 			}
 		} else { // single connecting object
-			setIdDboForeign := dataxform.UnTokenizeKeyExpr(tokenizedKey[:1]) + ".F"
+			setIdDboForeign := UnTokenizeKeyExpr(tokenizedKey[:1]) + ".F"
 			dboForeign := updateSet.dbos[setIdDboForeign]
 			if dboForeign == nil {
 				dboForeign = updateSet.dbCtx.FindDBObyCriteria(conn.foreignTable.name, &ColumnCriteria{column: conn.foreignColumn.name, value: dboRoot.Key.Value})
@@ -203,25 +240,75 @@ func (updateSet *DboUpdateSet) dataLookupFromDBO(dboRoot *DataBaseObject, tokeni
 			return updateSet.dataLookupFromDBO(dboForeign, tokenizedKey[1:], baseSaveOrder+1)
 		}
 	}
-	return dataxform.SICollGetNode(dataxform.UnTokenizeKeyExpr(tokenizedKey), dboRoot.Data)
+	
+	valueIf := SICollGetNode(UnTokenizeKeyExpr(tokenizedKey), dboRoot.Data)
+	switch value := valueIf.(type) {
+		case map[string]interface{}:
+		logger.Info("return value is map, fields to auto convert lookup")
+		for subKey, subValue := range value {
+			if conn, has := tableStruct.connections[subKey]; has {
+				// blob connection, replace with BinaryData (empty dbo with key, read data later on reqest)
+				if conn.foreignTable.tableType == TABLETYPE_BLOB {
+					logger.Info("blob conn")
+					setIdDboForeign := UnTokenizeKeyExpr(tokenizedKey[:1]) + ".F"
+					dboForeign := updateSet.dbos[setIdDboForeign]
+					if dboForeign == nil {
+						bd := &BinaryData{}
+						bd.dbCtx = updateSet.dbCtx
+						bd.tableName = conn.foreignTable.name
+						bd.key = &DataBaseObjectKey{Value: IAsInt64(subValue)}
+						logger.Info("binary data", bd)
+						logger.Info("binary data key ", *bd.key)
+						dboForeign = updateSet.dbCtx.CreateBinaryDBO(bd, conn.foreignTable.name)
+						logger.Info("dboForeign blob", dboForeign)
+						updateSet.addDBO(dboForeign, setIdDboForeign, baseSaveOrder-1)
+					}
+					value[subKey] = dboForeign.BinaryData
+				}			
+			}
+		}
+	}
+	
+				
+				
+	
+	return valueIf
+}
+
+func (updateSet *DboUpdateSet) firstInSet() *DataBaseObject {
+	for _, dbo := range updateSet.dbos {
+		return dbo
+	}
+	return nil
 }
 
 func (updateSet *DboUpdateSet) Save() {
-	for i := 0; i <= 1; i++ {
+	if len(updateSet.dbos) == 0 {
+		return
+	}
+	minSaveOrder := updateSet.firstInSet().saveOrder
+	maxSaveOrder := minSaveOrder
+	for _, dbo := range updateSet.dbos {
+		if dbo.saveOrder < minSaveOrder {
+			minSaveOrder = dbo.saveOrder
+		}
+		if dbo.saveOrder > maxSaveOrder {
+			maxSaveOrder = dbo.saveOrder
+		}
+	}
+	for i := minSaveOrder; i <= maxSaveOrder; i++ {
 		for _, dbo := range updateSet.dbos {
 			if dbo.IsMarkedToDelete() {
 				continue
 			}
-			if i > 0 {
-				dbo.UpdateForeignKeys()
-			}
 			if dbo.saveOrder == i {
+				dbo.UpdateForeignKeys()
 				dbo.Save()
 			}
 		}
 	}
 	// remove unused DBOs
-	for i := 1; i >= 0; i-- {
+	for i := maxSaveOrder; i >= minSaveOrder; i-- {
 		for _, dbo := range updateSet.dbos {
 			if !dbo.IsMarkedToDelete() {
 				continue

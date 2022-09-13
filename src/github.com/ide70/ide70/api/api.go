@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/ide70/ide70/dataxform"
 	"github.com/ide70/ide70/loader"
 	"github.com/ide70/ide70/util/log"
 	"reflect"
@@ -44,11 +43,11 @@ func (i Interface) AsMap() SIMap {
 	case SIMap:
 		return iT
 	}
-	return dataxform.IAsSIMap(i.I)
+	return IAsSIMap(i.I)
 }
 
 func (i Interface) AsArray() IArray {
-	return dataxform.IAsArr(i.I)
+	return IAsArr(i.I)
 }
 
 func (i Interface) AsITable() ITable {
@@ -71,11 +70,11 @@ func (i Interface) AsITable() ITable {
 }
 
 func (i Interface) AsString() string {
-	return dataxform.IAsString(i.I)
+	return IAsString(i.I)
 }
 
 func (i Interface) AsInt64() int64 {
-	return dataxform.IAsInt64(i.I)
+	return IAsInt64(i.I)
 }
 
 func (i Interface) AsQueryDef() *QueryDef {
@@ -176,8 +175,8 @@ func (m SIMap) ValueList() IArray {
 
 func (a IArray) Sort() IArray {
 	sort.SliceStable(a, func(i, j int) bool {
-		aiStr := dataxform.IAsString(a[i])
-		ajStr := dataxform.IAsString(a[j])
+		aiStr := IAsString(a[i])
+		ajStr := IAsString(a[j])
 		return aiStr < ajStr
 	})
 	return a
@@ -192,7 +191,7 @@ func (t ITable) PrintDBG() {
 }
 
 func (t ITable) Get(idxIf interface{}) SIMap {
-	idx := dataxform.IAsInt(idxIf)
+	idx := IAsInt(idxIf)
 	if idx < 0 || idx >= len(t) {
 		return SIMap{}
 	}
@@ -438,11 +437,11 @@ func (loadCtx *LoadContext) LoadDictAsMap(dictName string) SIMap {
 	fileAsTemplatedYaml := loader.GetTemplatedYaml(dictName, "ide70/dcfg/dict/")
 	if fileAsTemplatedYaml != nil {
 		fileData := fileAsTemplatedYaml.Def
-		itemList := dataxform.SIMapGetByKeyAsList(fileData, "items")
+		itemList := SIMapGetByKeyAsList(fileData, "items")
 		for _, itemIf := range itemList {
-			itemData := dataxform.IAsSIMap(itemIf)
-			code := dataxform.SIMapGetByKeyAsString(itemData, "code")
-			descr := dataxform.SIMapGetByKeyAsString(itemData, "descr")
+			itemData := IAsSIMap(itemIf)
+			code := SIMapGetByKeyAsString(itemData, "code")
+			descr := SIMapGetByKeyAsString(itemData, "descr")
 			res[code] = descr
 		}
 	}

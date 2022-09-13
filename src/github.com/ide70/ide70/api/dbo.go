@@ -1,9 +1,5 @@
 package api
 
-import (
-	"github.com/ide70/ide70/dataxform"
-)
-
 type DataBaseObjectKey struct {
 	Value int64
 }
@@ -15,6 +11,7 @@ type ForeignKey struct {
 
 type DataBaseObject struct {
 	Data        map[string]interface{}
+	BinaryData  *BinaryData
 	TableName   string
 	Key         *DataBaseObjectKey
 	dbCtx       *DatabaseContext
@@ -26,6 +23,11 @@ type DataBaseObject struct {
 
 func (dbCtx *DatabaseContext) CreateDBO(data map[string]interface{}, tableName string) *DataBaseObject {
 	dbo := &DataBaseObject{dbCtx: dbCtx, Data: data, TableName: tableName}
+	return dbo
+}
+
+func (dbCtx *DatabaseContext) CreateBinaryDBO(data *BinaryData, tableName string) *DataBaseObject {
+	dbo := &DataBaseObject{dbCtx: dbCtx, BinaryData: data, TableName: tableName}
 	return dbo
 }
 
@@ -74,9 +76,15 @@ func (dbo *DataBaseObject) UpdateData(data map[string]interface{}) {
 	// TODO: - detect real changes
 }
 
+func (dbo *DataBaseObject) UpdateBinaryData(data *BinaryData) {
+	dbo.BinaryData = data
+	// TODO: - detect real changes, by checksum
+}
+
 func (dbo *DataBaseObject) UpdateForeignKeys() {
 	for _, foreignKey := range dbo.foreignKeys {
-		dbo.Data[foreignKey.columnName] = foreignKey.foreignDBO.Key.Value
+		logger.Info("updating f key:", foreignKey.columnName, "to:", foreignKey.foreignDBO.Key.Value)
+		SIMapUpdateValue(foreignKey.columnName, foreignKey.foreignDBO.Key.Value, dbo.Data, true)
 	}
 }
 
@@ -91,11 +99,20 @@ func (dbo *DataBaseObject) Save() {
 	if dbo.Key == nil {
 		// new dbo
 		logger.Info("save dbo")
-		keyValue := dbo.dbCtx.CRUDGenInsert(dbo.TableName, dataxform.SIMapToJson(dbo.Data))
+		var keyValue int64
+		if dbo.BinaryData != nil {
+			keyValue = dbo.dbCtx.CRUDGenInsertBlob(dbo.TableName, dbo.BinaryData)
+		} else {
+			keyValue = dbo.dbCtx.CRUDGenInsert(dbo.TableName, SIMapToJson(dbo.Data))
+		}
 		dbo.Key = &DataBaseObjectKey{Value: keyValue}
 	} else {
 		// existing dbo
-		dbo.dbCtx.CRUDGenUpdate(dbo.TableName, dbo.Key.Value, dataxform.SIMapToJson(dbo.Data))
+		if dbo.BinaryData != nil {
+			dbo.dbCtx.CRUDGenUpdateBlob(dbo.TableName, dbo.Key.Value, dbo.BinaryData)
+		} else {
+			dbo.dbCtx.CRUDGenUpdate(dbo.TableName, dbo.Key.Value, SIMapToJson(dbo.Data))
+		}
 	}
 }
 

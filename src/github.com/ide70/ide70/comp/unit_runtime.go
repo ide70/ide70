@@ -3,7 +3,6 @@ package comp
 import (
 	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/app"
-	"github.com/ide70/ide70/dataxform"
 	"github.com/ide70/ide70/util/log"
 	"io"
 	"reflect"
@@ -190,11 +189,12 @@ func (unit *UnitRuntime) ProcessEvent(e *EventRuntime) {
 func (unit *UnitRuntime) CollectStored() map[string]interface{} {
 	m := map[string]interface{}{}
 	for _, comp := range unit.CompByChildRefId {
-		storeKey := dataxform.SIMapGetByKeyAsString(comp.State, "store")
+		storeKey := api.SIMapGetByKeyAsString(comp.State, "store")
+		// subfieldStore handling
 		if storeKey != "" {
 			logger.Info("comp:", comp.ChildRefId(), " key:", storeKey, " value:", comp.State["value"])
 			if value, has := comp.State["value"]; has {
-				dataxform.SIMapUpdateValue(storeKey, value, m, true)
+				api.SIMapUpdateValue(storeKey, value, m, true)
 			}
 		}
 	}
@@ -204,10 +204,10 @@ func (unit *UnitRuntime) CollectStored() map[string]interface{} {
 
 func (unit *UnitRuntime) InitializeStored(data map[string]interface{}) {
 	for _, comp := range unit.CompByChildRefId {
-		storeKey := dataxform.SIMapGetByKeyAsString(comp.State, "store")
+		storeKey := api.SIMapGetByKeyAsString(comp.State, "store")
 		if storeKey != "" {
 			comp.State["value"] =
-				dataxform.SICollGetNode(storeKey, data)
+				api.SICollGetNode(storeKey, data)
 			log.Info("datamap vt:", reflect.TypeOf(comp.State["value"]), storeKey)
 		}
 	}
@@ -215,12 +215,12 @@ func (unit *UnitRuntime) InitializeStored(data map[string]interface{}) {
 
 /*func (unit *UnitRuntime) InitializeStoredComp(comp *CompRuntime, data map[string]interface{}) {
 
-	storeKey := dataxform.SIMapGetByKeyAsString(comp.State, "store")
+	storeKey := api.SIMapGetByKeyAsString(comp.State, "store")
 	if storeKey == "" {
 		return
 	}
 	comp.State["value"] =
-		dataxform.SICollGetNode(storeKey, data)
+		api.SICollGetNode(storeKey, data)
 	log.Info("datamap vt:", reflect.TypeOf(comp.State["value"]), storeKey)
 
 }*/

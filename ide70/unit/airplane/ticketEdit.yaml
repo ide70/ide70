@@ -193,6 +193,8 @@
 - compType: in/file
   cr: document
   label: Document
+  store: document
+  blobConnection: documentConn
 - compType: button
   text: Save
   eventHandlers:

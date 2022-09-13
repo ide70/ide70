@@ -2,7 +2,7 @@ package codecomplete
 
 import (
 	//"fmt"
-	"github.com/ide70/ide70/dataxform"
+	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/loader"
 	"regexp"
 	"strings"
@@ -19,9 +19,9 @@ func htmlCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData m
 
 		selfAsTemplatedYaml := loader.ConvertTemplatedYaml([]byte(edContext.content), "self")
 		selfData := selfAsTemplatedYaml.Def
-		unitInterfaceData := dataxform.SIMapGetByKeyAsMap(selfData, "unitInterface")
-		ppData := dataxform.SIMapGetByKeyAsMap(selfData, "privateProperties")
-		propertyData := dataxform.SIMapGetByKeyAsMap(unitInterfaceData, "properties")
+		unitInterfaceData := api.SIMapGetByKeyAsMap(selfData, "unitInterface")
+		ppData := api.SIMapGetByKeyAsMap(selfData, "privateProperties")
+		propertyData := api.SIMapGetByKeyAsMap(unitInterfaceData, "properties")
 		propMap := map[string]string{}
 		processPropertyData(ppData, propMap)
 		processPropertyData(propertyData, propMap)
@@ -35,11 +35,11 @@ func htmlCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData m
 			return compl
 		}
 		templateConfig := fileAsTemplatedYaml.Def
-		methods := dataxform.SIMapGetByKeyAsMap(templateConfig, "methods")
+		methods := api.SIMapGetByKeyAsMap(templateConfig, "methods")
 		for methodName, methodDataIf := range methods {
-			methodData := dataxform.IAsSIMap(methodDataIf)
-			closeTag := dataxform.SIMapGetByKeyAsString(methodData, "closeTag")
-			methodDescr := dataxform.SIMapGetByKeyAsString(methodData, "descr")
+			methodData := api.IAsSIMap(methodDataIf)
+			closeTag := api.SIMapGetByKeyAsString(methodData, "closeTag")
+			methodDescr := api.SIMapGetByKeyAsString(methodData, "descr")
 			value := "{" + methodName + "}}"
 			if closeTag != "" {
 				value += "{{" + closeTag + "}}"
@@ -66,7 +66,7 @@ func htmlCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData m
 			return compl
 		}
 		templateConfig := fileAsTemplatedYaml.Def
-		methods := dataxform.SIMapGetByKeyAsMap(templateConfig, "methods")
+		methods := api.SIMapGetByKeyAsMap(templateConfig, "methods")
 		logger.Info("meth listed")
 		methodName := ""
 		methodTokenIdx := 0
@@ -86,9 +86,9 @@ func htmlCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData m
 		logger.Info("meth:", methodName)
 		logger.Info("paramNo:", paramNo)
 
-		methodData := dataxform.SIMapGetByKeyAsMap(methods, methodName)
+		methodData := api.SIMapGetByKeyAsMap(methods, methodName)
 
-		methodParams := dataxform.SIMapGetByKeyAsList(methodData, "params")
+		methodParams := api.SIMapGetByKeyAsList(methodData, "params")
 		if paramNo >= len(methodParams) {
 			return compl
 		}
@@ -96,10 +96,10 @@ func htmlCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData m
 		compl = append(compl, effectiveLoopVars(code, false)...)
 
 		methodParam := methodParams[paramNo]
-		methodParamData := dataxform.IAsSIMap(methodParam)
+		methodParamData := api.IAsSIMap(methodParam)
 		logger.Info("meth param data:", methodParamData)
-		fixedValue := dataxform.SIMapGetByKeyAsString(methodParamData, "fixedValue")
-		paramDescr := dataxform.SIMapGetByKeyAsString(methodParamData, "descr")
+		fixedValue := api.SIMapGetByKeyAsString(methodParamData, "fixedValue")
+		paramDescr := api.SIMapGetByKeyAsString(methodParamData, "descr")
 		
 		compl = append(compl, newHeader(paramDescr))
 		if fixedValue != "" {
@@ -133,10 +133,10 @@ func htmlCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData m
 		if idxAttrValueStart+1 == idxAttrValueEnd {
 			idxAttrStart := strings.LastIndex(code, " ")
 			searchAttrName := code[idxAttrStart+1 : idxAttrValueStart]
-			attrs := dataxform.SIMapGetByKeyAsList(htmlConfig, "attrs")
+			attrs := api.SIMapGetByKeyAsList(htmlConfig, "attrs")
 			for _, attrIf := range attrs {
-				attrData := dataxform.IAsSIMap(attrIf)
-				attrName := dataxform.SIMapGetByKeyAsString(attrData, "name")
+				attrData := api.IAsSIMap(attrIf)
+				attrName := api.SIMapGetByKeyAsString(attrData, "name")
 				if searchAttrName != attrName {
 					continue
 				}
@@ -153,11 +153,11 @@ func htmlCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData m
 		return compl
 	}
 
-	tags := dataxform.SIMapGetByKeyAsList(htmlConfig, "tags")
+	tags := api.SIMapGetByKeyAsList(htmlConfig, "tags")
 	for _, tagIf := range tags {
-		tagData := dataxform.IAsSIMap(tagIf)
-		tagName := dataxform.SIMapGetByKeyAsString(tagData, "name")
-		tagDescr := dataxform.SIMapGetByKeyAsString(tagData, "descr")
+		tagData := api.IAsSIMap(tagIf)
+		tagName := api.SIMapGetByKeyAsString(tagData, "name")
+		tagDescr := api.SIMapGetByKeyAsString(tagData, "descr")
 		tagCaption := "<" + tagName + ">"
 		tagValue := tagCaption + "</" + tagName + ">"
 		compl = append(compl, newCompletion(tagValue, tagCaption, tagDescr))
@@ -171,25 +171,25 @@ func processPropertyData(propertyData map[string]interface{}, res map[string]str
 		case string:
 			res[name] = dt
 		case map[string]interface{}:
-			res[name] = dataxform.SIMapGetByKeyAsString(dt, "descr")
+			res[name] = api.SIMapGetByKeyAsString(dt, "descr")
 		}
 	}
 }
 
 func completeAttr(tagName string, htmlConfig map[string]interface{}) []map[string]string {
 	compl := []map[string]string{}
-	attrs := dataxform.SIMapGetByKeyAsList(htmlConfig, "attrs")
+	attrs := api.SIMapGetByKeyAsList(htmlConfig, "attrs")
 	for _, attrIf := range attrs {
-		attrData := dataxform.IAsSIMap(attrIf)
-		if dataxform.SIMapGetByKeyIsString(attrData, "scope") {
-			if dataxform.SIMapGetByKeyAsString(attrData, "scope") != "all" {
+		attrData := api.IAsSIMap(attrIf)
+		if api.SIMapGetByKeyIsString(attrData, "scope") {
+			if api.SIMapGetByKeyAsString(attrData, "scope") != "all" {
 				continue
 			}
 		} else {
 			match := false
-			attrScope := dataxform.SIMapGetByKeyAsList(attrData, "scope")
+			attrScope := api.SIMapGetByKeyAsList(attrData, "scope")
 			for _, scopeIf := range attrScope {
-				scopeTag := dataxform.IAsString(scopeIf)
+				scopeTag := api.IAsString(scopeIf)
 				if tagName == scopeTag {
 					match = true
 				}
@@ -198,9 +198,9 @@ func completeAttr(tagName string, htmlConfig map[string]interface{}) []map[strin
 				continue
 			}
 		}
-		attrName := dataxform.SIMapGetByKeyAsString(attrData, "name")
-		attrDescr := dataxform.SIMapGetByKeyAsString(attrData, "descr")
-		attrType := dataxform.SIMapGetByKeyAsString(attrData, "type")
+		attrName := api.SIMapGetByKeyAsString(attrData, "name")
+		attrDescr := api.SIMapGetByKeyAsString(attrData, "descr")
+		attrType := api.SIMapGetByKeyAsString(attrData, "type")
 		attrCaption := attrName
 		attrValue := attrName
 		if attrType != "boolean" {

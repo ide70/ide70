@@ -1,7 +1,7 @@
 package codecomplete
 
 import (
-	"github.com/ide70/ide70/dataxform"
+	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/loader"
 	"regexp"
 	"strings"
@@ -11,17 +11,17 @@ import (
 // key1.*
 
 func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
-	folderPrefix := dataxform.SIMapGetByKeyAsString(configData, "folderPrefix")
-	fileNameExpr := dataxform.SIMapGetByKeyAsString(configData, "fileNameExpr")
-	fileNameRegex := dataxform.SIMapGetByKeyAsString(configData, "fileNameRegex")
-	fileNameRegexCrToCompType := dataxform.SIMapGetByKeyAsBoolean(configData, "fileNameRegexCrToCompType")
-	fileNameFromAutoProperty := dataxform.SIMapGetByKeyAsString(configData, "fileNameFromAutoProperty")
-	fileName := dataxform.SIMapGetByKeyAsString(configData, "fileName")
-	pathExpr := dataxform.SIMapGetByKeyAsString(configData, "pathExpr")
-	pathNodes := dataxform.SIMapGetByKeyAsBoolean(configData, "pathNodes")
-	filterExprList := dataxform.SIMapGetByKeyAsString(configData, "filterExpr")
-	self := dataxform.SIMapGetByKeyAsBoolean(configData, "self")
-	convertMapDescr := dataxform.SIMapGetByKeyAsString(configData, "convertMapDescr")
+	folderPrefix := api.SIMapGetByKeyAsString(configData, "folderPrefix")
+	fileNameExpr := api.SIMapGetByKeyAsString(configData, "fileNameExpr")
+	fileNameRegex := api.SIMapGetByKeyAsString(configData, "fileNameRegex")
+	fileNameRegexCrToCompType := api.SIMapGetByKeyAsBoolean(configData, "fileNameRegexCrToCompType")
+	fileNameFromAutoProperty := api.SIMapGetByKeyAsString(configData, "fileNameFromAutoProperty")
+	fileName := api.SIMapGetByKeyAsString(configData, "fileName")
+	pathExpr := api.SIMapGetByKeyAsString(configData, "pathExpr")
+	pathNodes := api.SIMapGetByKeyAsBoolean(configData, "pathNodes")
+	filterExprList := api.SIMapGetByKeyAsString(configData, "filterExpr")
+	self := api.SIMapGetByKeyAsBoolean(configData, "self")
+	convertMapDescr := api.SIMapGetByKeyAsString(configData, "convertMapDescr")
 
 	var fileAsTemplatedYaml *loader.TemplatedYaml
 	if self {
@@ -48,12 +48,12 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 				selfAsTemplatedYaml := loader.ConvertTemplatedYaml([]byte(edContext.content), "self")
 				selfData := selfAsTemplatedYaml.IDef
 				rePath, _ := convertYamlpathToRegex("[%].cr", yamlPos)
-				dataxform.IApplyFn(selfData, func(entry dataxform.CollectionEntry) {
+				api.IApplyFn(selfData, func(entry api.CollectionEntry) {
 					logger.Info("sleaf:", entry.LinearKey())
 					if rePath.MatchString(entry.LinearKey()) {
 						logger.Info("match")
-						if dataxform.IAsString(entry.Value()) == fileName {
-							fileName = dataxform.IAsString(entry.SameLevelValue("compType"))
+						if api.IAsString(entry.Value()) == fileName {
+							fileName = api.IAsString(entry.SameLevelValue("compType"))
 							logger.Info("comptype fileName:" + fileName)
 							entry.Stop()
 						}
@@ -66,17 +66,17 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 			selfData := selfAsTemplatedYaml.IDef
 			logger.Info("fileNameExpr:", fileNameExpr)
 			rePath, _ := convertYamlpathToRegex(fileNameExpr, yamlPos)
-			dataxform.IApplyFn(selfData, func(entry dataxform.CollectionEntry) {
+			api.IApplyFn(selfData, func(entry api.CollectionEntry) {
 				logger.Info("sleaf:", entry.LinearKey())
 				if rePath.MatchString(entry.LinearKey()) {
 					logger.Info("match")
-					fileName = dataxform.IAsString(entry.Value())
+					fileName = api.IAsString(entry.Value())
 					logger.Info("fileName:" + fileName)
 				}
 			})
 		}
 		if fileNameFromAutoProperty != "" {
-			fileName = dataxform.SIMapGetByKeyAsString(configData, fileNameFromAutoProperty)
+			fileName = api.SIMapGetByKeyAsString(configData, fileNameFromAutoProperty)
 		}
 		fileAsTemplatedYaml = loader.GetTemplatedYaml(fileName, "ide70/"+folderPrefix+"/")
 	}
@@ -85,11 +85,11 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 		logger.Info("pathExpr:", pathExpr)
 		rePath, selector := convertYamlpathToRegex(pathExpr, yamlPos)
 		if rePath != nil {
-			treeIterationFn := dataxform.IApplyFn
+			treeIterationFn := api.IApplyFn
 			if pathNodes {
-				treeIterationFn = dataxform.IApplyFnToNodes
+				treeIterationFn = api.IApplyFnToNodes
 			}
-			treeIterationFn(fileData, func(entry dataxform.CollectionEntry) {
+			treeIterationFn(fileData, func(entry api.CollectionEntry) {
 				logger.Info("leaf:", entry.LinearKey())
 				if rePath.MatchString(entry.LinearKey()) {
 					value, descr := leafValDescr(entry, selector)
@@ -105,7 +105,7 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 							logger.Info("filterExpr:", filterExpr)
 							if reFilterExpr != nil {
 								logger.Info("examine nodes")
-								dataxform.IApplyFnToNodes(fileData, func(entry dataxform.CollectionEntry) {
+								api.IApplyFnToNodes(fileData, func(entry api.CollectionEntry) {
 									logger.Info("lin key:", entry.LinearKey())
 									if reFilterExpr.MatchString(entry.LinearKey()) {
 										filterValue, _ := leafValDescr(entry, isFilterValue)
@@ -128,7 +128,7 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 							logger.Info("filtered:", value)
 							return
 						}
-						actconfigData := dataxform.SIMapLightCopy(configData)
+						actconfigData := api.SIMapLightCopy(configData)
 						if descr != "" {
 							actconfigData["descr"] = descr
 						}
@@ -144,10 +144,10 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 	return compl
 }
 
-func leafValDescr(entry dataxform.CollectionEntry, selector string) (string, string) {
+func leafValDescr(entry api.CollectionEntry, selector string) (string, string) {
 	switch selector {
 	case "value":
-		return dataxform.IAsString(entry.Value()), ""
+		return api.IAsString(entry.Value()), ""
 	case "fullKey":
 		return entry.LinearKey(), valueToDescr(entry.Value())
 	}
@@ -155,11 +155,11 @@ func leafValDescr(entry dataxform.CollectionEntry, selector string) (string, str
 }
 
 func valueToDescr(value interface{}) string {
-	valueStr := dataxform.IAsString(value)
+	valueStr := api.IAsString(value)
 	if valueStr != "" {
 		return valueStr
 	}
-	return dataxform.SIMapGetByKeyAsString(dataxform.IAsSIMap(value), "descr")
+	return api.SIMapGetByKeyAsString(api.IAsSIMap(value), "descr")
 }
 
 func convertYamlpathToRegex(path string, ypos *YamlPosition) (*regexp.Regexp, string) {

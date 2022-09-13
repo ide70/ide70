@@ -213,6 +213,17 @@ methods:
       - descr: Equals check second arg
         valueCompleter:
           templateCompleter:
+  ne:
+    descr: "Returns the boolean truth of arg1 != arg2"
+    kind: internal
+    type: boolean
+    params:
+      - descr: Not equals check first arg
+        valueCompleter:
+          templateCompleter:
+      - descr: Not equals check second arg
+        valueCompleter:
+          templateCompleter:
   not:
     descr: Negate truth of argument
     kind: internal

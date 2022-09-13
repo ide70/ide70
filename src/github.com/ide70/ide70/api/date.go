@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/ide70/ide70/dataxform"
 	"github.com/newm4n/go-dfe"
 	"time"
 )
@@ -17,36 +16,36 @@ func (dc *DateCtx) Date(year int, month time.Month, day, hour, min, sec, nsec in
 }
 
 func (dc *DateCtx) PureDate(yearI, monthI, dayI interface{}) time.Time {
-	year := dataxform.IAsInt(yearI)
-	month := dataxform.IAsInt(monthI)
-	day := dataxform.IAsInt(dayI)
+	year := IAsInt(yearI)
+	month := IAsInt(monthI)
+	day := IAsInt(dayI)
 	logger.Info("PureDate", year, month, day)
 	return time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 }
 
 func (dc *DateCtx) PureTime(hourI, minuteI, secondI interface{}) time.Time {
-	hour := dataxform.IAsInt(hourI)
-	minute := dataxform.IAsInt(minuteI)
-	second := dataxform.IAsInt(secondI)
+	hour := IAsInt(hourI)
+	minute := IAsInt(minuteI)
+	second := IAsInt(secondI)
 	logger.Info("PureTime", hour, minute, second)
 	return time.Date(0, 1, 1, hour, minute, second, 0, time.UTC)
 }
 
 func (dc *DateCtx) SetSecond(tI interface{}, secondI interface{}) time.Time {
 	t := dc.AsTime(tI)
-	second := dataxform.IAsInt(secondI)
+	second := IAsInt(secondI)
 	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), second, t.Nanosecond(), t.Location())
 }
 
 func (dc *DateCtx) SetMinute(tI interface{}, minuteI interface{}) time.Time {
 	t := dc.AsTime(tI)
-	minute := dataxform.IAsInt(minuteI)
+	minute := IAsInt(minuteI)
 	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), minute, t.Second(), t.Nanosecond(), t.Location())
 }
 
 func (dc *DateCtx) SetHour(tI interface{}, hourI interface{}) time.Time {
 	t := dc.AsTime(tI)	
-	hour := dataxform.IAsInt(hourI)
+	hour := IAsInt(hourI)
 	return time.Date(t.Year(), t.Month(), t.Day(), hour, t.Minute(), t.Second(), t.Nanosecond(), t.Location())
 }
 

@@ -33,9 +33,9 @@ unitInterface:
           name:
             descr: Name of file to include
             listHead: yes
-            valueCompleter: fileNameCompleter
-            valueCompleterParams:
-              folderPrefix: css
+            valueCompleter:
+              fileNameCompleter:
+                folderPrefix: css
 body: |
   <html>
   <head>

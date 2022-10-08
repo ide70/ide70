@@ -1,0 +1,15 @@
+---
+descr: Log levels
+items:
+  - code: TRACE
+    descr: Trace
+  - code: DEBUG
+    descr: Debug
+  - code: INFO
+    descr: Info
+  - code: WARNING
+    descr: Warning
+  - code: ERROR
+    descr: Error
+  - code: DISABLE
+    descr: Disable logging

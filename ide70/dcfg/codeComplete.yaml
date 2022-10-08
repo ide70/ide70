@@ -266,6 +266,14 @@ comp:
                     override:
                       name: listHead
                       value: yes
+                  completerRef:
+                    descr: Pre defined completer
+                    valueCompleter:
+                      yamlPathCompleter:
+                        folderPrefix: dcfg
+                        fileName: namedCompleters
+                        pathNodes: yes
+                        pathExpr: "^%$"
               valueCompleter:
                 descr: Name of completer mechanism producing possible values
                 mapHead: yes
@@ -433,3 +441,60 @@ dcfg/schema:
                 descr: Field completer for type
                 mapHead: yes
                 children: *completerNames
+"app/app.yaml":
+  description:
+    descr: Application description
+  name:
+    descr: Application path
+  port:
+    descr: Application URL port 
+  secure:
+    descr: Boolean indicating communication is over http or https
+  loginUnits:
+    descr: List of configured login points (runtime configurable)
+    mapHead: yes
+    children:
+      path:
+        descr: Path of login unit
+        listHead: yes
+        valueCompleter:
+          fileNameCompleter:
+            folderPrefix: unit
+            trimSuffix: .yaml
+        children:
+          descr:
+            descr: Description of login unit
+  connectors:
+    descr: Connectors to various resources
+    mapHead: yes
+    children:
+      mainDB:
+        descr: Primary database connection (postgresql)
+        mapHead: yes
+        children:
+          host:
+            descr: Hostname ot IP address
+          port:
+            descr: port
+          dbName:
+            descr: Database name
+          user:
+            descr: Database user
+          password:
+            descr: Database password
+  log:
+    descr: Log setting
+    mapHead: yes
+    children:
+      any:
+        descr: Log category
+        mapHead: yes
+        keyCompleter:
+          dictCompleter:
+            dictName: ide/logCategory
+        children:
+          level:
+            descr: Log level
+            valueCompleter:
+              dictCompleter:
+                dictName: ide/logLevel

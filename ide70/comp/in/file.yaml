@@ -9,6 +9,16 @@ unitInterface:
       descr: Connection to blob table
       valueCompleter:
         completerRef: dbFieldCompleter
+      default: data
+    store:
+      descr: Persistence key
+      valueCompleter:
+        completerRef: dbFieldCompleter
+  events:
+    onUploadComplete:
+      descr: Fires when upload completes
+      params:
+        binaryData: Binary data of the uploaded file
 subParts: 
   file:
     descr: File details
@@ -50,6 +60,7 @@ eventHandlers:
           upload.Put("fileName", CompCtx().UploadCtx().GetFileName());
           CompCtx().SetProp("value", upload);
           CompCtx().SetProp("progress", 100);
+          CompCtx().ForwardEvent("onUploadComplete").AddForwardParam("binaryData", CompCtx().UploadCtx().GetData());
       }
   download:
     action: |
@@ -64,6 +75,9 @@ eventHandlers:
       if(value) {
           CompCtx().SetProp("fileName", value.Get("fileName"));
       }
+  onUploadComplete:
+    action: |
+      ;
 injectRootComp:
   css:
     - name: comp/file.css

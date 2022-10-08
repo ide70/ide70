@@ -17,6 +17,8 @@
       loadUnit: airplane/seats
     - name: Tickets
       loadUnit: airplane/tickets
+    - name: Folyamat
+      loadUnit: airplane/folyamatEdit
     - name: Logout
       fireEvent: logout
       alignRight: true

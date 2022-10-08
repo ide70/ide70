@@ -69,14 +69,14 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 	compsOrder := []*CompDef{}
 	
 	for i := 0; i < len(unitIfArr); i++ {
-		logger.Info("len:", len(unitIfArr))
+		logger.Debug("len:", len(unitIfArr))
 		unitIfTag := unitIfArr[i].(map[string]interface{})
-		logger.Info("before pcd:", unitIfTag, reflect.TypeOf(unitIfTag))
+		logger.Debug("before pcd:", unitIfTag, reflect.TypeOf(unitIfTag))
 		compDef := ParseCompDef(unitIfTag, context)
-		logger.Info("after pcd")
+		logger.Debug("after pcd")
 		if compDef.Props["autoInclude"] != nil {
 			unitIfArr = append(unitIfArr, api.IAsArr(compDef.Props["autoInclude"])...)
-			logger.Info("adding comps, new len:", len(unitIfArr))
+			logger.Debug("adding comps, new len:", len(unitIfArr))
 		}
 		// handle autoInclude
 		unit.CompsMap[compDef.ChildRefId()] = compDef
@@ -86,28 +86,28 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 			unit.RootComp = compDef
 		}
 	}
-	logger.Info("components done")
+	logger.Debug("components done")
 
 	for _, comp := range unit.CompsMap {
 		if comp.Props["injectRootComp"] == nil {
 			continue
 		}
 		defs := api.AsSIMap(comp.Props["injectRootComp"])
-		logger.Info("injectRootComp defs:", defs)
+		logger.Debug("injectRootComp defs:", defs)
 		api.SIMapInjectDefaults(defs, unit.RootComp.Props)
 	}
 
 	for _, comp := range unit.CompsMap {
-		logger.Info("itc check")
+		logger.Debug("itc check")
 		if comp.Props["injectToComp"] == nil {
 			continue
 		}
-		logger.Info("injectToComp")
+		logger.Debug("injectToComp")
 		injectDefsArr := api.IAsArr(comp.Props["injectToComp"])
-		logger.Info("injectDefsArr", injectDefsArr)
+		logger.Debug("injectDefsArr", injectDefsArr)
 		for _, injectDefIf := range injectDefsArr {
 			injectDef := api.AsSIMap(injectDefIf)
-			logger.Info("injectDef", injectDef)
+			logger.Debug("injectDef", injectDef)
 
 			filter := api.IAsSIMap(injectDef["filter"])
 
@@ -115,9 +115,9 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 
 			if len(targetCompList) == 0 {
 				cr := api.IAsString(injectDef["cr"])
-				logger.Info("cr", cr)
+				logger.Debug("cr", cr)
 				targetComp := unit.CompsMap[cr]
-				logger.Info("targetComp", targetComp.ChildRefId())
+				logger.Debug("targetComp", targetComp.ChildRefId())
 				if targetComp == nil {
 					continue
 				}
@@ -125,23 +125,23 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 			}
 
 			defs := api.IAsSIMap(injectDef["defs"])
-			logger.Info("defs", defs)
+			logger.Debug("defs", defs)
 			toCopyArr := api.IAsArr(injectDef["copy"])
-			logger.Info("toCopyArr", toCopyArr)
+			logger.Debug("toCopyArr", toCopyArr)
 
 			for _, targetComp := range targetCompList {
 				if len(defs) > 0 {
-					logger.Info("adding defs: ", targetComp.ChildRefId(), defs)
-					logger.Info("before: ", targetComp.Props["eventHandlers"])
+					logger.Debug("adding defs: ", targetComp.ChildRefId(), defs)
+					logger.Debug("before: ", targetComp.Props["eventHandlers"])
 					api.SIMapInjectDefaults(defs, targetComp.Props)
-					logger.Info("after: ", targetComp.Props["eventHandlers"])
+					logger.Debug("after: ", targetComp.Props["eventHandlers"])
 				}
 
 				if toCopyArr != nil {
 					for _, toCopyIf := range toCopyArr {
 						toCopy := api.IAsString(toCopyIf)
 						targetComp.Props[toCopy] = comp.Props[toCopy]
-						logger.Info("copying: ", toCopy, comp.Props[toCopy])
+						logger.Debug("copying: ", toCopy, comp.Props[toCopy])
 					}
 					api.SIMapInjectDefaults(defs, targetComp.Props)
 				}
@@ -167,14 +167,14 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 			childrenRefs = append(childrenRefs, refs.(string))
 		}
 
-		logger.Info("children refs:", childrenRefs)
+		logger.Debug("children refs:", childrenRefs)
 		for _, childRef := range childrenRefs {
 			childDef := unit.CompsMap[childRef]
 			if childDef == nil {
 				// error
 			} else {
 				comp.Children = append(comp.Children, childDef)
-				logger.Info("child add:", childDef)
+				logger.Debug("child add:", childDef)
 				attachedCompMap[childRef] = childDef
 			}
 		}
@@ -186,7 +186,7 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 	}
 
 	childrenIf := unit.RootComp.Props["tree"]
-	logger.Info("tree scruct:", childrenIf)
+	logger.Debug("tree scruct:", childrenIf)
 	if childrenIf != nil {
 		processCompTree(unit, unit.RootComp, api.IAsArr(childrenIf), attachedCompMap)
 	}
@@ -194,7 +194,7 @@ func ParseUnit(name string, appParams *AppParams) *UnitDef {
 	for cr, comp := range unit.CompsMap {
 		if attachedCompMap[cr] == nil {
 			unit.UnattachedComps = append(unit.UnattachedComps, comp)
-			logger.Info("unattached:", cr)
+			logger.Debug("unattached:", cr)
 		}
 	}
 

@@ -14,6 +14,10 @@ type ITableW struct {
 	t ITable
 }
 
+type SIMapW struct {
+	m SIMap
+}
+
 type RowToInsert struct {
 	row SIMap
 	itablew *ITableW
@@ -42,6 +46,19 @@ func (as *Arrays) NewSIMap() SIMap {
 
 func (t ITable) Change() *ITableW {
 	return &ITableW{t: t}
+}
+
+func (m SIMap) Change() *SIMapW {
+	return &SIMapW{m: m}
+}
+
+func (m *SIMapW) Put(key string, value interface{}) *SIMapW {
+	m.m.Put(key, value)
+	return m
+}
+
+func (m *SIMapW) Finalize() SIMap {
+	return m.m
 }
 
 func (tw *ITableW) AddCol(col string, v interface{}) *ITableW {
@@ -96,7 +113,7 @@ func (m SIMap) AppendMap(am SIMap) SIMap{
 
 /*func (m SIMap) ForEach(f otto.FunctionCall) {
 	arg0 := call.Argument(0)
-	logger.Info("is fn:", arg0.IsFunction());
+	logger.Debug("is fn:", arg0.IsFunction());
 	val, _ := call.Otto.ToValue("hello")
 	valThis, _ := call.Otto.ToValue(nil)
 	arg0.Call(valThis, val)
@@ -108,9 +125,9 @@ func (r *RowToInsert) AddCol(col string, v interface{}) *RowToInsert {
 }
 
 func (r *RowToInsert) InsertAt0() *ITableW {
-	logger.Info("RowToInsert before:", r.itablew.t)
+	logger.Debug("RowToInsert before:", r.itablew.t)
 	r.itablew.t = append(ITable{r.row}, r.itablew.t...)
-	logger.Info("RowToInsert after:", r.itablew.t)
+	logger.Debug("RowToInsert after:", r.itablew.t)
 	return r.itablew
 }
 
@@ -127,7 +144,7 @@ func ensureRow(tw *ITableW) int {
 }
 
 func (tw *ITableW) Finalize() ITable {
-	logger.Info("finalize, length:", len(tw.t))
+	logger.Debug("finalize, length:", len(tw.t))
 	return tw.t
 }
 

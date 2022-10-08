@@ -19,7 +19,8 @@ var levelNamesInLog = []string{"", "", "", "WARNING: ", "ERROR: ", "", ""}
 var Prefix string
 var TTY bool = false
 
-var keyMap map[string]int = map[string]int{"": DEBUG}
+var keyMap map[string]int = map[string]int{"": INFO}
+var nameToLevelMap = map[string]int{"TRACE":TRACE, "DEBUG":DEBUG, "INFO":INFO, "WARNING":WARNING, "ERROR":ERROR, "DISABLED": OFF}
 
 type Logger struct {
 	Key string
@@ -140,8 +141,22 @@ func logMultiline(level int, s string) {
 	}
 }
 
-func SetKeyLevel(key string, level int) {
+func NameToLevel(levelName string) int {
+	level, has :=  nameToLevelMap[levelName]
+	if !has {
+		return -1
+	}
+	return level
+}
+
+func SetKeyLevel(key string, level int) bool {
+	origLevel,has := keyMap[key] 
 	keyMap[key] = level
+	return !has || level != origLevel
+}
+
+func SetLevel(level int) {
+	keyMap[""] = level
 }
 
 func GetKeyLevel(key string) int {
@@ -155,4 +170,8 @@ func GetKeyLevel(key string) int {
 
 func LevelToString(level int) string {
 	return levelNames[level]
+}
+
+func ResetKeyLevels() {
+	keyMap = map[string]int{"": INFO}
 }

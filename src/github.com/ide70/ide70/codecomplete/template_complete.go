@@ -8,7 +8,7 @@ import (
 
 func templateCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
 	code := yamlPos.valuePrefx
-	logger.Info("code:", code+"|")
+	logger.Debug("code:", code+"|")
 
 	selfAsTemplatedYaml := loader.ConvertTemplatedYaml([]byte(edContext.content), "self")
 	selfData := selfAsTemplatedYaml.Def

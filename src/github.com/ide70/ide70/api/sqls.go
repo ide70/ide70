@@ -27,7 +27,7 @@ func (dbCtx *DatabaseContext) SQLGetValue(sql string, sqlParams ...interface{}) 
 	db := dbCtx.getConnection()
 	defer db.Close()
 
-	logger.Info("sql: ", sql)
+	logger.Debug("sql: ", sql)
 	rows, err := db.Query(sql, sqlParams...)
 
 	if err != nil {
@@ -57,7 +57,7 @@ func (dbCtx *DatabaseContext) CRUDGenInsert(tableName string, data string) int64
 	defer db.Close()
 
 	sql := "insert into " + tableName + " (data) values($1) returning id;"
-	logger.Info("sql:", sql)
+	logger.Debug("sql:", sql)
 	var id int64
 	err := db.QueryRow(sql, data).Scan(&id)
 	if err != nil {
@@ -73,7 +73,7 @@ func (dbCtx *DatabaseContext) CRUDGenInsertBlob(tableName string, data *BinaryDa
 	defer db.Close()
 
 	sql := "insert into " + tableName + " (data) values($1) returning id;"
-	logger.Info("sql:", sql)
+	logger.Debug("sql:", sql)
 	var id int64
 	err := db.QueryRow(sql, *data.data).Scan(&id)
 	if err != nil {
@@ -110,9 +110,9 @@ func (dbCtx *DatabaseContext) CRUDGenFindbyCriteria(tableName string, criterias.
 	defer db.Close()
 
 	sql := "select id, data from " + tableName + " where "+criteriasToSql(criterias...)+";"
-	logger.Info("sql:", sql)
+	logger.Debug("sql:", sql)
 	args := criteriasToArgs(criterias...)
-	logger.Info("args:", args)
+	logger.Debug("args:", args)
 
 	rows, err := db.Query(sql, args...)
 

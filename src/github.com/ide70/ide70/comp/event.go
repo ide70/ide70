@@ -2,11 +2,11 @@ package comp
 
 import (
 	"fmt"
-	"net/http"
 	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/util/file"
 	"github.com/ide70/ide70/util/log"
 	"github.com/robertkrimen/otto"
+	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
@@ -76,6 +76,8 @@ type EventRuntime struct {
 	Session        *Session
 	MouseWX        int64
 	MouseWY        int64
+	KeyString      string
+	KCode		   int64
 	Params         map[string]interface{}
 }
 
@@ -134,7 +136,7 @@ func NewEventRuntime(sess *Session, unit *UnitRuntime, comp *CompRuntime, typeCo
 }
 
 type BinaryResponse struct {
-	data *[]byte
+	data        *[]byte
 	contentType string
 }
 
@@ -171,7 +173,7 @@ func (ra *ResponseAction) Write(wr http.ResponseWriter) {
 		return
 	}
 	wr.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	logger.Info("act result:", ra.Encode())
+	logger.Debug("act result:", ra.Encode())
 	wr.Write([]byte(ra.Encode()))
 }
 
@@ -191,7 +193,7 @@ func (ra *ResponseAction) Encode() string {
 	if len(ra.compsToRefresh) > 0 {
 		addSep(&sb, "|")
 		sb.WriteString(fmt.Sprintf("%d,%s", eraDirtyComps, strings.Join(ra.compsToRefresh, ",")))
-		logger.Info("REFRESH:", strings.Join(ra.compsToRefresh, ","))
+		logger.Debug("REFRESH:", strings.Join(ra.compsToRefresh, ","))
 	}
 
 	if len(ra.attrsToRefresh) > 0 {
@@ -352,7 +354,7 @@ type CompCtx struct {
 
 func (cSW *CompCtx) SetProp(key string, value interface{}) *CompCtx {
 	cSW.c.State[key] = value
-	//eventLogger.Info("cr", cSW.c.ChildRefId(), "property", key, "set to", value)
+	//eventLogger.Debug("cr", cSW.c.ChildRefId(), "property", key, "set to", value)
 	if eventType, has := cSW.c.CompDef.Triggers[key]; has {
 		cSW.ForwardEventFirst(eventType)
 	}
@@ -361,7 +363,7 @@ func (cSW *CompCtx) SetProp(key string, value interface{}) *CompCtx {
 
 func (cSW *CompCtx) RemoveProp(key string) *CompCtx {
 	delete(cSW.c.State, key)
-	eventLogger.Info("property", key, "removed")
+	eventLogger.Debug("property", key, "removed")
 	return cSW
 }
 
@@ -405,10 +407,10 @@ func (cSW *CompCtx) CompByIndexAndCrInRepeat(idx interface{}, cr string) *CompCt
 	switch pc := cSW.c.State["parentContext"].(type) {
 	case *GenerationContext:
 		genChildRefId := pc.generateChildRefWithIndex(pc, cr, idx)
-		logger.Info("genChildRefId:", genChildRefId)
-		logger.Info("pc.parentComp.GenChildren:", pc.parentComp.GenChildren)
+		logger.Debug("genChildRefId:", genChildRefId)
+		logger.Debug("pc.parentComp.GenChildren:", pc.parentComp.GenChildren)
 		comp := pc.parentComp.GenChildren[genChildRefId]
-		logger.Info("CompByIndexAndCrInRepeat comp:", comp, "idx:", idx, "cr:", cr)
+		logger.Debug("CompByIndexAndCrInRepeat comp:", comp, "idx:", idx, "cr:", cr)
 		if comp == nil {
 			return nil
 		}
@@ -458,7 +460,7 @@ func (cSW *CompCtx) ForwardEvent(eventType string) *CompCtx {
 	if eventType == "" {
 		eventType = cSW.event.TypeCode
 	}
-	logger.Info("cSW.c", cSW.c.ChildRefId())
+	logger.Debug("cSW.c", cSW.c.ChildRefId())
 	cSW.event.ResponseAction.SetForwardEvent(cSW.c, eventType)
 	return cSW
 }
@@ -467,7 +469,7 @@ func (cSW *CompCtx) ForwardEventFirst(eventType string) *CompCtx {
 	if eventType == "" {
 		eventType = cSW.event.TypeCode
 	}
-	logger.Info("cSW.c", cSW.c.ChildRefId())
+	logger.Debug("cSW.c", cSW.c.ChildRefId())
 	cSW.event.ResponseAction.SetForwardEventFirst(cSW.c, eventType)
 	return cSW
 }
@@ -504,8 +506,8 @@ func (cSW *CompCtx) ForwardToParent(parentCompCr, eventType string) *CompCtx {
 }
 
 func (cSW *CompCtx) ForwardToParentComp(parentComp *CompRuntime, eventType string) *CompCtx {
-	//logger.Info("ForwardToParentComp pc:", parentComp)
-	logger.Info("ForwardToParentComp:", parentComp.Sid(), eventType)
+	//logger.Debug("ForwardToParentComp pc:", parentComp)
+	logger.Debug("ForwardToParentComp:", parentComp.Sid(), eventType)
 	cSW.event.ResponseAction.AddParentForwardEvent(parentComp.Sid(), eventType)
 	return cSW
 }
@@ -540,7 +542,7 @@ func (cSW *CompCtx) GetParentComp() *CompCtx {
 
 func reloadUnit(e *EventRuntime, unit *UnitRuntime) {
 	unitPath := fmt.Sprintf("%s/%s", PathUnitById, unit.getID())
-	logger.Info("Reload existing unit:", unitPath)
+	logger.Debug("Reload existing unit:", unitPath)
 	e.ResponseAction.SetLoadUnit(unitPath)
 }
 
@@ -550,6 +552,14 @@ func (e *EventRuntime) CurrentComp() *CompCtx {
 
 func (e *EventRuntime) EventKey() string {
 	return e.ValueStr
+}
+
+func (e *EventRuntime) KeyStr() string {
+	return e.KeyString
+}
+
+func (e *EventRuntime) KeyCode() int64 {
+	return e.KCode
 }
 
 func (e *EventRuntime) ParentComp() *CompCtx {
@@ -574,10 +584,10 @@ func (e *EventRuntime) setPassParamteres() {
 
 func (e *EventRuntime) LoadUnitToTarget(unitName string, target *CompRuntime) {
 	if target == nil {
-		logger.Info("LoadUnit unitName", unitName)
+		logger.Debug("LoadUnit unitName", unitName)
 		e.ResponseAction.SetLoadUnit(unitName)
 	} else {
-		logger.Info("LoadUnit unitName and target", unitName, target.ChildRefId())
+		logger.Debug("LoadUnit unitName and target", unitName, target.ChildRefId())
 		e.ResponseAction.SetLoadUnitToTarget(unitName, target)
 	}
 }
@@ -593,7 +603,7 @@ func (cSW *CompCtx) InitializeStored(data map[string]interface{}) {
 	if storeKey != "" {
 		comp.State["value"] =
 			api.SICollGetNode(storeKey, data)
-		log.Info("datamap v vt key:", comp.State["value"], reflect.TypeOf(comp.State["value"]), storeKey)
+		log.Debug("datamap v vt key:", comp.State["value"], reflect.TypeOf(comp.State["value"]), storeKey)
 	}
 }
 
@@ -625,7 +635,7 @@ func (e *EventRuntime) GetSession() SessionWrapper {
 }
 
 func (e *EventRuntime) LoadParent() {
-	logger.Info("Loadparent")
+	logger.Debug("Loadparent")
 	unit := e.UnitRuntime
 	parentUnit := unit.GetParent(e.Session)
 	if parentUnit == nil {
@@ -636,7 +646,7 @@ func (e *EventRuntime) LoadParent() {
 }
 
 func (e *EventRuntime) CloseLayer() {
-	logger.Info("CloseLayer")
+	logger.Debug("CloseLayer")
 	unit := e.UnitRuntime
 	//parentUnit := unit.GetParent(e.Session)
 	// iframe-et megkeresni, src-t üresre állítani, elrejteni
@@ -646,7 +656,7 @@ func (e *EventRuntime) CloseLayer() {
 }
 
 func (e *EventRuntime) ClearAuthentication() {
-	logger.Info("Logout")
+	logger.Debug("Logout")
 	e.Session.ClearAuthentication()
 }
 
@@ -659,11 +669,11 @@ func (e *EventRuntime) CompProps() api.SIMap {
 }
 
 func (e *EventRuntime) GetParam(key string) interface{} {
-	logger.Info("GetParam:", e.Params)
+	logger.Debug("GetParam:", e.Params)
 	if e.Params == nil {
 		return nil
 	}
-	logger.Info("GetParam:", key, e.Params[key])
+	logger.Debug("GetParam:", key, e.Params[key])
 	return e.Params[key]
 }
 
@@ -709,7 +719,7 @@ func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 	vm.Set("PassParams", unit.PassContext.Params)
 	vm.Set("common_log", func(call otto.FunctionCall) otto.Value {
 		right, _ := call.Argument(0).ToString()
-		eventLogger.Info("EXE: " + right)
+		eventLogger.Debug("EXE: " + right)
 		result, _ := vm.ToValue(2)
 		return result
 	})
@@ -764,7 +774,7 @@ func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 
 	/*vm.Set("ForEach", func(call otto.FunctionCall) otto.Value {
 			arg0 := call.Argument(0)
-		logger.Info("is fn:", arg0.IsFunction());
+		logger.Debug("is fn:", arg0.IsFunction());
 		val, _ := call.Otto.ToValue("hello")
 		valThis, _ := call.Otto.ToValue(nil)
 		arg0.Call(val, val)
@@ -787,7 +797,7 @@ func (esh *UnitDefEventsHandler) AddHandler(eventType string, handler *CompEvent
 	for idx, exisingHandler := range esh.Handlers[eventType] {
 		if exisingHandler.CompDef.ChildRefId() == handler.CompDef.ChildRefId() {
 			esh.Handlers[eventType][idx] = handler
-			logger.Info("Overriding handler for:" + eventType)
+			logger.Debug("Overriding handler for:" + eventType)
 			return
 		}
 	}
@@ -809,11 +819,11 @@ func ProcessCompEvent(e *EventRuntime) {
 		logger.Debug("compDef.eh:", e.Comp.CompDef.EventsHandler)
 		e.Comp.CompDef.EventsHandler.ProcessEvent(e)
 		if len(e.ResponseAction.forward) > 0 {
-			logger.Info("event forward to type:" + e.ResponseAction.forward[0].EventType)
+			logger.Debug("event forward to type:" + e.ResponseAction.forward[0].EventType)
 			e.Comp = e.ResponseAction.forward[0].To
 			e.TypeCode = e.ResponseAction.forward[0].EventType
 			e.Params = e.ResponseAction.forward[0].Params
-			logger.Info("with params:", e.Params)
+			logger.Debug("with params:", e.Params)
 			e.ResponseAction.forward = e.ResponseAction.forward[1:]
 			continue
 		}
@@ -837,9 +847,9 @@ func newEventHandler() *EventHandler {
 func (eh *EventHandler) processEvent(e *EventRuntime) {
 	calcResult := e.UnitRuntime.EventsHandler.runJs(e, eh.JsCode)
 	if eh.PropertyKey != "" {
-		logger.Info("calc result for", eh.PropertyKey, "is", calcResult, "type:", reflect.TypeOf(calcResult))
+		logger.Debug("calc result for", eh.PropertyKey, "is", calcResult, "type:", reflect.TypeOf(calcResult))
 		e.Comp.State[eh.PropertyKey] = calcResult
-		logger.Info("calc result done")
+		logger.Debug("calc result done")
 	}
 }
 
@@ -847,19 +857,19 @@ func (eh *UnitRuntimeEventsHandler) runJs(e *EventRuntime, jsCode string) interf
 	defer func() {
 		r := recover()
 		if r != nil {
-			eventLogger.Info("Vm Run panic:", r)
+			eventLogger.Debug("Vm Run panic:", r)
 		}
 	}()
 	eh.exMutex.Lock()
 	defer eh.exMutex.Unlock()
 	eh.Vm.Set("currentEvent", e)
 	defer eh.Vm.Set("currentEvent", nil)
-	//eventLogger.Info("executing: ", jsCode)
-	//eventLogger.Info("event: ", e)
+	//eventLogger.Debug("executing: ", jsCode)
+	//eventLogger.Debug("event: ", e)
 
-	eventLogger.Info("Vm.Run: ", jsCode)
+	eventLogger.Debug("Vm.Run: ", jsCode)
 	value, err := eh.Vm.Run(jsCode)
-	eventLogger.Info("Vm.Run end")
+	eventLogger.Debug("Vm.Run end")
 	if err != nil {
 		eventLogger.Error("error evaluating script:", jsCode, err.Error())
 	}

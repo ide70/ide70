@@ -10,6 +10,8 @@ unitInterface:
       descr: Database field
       valueCompleter:
         completerRef: dbFieldCompleter
+    regenerateOnRefresh:
+      descr: Regenerate sub components on refresh
 privateProperties:
   value: Array of subcomponents data
 body: |

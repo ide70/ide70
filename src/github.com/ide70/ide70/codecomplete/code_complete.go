@@ -116,7 +116,7 @@ func findMultilineValue(lines []string, row, col int) (string, int) {
 						multilineValue.WriteString(lines[valRow][valSpaces:] + "\n")
 					}
 					multilineValue.WriteString(lines[row][valSpaces:col])
-					logger.Info("findmulti mlvalue:", multilineValue.String())
+					logger.Debug("findmulti mlvalue:", multilineValue.String())
 					return multilineValue.String(), srchRow
 				}
 			}
@@ -154,11 +154,11 @@ func getYamlPosition(lines []string, row, col int, findMultiline bool) *YamlPosi
 		if strings.HasSuffix(keyPrefix, ":") {
 			yamlPos.keyPrefix = strings.TrimSuffix(yamlPos.keyPrefix, ":")
 			yamlPos.keyComplete = true
-			logger.Info("tokens:", tokens, len(tokens))
-			logger.Info("keyRow:", keyRow)
+			logger.Debug("tokens:", tokens, len(tokens))
+			logger.Debug("keyRow:", keyRow)
 			if len(tokens) > 1 {
 				valuePrefix := tokens[1]
-				logger.Info("vp:", valuePrefix)
+				logger.Debug("vp:", valuePrefix)
 				yamlPos.valuePrefx = valuePrefix
 			}
 		}
@@ -216,7 +216,7 @@ func CodeComplete(content string, row, col int, fileName string) []map[string]st
 	}
 
 	if maxPrefix == "" {
-		logger.Info("unknown prefix:", fileName)
+		logger.Debug("unknown prefix:", fileName)
 		return compl
 	}
 
@@ -225,7 +225,7 @@ func CodeComplete(content string, row, col int, fileName string) []map[string]st
 
 	if len(compDescrFt) > 0 {
 		yamlPos := getYamlPosition(lines, row, col, true)
-		logger.Info("yP:", yamlPos)
+		logger.Debug("yP:", yamlPos)
 		compl = completerCore(yamlPos, edContext, compDescrFt, compl)
 	}
 
@@ -253,12 +253,12 @@ func sliceDeleteAt(sp *[]map[string]string, i int) {
 }
 
 func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map[string]interface{}, compl []map[string]string) []map[string]string {
-	logger.Info("cc yPk:", yamlPos.getKey())
+	logger.Debug("cc yPk:", yamlPos.getKey())
 	references := map[string]map[string]interface{}{}
 	for {
-		logger.Info("matchkeyPrefix:", yamlPos.keyPrefix)
+		logger.Debug("matchkeyPrefix:", yamlPos.keyPrefix)
 		matchingKeys, perfectMatch, anyMatch := getMatchingKeys(levelMap, yamlPos.keyPrefix)
-		logger.Info("pm:", perfectMatch, "am:", anyMatch, "mks:", matchingKeys)
+		logger.Debug("pm:", perfectMatch, "am:", anyMatch, "mks:", matchingKeys)
 		if perfectMatch {
 			keyData := api.IAsSIMap(levelMap[yamlPos.keyPrefix])
 			reference := api.SIMapGetByKeyAsString(keyData, "reference")
@@ -274,7 +274,7 @@ func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map
 					if childrenRef != "" {
 						levelMap = references[childrenRef]
 					} else {
-						logger.Info("-- no children")
+						logger.Debug("-- no children")
 					}
 				}
 				yamlPos = yamlPos.child
@@ -282,7 +282,7 @@ func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map
 			}
 
 			if yamlPos.keyComplete {
-				logger.Info("-- complete key")
+				logger.Debug("-- complete key")
 				possibleValues := api.SIMapGetByKeyAsMap(keyData, "possibleValues")
 				if len(possibleValues) > 0 {
 					matchingKeys = []string{}
@@ -303,7 +303,7 @@ func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map
 		}
 		if anyMatch {
 			keyData := api.SIMapGetByKeyAsMap(levelMap, "any")
-			logger.Info("kD:", keyData)
+			logger.Debug("kD:", keyData)
 			reference := api.SIMapGetByKeyAsString(keyData, "reference")
 			if reference != "" {
 				references[reference] = levelMap
@@ -332,17 +332,17 @@ func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map
 				} else {
 					childrenRef := api.SIMapGetByKeyAsString(keyData, "childrenRef")
 					if childrenRef == "self" {
-						logger.Info("childrenRef self")
+						logger.Debug("childrenRef self")
 						yamlPos = yamlPos.child
 						continue
 					} else if childrenRef != "" {
-						logger.Info("childrenRef:", childrenRef)
+						logger.Debug("childrenRef:", childrenRef)
 						levelMap = references[childrenRef]
-						logger.Info("levelMap:", levelMap)
+						logger.Debug("levelMap:", levelMap)
 						yamlPos = yamlPos.child
 						continue
 					} else {
-						logger.Info("-- no children")
+						logger.Debug("-- no children")
 						break
 					}
 				}
@@ -353,12 +353,12 @@ func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map
 			}
 
 		}
-		logger.Info("pmatch check mks:", matchingKeys)
+		logger.Debug("pmatch check mks:", matchingKeys)
 
 		for _, matchingKey := range matchingKeys {
 			keyPrefix := ""
 			keyPostfix := ": "
-			logger.Info("matchKey:", matchingKey)
+			logger.Debug("matchKey:", matchingKey)
 			// short form: key has only a description
 			if api.SIMapGetByKeyIsString(levelMap, matchingKey) {
 				keyDescr := api.SIMapGetByKeyAsString(levelMap, matchingKey)
@@ -376,7 +376,7 @@ func completerCore(yamlPos *YamlPosition, edContext *EditorContext, levelMap map
 }
 
 func addValueCompletion(value, descr string, edContext *EditorContext, keyData map[string]interface{}, compl []map[string]string) []map[string]string {
-	logger.Info("addValueCompletion:", value)
+	logger.Debug("addValueCompletion:", value)
 	keyPrefix := ""
 	captionPostfix := ""
 	quote := api.SIMapGetByKeyAsString(keyData, "quote")
@@ -400,7 +400,7 @@ func addValueCompletion(value, descr string, edContext *EditorContext, keyData m
 }
 
 func addCompletion(value string, edContext *EditorContext, keyData map[string]interface{}, compl []map[string]string) []map[string]string {
-	logger.Info("addCompletion:", value)
+	logger.Debug("addCompletion:", value)
 	keyPrefix := ""
 	keyPostfix := ": "
 	captionPostfix := ""
@@ -444,7 +444,7 @@ func addCompletion(value string, edContext *EditorContext, keyData map[string]in
 		keyPrefix = quote
 		keyPostfix = quote
 	}
-	logger.Info("finish:")
+	logger.Debug("finish:")
 	return append(compl, newCompletion(keyPrefix+value+keyPostfix, value+captionPostfix, keyDescr))
 }
 
@@ -452,8 +452,8 @@ func lookupCompleter(completerType string, keyData map[string]interface{}) (Valu
 	completerKey := completerType + "Completer"
 	completerMap := api.SIMapGetByKeyAsMap(keyData, completerKey)
 	if len(completerMap) != 1 {
-		logger.Info("no completer / multiple completers")
-		logger.Info("completerType:", completerType)
+		logger.Debug("no completer / multiple completers")
+		logger.Debug("completerType:", completerType)
 		return nil, nil
 	}
 	completerName, completerParamsIf := api.GetOnlyEntry(completerMap)
@@ -492,10 +492,10 @@ func lookupCompleter(completerType string, keyData map[string]interface{}) (Valu
 	
 	configData["handleChildren"] = false
 	if len(completerParamsList) > 0 {
-		logger.Info("range completerParamsList")
+		logger.Debug("range completerParamsList")
 		for _,subCompleterIf := range completerParamsList {
 			key,_ := api.GetOnlyEntry(api.IAsSIMap(subCompleterIf))
-			logger.Info("key", key)
+			logger.Debug("key", key)
 			if key == "yamlDataCompleter" {
 				configData["handleChildren"] = true
 			}
@@ -510,7 +510,7 @@ func lookupCompleter(completerType string, keyData map[string]interface{}) (Valu
 	}
 
 	if completerName != "" {
-		logger.Info(completerType+"Completer:", completerName)
+		logger.Debug(completerType+"Completer:", completerName)
 		completer := completers[completerName]
 		if completer != nil {
 			return completer, configData
@@ -524,7 +524,7 @@ func getMatchingKeys(level map[string]interface{}, keyPrefix string) ([]string, 
 	perfectMatch := false
 	anyMatch := false
 	for k, _ := range level {
-		logger.Info("lvl key prefix:", k)
+		logger.Debug("lvl key prefix:", k)
 		if k == "any" {
 			//matching = append(matching, keyPrefix)
 			anyMatch = true

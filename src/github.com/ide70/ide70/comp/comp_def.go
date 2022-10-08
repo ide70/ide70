@@ -15,7 +15,7 @@ type CompDef struct {
 }
 
 func ParseCompDef(def map[string]interface{}, context *UnitDefContext) *CompDef {
-	logger.Info("ParseCompDef", def)
+	logger.Debug("ParseCompDef", def)
 	compDef := &CompDef{}
 	compTypeName := def["compType"].(string)
 	compDef.CompType = GetCompType(compTypeName, context.appParams)
@@ -25,11 +25,11 @@ func ParseCompDef(def map[string]interface{}, context *UnitDefContext) *CompDef 
 	accDefCopy := api.IAsSIMap(api.SIMapCopy(compDef.CompType.AccessibleDef))
 	api.SIMapInjectDefaults(accDefCopy, compDef.Props)
 
-	logger.Info("ParseCompDef id before")
+	logger.Debug("ParseCompDef id before")
 	if def["cr"] == nil {
 		def["cr"] = context.getNextId(compTypeName)
 	}
-	logger.Info("ParseCompDef id", def["cr"])
+	logger.Debug("ParseCompDef id", def["cr"])
 
 	//compDef.EventsHandler = ParseEventHandlers(def, compDef.CompType.EventsHandler, context, compDef)
 
@@ -38,7 +38,7 @@ func ParseCompDef(def map[string]interface{}, context *UnitDefContext) *CompDef 
 	parseTriggerDefs(def, compDef)
 	parseUnitRelatedDefs(def, context)
 
-	logger.Info("ParseCompDef end")
+	logger.Debug("ParseCompDef end")
 
 	return compDef
 }
@@ -67,7 +67,7 @@ func parseUnitRelatedDefs(def map[string]interface{}, context *UnitDefContext) {
 		srcProp := api.SIMapGetByKeyAsString(copyitem, "srcProp")
 		dstProp := api.SIMapGetByKeyAsString(copyitem, "dstProp")
 		context.unitDef.Props[dstProp] = def[srcProp]
-		logger.Info("unit poperty:", dstProp, context.unitDef.Props[dstProp])
+		logger.Debug("unit poperty:", dstProp, context.unitDef.Props[dstProp])
 	}
 }
 
@@ -77,7 +77,7 @@ func parseCalcs(def map[string]interface{}, context *UnitDefContext, compDef *Co
 			value := api.IAsString(entry.Value())
 			if value != "" {
 				calc := &Calc{Comp: compDef, PropertyKey: entry.Parent().Key(), jsCode: value}
-				logger.Info("calc added:", *calc)
+				logger.Debug("calc added:", *calc)
 				context.unitDef.CalcArr = append(context.unitDef.CalcArr, calc)
 			}
 		}
@@ -94,7 +94,7 @@ func parseExternalReferences(def map[string]interface{}, context *UnitDefContext
 				// betölteni
 				extConfig := loader.GetTemplatedYaml(fileName, "ide70/dcfg/")
 				value := api.SIMapGetByKeyChain(extConfig.Def, key)
-				logger.Info("external definition:", key, value)
+				logger.Debug("external definition:", key, value)
 				entry.Parent().Update(value)
 			}
 		}
@@ -105,9 +105,9 @@ func ParseEventHandlers(def map[string]interface{}, superEventsHandler *CompDefE
 	eventsHandler := newEventsHandler()
 
 	if compDef != nil {
-		logger.Info("processing events for:", compDef.ChildRefId())
+		logger.Debug("processing events for:", compDef.ChildRefId())
 	}
-	//logger.Info("ParseEventHandlers super:", superEventsHandler)
+	//logger.Debug("ParseEventHandlers super:", superEventsHandler)
 	var initEventCodeList map[string]bool
 	
 	if context != nil {
@@ -120,19 +120,19 @@ func ParseEventHandlers(def map[string]interface{}, superEventsHandler *CompDefE
 	}
 	
 	eventHandlers := api.SIMapGetByKeyAsMap(def, "eventHandlers")
-	logger.Info("ehs:", eventHandlers)
+	logger.Debug("ehs:", eventHandlers)
 	if superEventsHandler != nil {
 		for eventType, handler := range superEventsHandler.Handlers {
 			if initEventCodeList[eventType] {
-				logger.Info("add super event to unit:"+eventType )
+				logger.Debug("add super event to unit:"+eventType )
 				context.unitDef.EventsHandler.AddHandler(eventType, &CompEventHandler{CompDef: compDef, EventHandler: handler})
 			}
-			logger.Info("add super event to comp:",eventType, " " ,len(handler.JsCode) )
+			logger.Debug("add super event to comp:",eventType, " " ,len(handler.JsCode) )
 			eventsHandler.AddHandler(eventType, handler)
 		}
 	}
 
-	//logger.Info("ParseEventHandlers def:", def)
+	//logger.Debug("ParseEventHandlers def:", def)
 	for eventType, eventPropsIf := range eventHandlers {
 		eventProps := api.AsSIMap(eventPropsIf)
 		eventAction := api.SIMapGetByKeyAsString(eventProps, "action")
@@ -140,15 +140,15 @@ func ParseEventHandlers(def map[string]interface{}, superEventsHandler *CompDefE
 		eventHandler.JsCode = eventAction
 		eventHandler.PropertyKey = api.SIMapGetByKeyAsString(eventProps, "propertyKey")
 		if initEventCodeList[eventType] {
-			logger.Info("add event to unit:"+eventType )
+			logger.Debug("add event to unit:"+eventType )
 			context.unitDef.EventsHandler.AddHandler(eventType, &CompEventHandler{CompDef: compDef, EventHandler: eventHandler})
 		}
-		logger.Info("add event to comp:",eventType , " " ,len(eventAction) )
+		logger.Debug("add event to comp:",eventType , " " ,len(eventAction) )
 		eventsHandler.AddHandler(eventType, eventHandler)
 	}
-	logger.Info("eventsHandler created:")
+	logger.Debug("eventsHandler created:")
 	for k,v:= range eventsHandler.Handlers {
-		logger.Info("evhan:", k, len(v.JsCode))
+		logger.Debug("evhan:", k, len(v.JsCode))
 	}
 	return eventsHandler
 }

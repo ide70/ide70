@@ -16,7 +16,7 @@ func idCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 
 	if fileAsTemplatedYaml != nil {
 		fileData := fileAsTemplatedYaml.IDef
-		logger.Info("srcExpr1:", srcExpr1)
+		logger.Debug("srcExpr1:", srcExpr1)
 		srcVal1 := firstMatchValue(srcExpr1, yamlPos, fileData)
 		if srcExpr2 != "" {
 			srcVal1 += " " + firstMatchValue(srcExpr2, yamlPos, fileData)
@@ -30,9 +30,35 @@ func idCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 	return compl
 }
 
+var autoRelpace = map[string]string{
+	"á": "a",
+	"é": "e",
+	"í": "i",
+	"ó": "o",
+	"ö": "o",
+	"ő": "o",
+	"ú": "u",
+	"ü": "u",
+	"ű": "u",
+	"Á": "A",
+	"É": "E",
+	"Í": "I",
+	"Ó": "O",
+	"Ö": "O",
+	"Ő": "O",
+	"Ú": "U",
+	"Ü": "U",
+	"Ű": "U",
+	"!": "",
+}
+
 func idCreate(s string) string {
 	s = splitCapitalize(s, " ")
 	s = splitCapitalize(s, "/")
+	for f, t := range autoRelpace {
+		s = strings.ReplaceAll(s, f, t)
+	}
+
 	return s
 }
 
@@ -50,10 +76,10 @@ func firstMatchValue(expr string, yamlPos *YamlPosition, data interface{}) strin
 	value := ""
 	re, isValue := convertYamlpathToRegex(expr, yamlPos)
 	api.IApplyFn(data, func(entry api.CollectionEntry) {
-		logger.Info("leaf:", entry.LinearKey())
+		logger.Debug("leaf:", entry.LinearKey())
 		if re.MatchString(entry.LinearKey()) {
-			logger.Info("match")
-			value,_ = leafValDescr(entry, isValue)
+			logger.Debug("match")
+			value, _ = leafValDescr(entry, isValue)
 			entry.Stop()
 		}
 	})

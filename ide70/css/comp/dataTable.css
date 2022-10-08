@@ -13,3 +13,7 @@ table.datatable td, table.datatable th {
 table.datatable tr:nth-child(even) {
     background-color: #dddddd;
 }
+
+table.datatable td:focus {
+    background-color: lightblue;
+}

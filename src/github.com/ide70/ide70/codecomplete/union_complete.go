@@ -6,7 +6,7 @@ import (
 )
 
 func unionCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
-	logger.Info("unionCompleter configData:", configData)
+	logger.Debug("unionCompleter configData:", configData)
 	subCompleters := api.SIMapGetByKeyAsList(configData, "paramsList")
 	completerType := api.SIMapGetByKeyAsString(configData, "completerType")
 	descrPostfix := api.SIMapGetByKeyAsString(configData, "descrPostfix")
@@ -22,7 +22,7 @@ func unionCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData 
 				subConfigData["table"] = configData["table"]
 				res := completer(yamlPos, edContext, subConfigData, compl)
 				compl = append(compl, res...)
-				logger.Info("len(res):", len(res))
+				logger.Debug("len(res):", len(res))
 				if len(res)>0 && firstNonemptyOnly {
 					break
 				}

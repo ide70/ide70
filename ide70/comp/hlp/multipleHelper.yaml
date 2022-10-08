@@ -1,0 +1,42 @@
+---
+unitInterface:
+  descr: Multiple helper
+privateProperties:
+  initializatonFinished:
+    descr: Initializaton finished flag. No component data initialization if ture
+    default: false
+injectToUnit:
+  initialEventList:
+    - onDataLoad
+  postRenderEventList:
+    - onRenderFinished
+injectToComp:
+  - filter:
+      hasProp: multiKey
+    defs:
+      eventHandlers:
+        onDataLoad:
+          action: |
+            Api().Logger().Info("odl:", CompCtx().Comp().ChildRefId());
+            var crMultipleHelper = CompCtx().GetUnit().GetProp("crMultipleHelper");
+            Api().Logger().Info("crMultipleHelper:", crMultipleHelper);
+            var multipleHelper = CompByCr(crMultipleHelper);
+            Api().Logger().Info("multipleHelper:", multipleHelper);
+            //var initializatonFinished = multipleHelper.GetProp("initializatonFinished");
+            //if(!initializatonFinished) {
+                Api().Logger().Info("initval");
+                var tbl = multipleHelper.GetPropToCast("value").AsITable();
+                var row = tbl.Get(CompCtx().RepeatIdx());
+                var multiKey = CompCtx().GetProp("multiKey");
+                var multiTargetProp = CompCtx().GetProp("multiTargetProp");
+                var val = row.Get(multiKey);
+                Api().Logger().Info("val:", val);
+                CompCtx().SetProp(multiTargetProp, val);
+            //}
+copyPropertyToUnit:
+  - srcProp: cr
+    dstProp: crMultipleHelper
+eventHandlers:
+  onRenderFinished:
+    action: |
+      CompCtx().SetProp("initializatonFinished", true);

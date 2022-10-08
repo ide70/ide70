@@ -17,11 +17,11 @@ func initSchemaInfo(dbCtx *DatabaseContext) {
 
 func ensureTable(dbCtx *DatabaseContext, tableName string, tableType string) {
 	if dbCtx.SchemaInfo == nil {
-		logger.Info("initSchemaInfo")
+		logger.Debug("initSchemaInfo")
 		initSchemaInfo(dbCtx)
 	}
 	if dbCtx.SchemaInfo.Tables[tableName] == nil {
-		logger.Info("no table", tableName, "exists in schemaInfo")
+		logger.Debug("no table", tableName, "exists in schemaInfo")
 		tableExists := IAsBool(dbCtx.SQLGetValue(
 			`SELECT EXISTS (
    SELECT FROM information_schema.tables 
@@ -30,7 +30,7 @@ func ensureTable(dbCtx *DatabaseContext, tableName string, tableType string) {
    );`, dbCtx.SchemaInfo.currentSchema, tableName))
 
 		if !tableExists {
-			logger.Info("Creating table:", tableName)
+			logger.Debug("Creating table:", tableName)
 			// read configuration
 			// related tables, etc.
 			createTable(dbCtx, tableName, tableType)

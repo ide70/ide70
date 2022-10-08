@@ -83,7 +83,7 @@ func (dbo *DataBaseObject) UpdateBinaryData(data *BinaryData) {
 
 func (dbo *DataBaseObject) UpdateForeignKeys() {
 	for _, foreignKey := range dbo.foreignKeys {
-		logger.Info("updating f key:", foreignKey.columnName, "to:", foreignKey.foreignDBO.Key.Value)
+		logger.Debug("updating f key:", foreignKey.columnName, "to:", foreignKey.foreignDBO.Key.Value)
 		SIMapUpdateValue(foreignKey.columnName, foreignKey.foreignDBO.Key.Value, dbo.Data, true)
 	}
 }
@@ -98,7 +98,7 @@ func (dbo *DataBaseObject) Save() {
 	}
 	if dbo.Key == nil {
 		// new dbo
-		logger.Info("save dbo")
+		logger.Debug("save dbo")
 		var keyValue int64
 		if dbo.BinaryData != nil {
 			keyValue = dbo.dbCtx.CRUDGenInsertBlob(dbo.TableName, dbo.BinaryData)
@@ -118,7 +118,7 @@ func (dbo *DataBaseObject) Save() {
 
 func (dbo *DataBaseObject) Delete() {
 	if dbo.Key != nil {
-		logger.Info("delete dbo")
+		logger.Debug("delete dbo")
 		dbo.dbCtx.CRUDGenDelete(dbo.TableName, dbo.Key.Value)
 	}
 }

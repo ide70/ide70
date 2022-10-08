@@ -37,6 +37,9 @@
   - key: new_file
     title: Create New File
     icon: far fa-file
+  - key: upload_file
+    title: Upload File
+    icon: far fa-file
   - key: new_folder
     title: Create New Folder
     icon: fa fa-folder
@@ -51,6 +54,11 @@
     menu_new_file:
       action: |
         CompByCr("firstLayer").ForwardEvent("show").LoadUnitInto("ide/createNewFile")
+        .AddPassParam("dirName", Event().GetParam("path"))
+        .AddPassParam("dirComp", Event().GetParam("dirComp"));
+    menu_upload_file:
+      action: |
+        CompByCr("firstLayer").ForwardEvent("show").LoadUnitInto("ide/uploadFile")
         .AddPassParam("dirName", Event().GetParam("path"))
         .AddPassParam("dirComp", Event().GetParam("dirComp"));
     menu_new_folder:

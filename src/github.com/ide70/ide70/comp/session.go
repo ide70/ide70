@@ -17,6 +17,7 @@ type Session struct {
 	attrs     map[string]interface{} // Session attributes
 	UnitCache *UnitCache
 	passItems map[string]*PassItem
+	accessPrefix string
 }
 
 type PassItem struct {
@@ -30,9 +31,9 @@ type PassContext struct {
 	ParentUnitId string
 }
 
-func NewSession() *Session {
+func NewSession(accessPrefix string) *Session {
 	now := time.Now()
-	return &Session{ID: genID(), IsNew: true, Created: now, accessed: now, Timeout: 30 * time.Minute, rwMutex: &sync.RWMutex{}, UnitCache: NewUnitCache(), attrs: map[string]interface{}{}, passItems: map[string]*PassItem{}}
+	return &Session{ID: genID(), IsNew: true, Created: now, accessed: now, Timeout: 30 * time.Minute, rwMutex: &sync.RWMutex{}, UnitCache: NewUnitCache(), attrs: map[string]interface{}{}, passItems: map[string]*PassItem{}, accessPrefix:accessPrefix}
 }
 
 // Valid characters (bytes) to be used in session IDs
@@ -156,5 +157,9 @@ func (s *Session) cleanupPassParameters() {
 
 func (sess *Session) DeleteUnit(unit *UnitRuntime) {
 	delete(sess.UnitCache.ActiveUnits, unit.getID())
-	logger.Info("Active unints in session:", len(sess.UnitCache.ActiveUnits))
+	logger.Debug("Active unints in session:", len(sess.UnitCache.ActiveUnits))
+}
+
+func (sess *Session) Accessible(action string) bool {
+	return sess.accessPrefix == action
 }

@@ -19,6 +19,7 @@ type UnitRuntime struct {
 	EventsHandler    *UnitRuntimeEventsHandler
 	Application      *app.Application
 	IDSeq            int64
+	appParams *AppParams
 }
 
 type AppParams struct {
@@ -40,6 +41,7 @@ func (unit *UnitRuntime) registerComp(compRuntime *CompRuntime) {
 
 func InstantiateUnit(name string, app *app.Application, appParams *AppParams, passContext *PassContext) *UnitRuntime {
 	unitRuntime := &UnitRuntime{}
+	unitRuntime.appParams = appParams
 	unitRuntime.PassContext = passContext
 	unitRuntime.Application = app
 	unitRuntime.CompRegistry = map[int64]*CompRuntime{}
@@ -52,9 +54,9 @@ func InstantiateUnit(name string, app *app.Application, appParams *AppParams, pa
 			return nil
 		}
 		UnitDefCache[name] = unitDef
-		unitLogger.Info("unit definition parsed and cached")
+		unitLogger.Debug("unit definition parsed and cached")
 	} else {
-		unitLogger.Info("unit definition read from cache")
+		unitLogger.Debug("unit definition read from cache")
 	}
 
 	unitRuntime.UnitDef = unitDef
@@ -74,14 +76,14 @@ func (unit *UnitRuntime) initialCalcs() {
 		comp := unit.CompByChildRefId[calc.Comp.ChildRefId()]
 		e := NewEventRuntime(nil, unit, comp, "calc", "")
 		calcResult := unit.EventsHandler.runJs(e, calc.jsCode)
-		logger.Info("calc result for", calc.PropertyKey, "is", calcResult, "type:", reflect.TypeOf(calcResult))
+		logger.Debug("calc result for", calc.PropertyKey, "is", calcResult, "type:", reflect.TypeOf(calcResult))
 		comp.State[calc.PropertyKey] = calcResult
 	}
 }
 
 func RefreshUnitDef(name string) {
 	delete(UnitDefCache, name)
-	logger.Info("refresh unit def:", name)
+	logger.Debug("refresh unit def:", name)
 }
 
 func RefreshCompType(name string) {
@@ -89,7 +91,7 @@ func RefreshCompType(name string) {
 	CompCache = map[string]*CompType{}
 	//drop all unit defs
 	UnitDefCache = map[string]*UnitDef{}
-	logger.Info("refresh comp type:", name)
+	logger.Debug("refresh comp type:", name)
 }
 
 func (unit *UnitRuntime) InstantiateComp(compDef *CompDef, genChildRefId string) *CompRuntime {
@@ -131,7 +133,7 @@ func (unit *UnitRuntime) getID() string {
 
 func (unit *UnitRuntime) ProcessInitEventsComp(comp *CompRuntime) {
 	eventCodeList := unit.UnitDef.getInitialEventCodes()
-	//logger.Info("IEC eventCodeList for",comp.ChildRefId(), eventCodeList)
+	//logger.Debug("IEC eventCodeList for",comp.ChildRefId(), eventCodeList)
 	for _, eventCode := range eventCodeList {
 		e := NewEventRuntime(nil, unit, comp, eventCode, "")
 		ProcessCompEvent(e)
@@ -140,7 +142,7 @@ func (unit *UnitRuntime) ProcessInitEventsComp(comp *CompRuntime) {
 
 func (unit *UnitRuntime) ProcessInitEvents(sess *Session) {
 	eventCodeList := unit.UnitDef.getInitialEventCodes()
-	//logger.Info("eventCodeList:",eventCodeList)
+	//logger.Debug("eventCodeList:",eventCodeList)
 	for _, eventCode := range eventCodeList {
 		e := NewEventRuntime(sess, unit, nil, eventCode, "")
 		unit.ProcessEvent(e)
@@ -149,7 +151,7 @@ func (unit *UnitRuntime) ProcessInitEvents(sess *Session) {
 
 func (unit *UnitRuntime) ProcessPostRenderEvents(sess *Session) {
 	eventCodeList := unit.UnitDef.getPostRenderEventCodes()
-	logger.Info("post render eventCodeList:",eventCodeList)
+	logger.Debug("post render eventCodeList:",eventCodeList)
 	for _, eventCode := range eventCodeList {
 		e := NewEventRuntime(sess, unit, nil, eventCode, "")
 		unit.ProcessEvent(e)
@@ -158,12 +160,12 @@ func (unit *UnitRuntime) ProcessPostRenderEvents(sess *Session) {
 
 // process unit lifecycle events
 func (unit *UnitRuntime) ProcessEvent(e *EventRuntime) {
-	logger.Info("ProcessEvent:", e.TypeCode)
-	logger.Info("handlers", unit.UnitDef.EventsHandler.Handlers)
+	logger.Debug("ProcessEvent:", e.TypeCode)
+	logger.Debug("handlers", unit.UnitDef.EventsHandler.Handlers)
 	compDefHandlers := unit.UnitDef.EventsHandler.Handlers[e.TypeCode]
 	for _, compDefHandler := range compDefHandlers {
 		comp := unit.CompByChildRefId[compDefHandler.CompDef.ChildRefId()]
-		//logger.Info("On comp", comp.ChildRefId())
+		//logger.Debug("On comp", comp.ChildRefId())
 		if comp == nil {
 			logger.Warning("UnitRuntime ProcessEvent: component not found")
 		}
@@ -172,11 +174,11 @@ func (unit *UnitRuntime) ProcessEvent(e *EventRuntime) {
 		for {
 			eh.processEvent(e)
 			if len(e.ResponseAction.forward) > 0 {
-				logger.Info("unit event forward to type:" + e.ResponseAction.forward[0].EventType)
+				logger.Debug("unit event forward to type:" + e.ResponseAction.forward[0].EventType)
 				e.Comp = e.ResponseAction.forward[0].To
 				e.TypeCode = e.ResponseAction.forward[0].EventType
 				e.Params = e.ResponseAction.forward[0].Params
-				logger.Info("with params:", e.Params)
+				logger.Debug("with params:", e.Params)
 				e.ResponseAction.forward = e.ResponseAction.forward[1:]
 				eh = e.Comp.CompDef.EventsHandler.Handlers[e.TypeCode]
 				continue
@@ -192,13 +194,13 @@ func (unit *UnitRuntime) CollectStored() map[string]interface{} {
 		storeKey := api.SIMapGetByKeyAsString(comp.State, "store")
 		// subfieldStore handling
 		if storeKey != "" {
-			logger.Info("comp:", comp.ChildRefId(), " key:", storeKey, " value:", comp.State["value"])
+			logger.Debug("comp:", comp.ChildRefId(), " key:", storeKey, " value:", comp.State["value"])
 			if value, has := comp.State["value"]; has {
 				api.SIMapUpdateValue(storeKey, value, m, true)
 			}
 		}
 	}
-	log.Info("CollectStored:", m)
+	log.Debug("CollectStored:", m)
 	return m
 }
 
@@ -208,7 +210,7 @@ func (unit *UnitRuntime) InitializeStored(data map[string]interface{}) {
 		if storeKey != "" {
 			comp.State["value"] =
 				api.SICollGetNode(storeKey, data)
-			log.Info("datamap vt:", reflect.TypeOf(comp.State["value"]), storeKey)
+			log.Debug("datamap vt:", reflect.TypeOf(comp.State["value"]), storeKey)
 		}
 	}
 }
@@ -221,7 +223,7 @@ func (unit *UnitRuntime) InitializeStored(data map[string]interface{}) {
 	}
 	comp.State["value"] =
 		api.SICollGetNode(storeKey, data)
-	log.Info("datamap vt:", reflect.TypeOf(comp.State["value"]), storeKey)
+	log.Debug("datamap vt:", reflect.TypeOf(comp.State["value"]), storeKey)
 
 }*/
 
@@ -230,6 +232,9 @@ func (unit *UnitRuntime) DBContext() *api.DatabaseContext {
 }
 
 func (unit *UnitRuntime) GetParent(sess *Session) *UnitRuntime {
+	if unit.PassContext == nil {
+		return nil
+	}
 	return sess.UnitCache.ActiveUnits[unit.PassContext.ParentUnitId]
 }
 

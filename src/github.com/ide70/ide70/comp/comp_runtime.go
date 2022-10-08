@@ -28,7 +28,7 @@ func init() {
 func (comp *CompRuntime) Render(writer io.Writer) {
 	//buf := &bytes.Buffer{}
 	//comp.CompDef.CompType.Body.Execute(buf, comp.State)
-	//logger.Info(buf.String())
+	//logger.Debug(buf.String())
 	if len(comp.GenChildren) > 0 && !api.SIMapGetByKeyAsBoolean(comp.State, "keepExistingGenChildren") {
 		comp.GenChildren = map[string]*CompRuntime{}
 	}
@@ -37,15 +37,15 @@ func (comp *CompRuntime) Render(writer io.Writer) {
 
 func (comp *CompRuntime) RenderSub(subCompName string, writer io.Writer) {
 	subTemplate := comp.CompDef.CompType.SubBodies[subCompName]
-	logger.Info("RenderSub")
+	logger.Debug("RenderSub")
 	if subTemplate != nil {
-		logger.Info("RenderSub has template")
+		logger.Debug("RenderSub has template")
 		if comp.IsEventDefined(EvtBeforeCompRefresh) {
-			logger.Info("event defined")
+			logger.Debug("event defined")
 			e := NewEventRuntime(nil, comp.Unit, comp, EvtBeforeCompRefresh, "")
 			ProcessCompEvent(e)
 		} else {
-			logger.Info("event not defined")
+			logger.Debug("event not defined")
 		}
 
 		subTemplate.Execute(writer, comp.State)
@@ -53,7 +53,7 @@ func (comp *CompRuntime) RenderSub(subCompName string, writer io.Writer) {
 }
 
 func InstantiateComp(compDef *CompDef, unit *UnitRuntime, gc *GenerationContext) *CompRuntime {
-	logger.Info("InstantiateComp", compDef.ChildRefId(), compDef.CompType.Name)
+	logger.Debug("InstantiateComp", compDef.ChildRefId(), compDef.CompType.Name)
 	comp := &CompRuntime{}
 	comp.CompDef = compDef
 	comp.Unit = unit
@@ -94,7 +94,7 @@ func InstantiateComp(compDef *CompDef, unit *UnitRuntime, gc *GenerationContext)
 		unit.ProcessInitEventsComp(comp)
 	}*/
 
-	logger.Info("InstantiateComp-done")
+	logger.Debug("InstantiateComp-done")
 
 	return comp
 }

@@ -21,21 +21,21 @@ var reVarParentVar = regexp.MustCompile(`var \w+\s*=\s*(\w+)\.|var \w+\s*=\s*(\w
 func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
 	edContext.contextType = "js"
 	code := yamlPos.valuePrefx
-	logger.Info("code:", code+"|")
+	logger.Debug("code:", code+"|")
 	if code == "" || strings.HasSuffix(code, "(") || strings.HasSuffix(code, ",") || strings.HasSuffix(code, ", ") {
 		nrParam, codeWithoutParams := inspectParamBlock(code)
-		logger.Info("codeWithoutParams:", codeWithoutParams, "nrParam:", nrParam)
+		logger.Debug("codeWithoutParams:", codeWithoutParams, "nrParam:", nrParam)
 		if nrParam >= 0 {
 			tp, funcName, attrs :=
 				getBaseTypeAndName(codeWithoutParams)
-			logger.Info("func:", funcName, "nrParam:", nrParam)
+			logger.Debug("func:", funcName, "nrParam:", nrParam)
 			
 			compls := completionsOfFuncParam(tp, funcName, nrParam, yamlPos, edContext, configData, attrs)
 			if len(compls) > 0 {
-				logger.Info("compls found:", len(compls))
+				logger.Debug("compls found:", len(compls))
 				compl = append(compl, compls...)
 			} else {
-				logger.Info("no compls found")
+				logger.Debug("no compls found")
 				compl = append(compl, completionsOfType(reflect.TypeOf(&comp.VmBase{}), "", yamlPos, edContext, configData)...)
 				compl = append(compl, collectVarDefs(code)...)
 			}
@@ -48,7 +48,7 @@ func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 	varNameStartMatches := reVarNameStart.FindStringSubmatch(code)
 	if varNameStartMatches != nil {
 		varNameStart := varNameStartMatches[1]
-		logger.Info("varNameStart:", varNameStart)
+		logger.Debug("varNameStart:", varNameStart)
 
 		tp, varAttributes := getVarType(code, varNameStart)
 
@@ -58,18 +58,18 @@ func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 		configDataForCompl := api.SIMapLightCopy(configData)
 		configDataForCompl["firstConst"] = varAttributes["firstConst"]
 		configDataForCompl["table"] = varAttributes["table"]
-		logger.Info("firstConst:", varAttributes["firstConst"])
+		logger.Debug("firstConst:", varAttributes["firstConst"])
 		compl = append(compl, completionsOfType(tp, "", yamlPos, edContext, configDataForCompl)...)
 		return compl
 	}
 	if reIdentifierStart.FindString(code) != "" {
-		logger.Info("RE tag start:")
+		logger.Debug("RE tag start:")
 		tp, funcNamePrefix := getReturnType(code)
 		if tp == nil {
 			return compl
 		}
-		logger.Info("return type: ", tp.String())
-		logger.Info("funcNamePrefix: ", funcNamePrefix)
+		logger.Debug("return type: ", tp.String())
+		logger.Debug("funcNamePrefix: ", funcNamePrefix)
 		compl = append(compl, completionsOfType(tp, funcNamePrefix, yamlPos, edContext, configData)...)
 		if tp == reflect.TypeOf(&comp.VmBase{}) {
 			compl = append(compl, collectVarDefs(code)...)
@@ -83,9 +83,9 @@ func jsCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map
 func getVarType(code, varName string) (reflect.Type, map[string]string) {
 	defs := availableVarDefs(code)
 	varDef := defs[varName]
-	logger.Info("vdef:", varDef)
+	logger.Debug("vdef:", varDef)
 	identifierDef := varDef.defCode
-	logger.Info("identifierDef:", identifierDef)
+	logger.Debug("identifierDef:", identifierDef)
 	// local variable and its definition found
 	if identifierDef != "" {
 		def := identifierDef + "."
@@ -100,18 +100,18 @@ func getVarType(code, varName string) (reflect.Type, map[string]string) {
 func yamlLookup(folderPrefix, fileName string, yamlExpr string) string {
 	fileAsTemplatedYaml := loader.GetTemplatedYaml(fileName, "ide70/"+folderPrefix+"/")
 	reExpr, isFilterValue := convertYamlpathToRegex(yamlExpr, nil)
-	logger.Info("filterExpr:", reExpr)
+	logger.Debug("filterExpr:", reExpr)
 	value := ""
 	if reExpr != nil {
-		logger.Info("examine nodes")
+		logger.Debug("examine nodes")
 		api.IApplyFnToNodes(fileAsTemplatedYaml.IDef, func(entry api.CollectionEntry) {
-			logger.Info("lin key:", entry.LinearKey())
+			logger.Debug("lin key:", entry.LinearKey())
 			if reExpr.MatchString(entry.LinearKey()) {
 				value, _ = leafValDescr(entry, isFilterValue)
 				return
 			}
 		})
-		logger.Info("examine nodes done")
+		logger.Debug("examine nodes done")
 	}
 	return value
 }
@@ -128,7 +128,7 @@ func calcVarAttributes(varName string, defs map[string]VarDef) map[string]string
 		parentAttributes := calcVarAttributes(def.parentVarName, defs)
 		attributes[attributeName] = yamlLookup("dcfg/schema", parentAttributes[attributeName], fmt.Sprintf("connections.%s.foreignTable:value", def.firstConst))
 	}
-	logger.Info("attrs for var ", varName, attributes)
+	logger.Debug("attrs for var ", varName, attributes)
 	return attributes
 }
 
@@ -180,32 +180,32 @@ func availableVarDefs(code string) map[string]VarDef {
 	varDefs := reVariableDefinition.FindAllStringSubmatch(code, -1)
 	varDefPositions := reVariableDefinition.FindAllStringSubmatchIndex(code, -1)
 	for idx, varDefMatch := range varDefs {
-		//logger.Info("vardef:", varDefMatch[1], code[:varDefPositions[idx][1]])
+		//logger.Debug("vardef:", varDefMatch[1], code[:varDefPositions[idx][1]])
 		//defs[varDefMatch[1]] = varDefMatch[2]
 		defCode := code[:varDefPositions[idx][1]]
-		logger.Info("defCode:",defCode)
+		logger.Debug("defCode:",defCode)
 		varDef := VarDef{defCode: defCode}
 
 		constMatch := findLastStringSubmatch(reVarDefConsts, defCode)
-		logger.Info("constMatch:",constMatch)
+		logger.Debug("constMatch:",constMatch)
 		if constMatch != nil {
 			varDef.firstConst = constMatch[1]
 		}
 
 		parentVarMatch := findLastStringSubmatch(reVarParentVar, defCode)
-		logger.Info("parentVarMatch:",parentVarMatch)
+		logger.Debug("parentVarMatch:",parentVarMatch)
 		if parentVarMatch != nil {
 			varDef.parentVarName = parentVarMatch[1]
 		}
 
 		constFuncNameMatch := findLastStringSubmatch(reVarFirstFuncName, defCode)
-		logger.Info("constFuncNameMatch:",constFuncNameMatch)
+		logger.Debug("constFuncNameMatch:",constFuncNameMatch)
 		if constFuncNameMatch != nil {
 			varDef.firstFuncName = constFuncNameMatch[2]
 		}
 
 		defs[varDefMatch[1]] = varDef
-		logger.Info("vardef:", varDefMatch[1], varDef)
+		logger.Debug("vardef:", varDefMatch[1], varDef)
 	}
 	return defs
 }
@@ -213,7 +213,7 @@ func availableVarDefs(code string) map[string]VarDef {
 func collectVarDefs(code string) []map[string]string {
 	compl := []map[string]string{}
 	code = filterNonvisibleScope(code)
-	logger.Info("vScope:", code+"|")
+	logger.Debug("vScope:", code+"|")
 	varDefs := reVariableDefinition.FindAllStringSubmatch(code, -1)
 	for _, varDefMatch := range varDefs {
 		compl = append(compl, newCompletion(varDefMatch[1], varDefMatch[1], "local variable"))
@@ -267,7 +267,7 @@ func getFuncNameChain(code string) []string {
 	nameStart := strings.LastIndexAny(code, "+-/*.{}=;: \n\t()") + 1
 	if nameStart < len(code) {
 		funcName := code[nameStart:]
-		logger.Info("getReturnType funcName:", funcName)
+		logger.Debug("getReturnType funcName:", funcName)
 		funcNameChain = append([]string{funcName}, funcNameChain...)
 		code = code[:nameStart]
 	}
@@ -281,14 +281,14 @@ func getFuncNameChain(code string) []string {
 				nameStart := strings.LastIndexAny(code[:openBracketPos], "+-/*.{}=;,(: \n\t") + 1
 				funcName := code[nameStart:openBracketPos]
 				funcNameChain = append([]string{funcName}, funcNameChain...)
-				logger.Info("func name resolved:", funcName)
+				logger.Debug("func name resolved:", funcName)
 				if nameStart > 0 {
 					code = code[:nameStart]
 					continue
 				}
 			}
 		} else if match := reWordEnding.FindStringSubmatch(code); match != nil {
-			logger.Info("var name resolved:", match[1])
+			logger.Debug("var name resolved:", match[1])
 			funcNameChain = append([]string{"var:" + match[1]}, funcNameChain...)
 			code = strings.TrimSuffix(code, match[0])
 			continue
@@ -307,7 +307,7 @@ func getReturnType(code string) (reflect.Type, string) {
 		baseTypePrev := baseType
 		if strings.HasPrefix(funcName, "var:") {
 			if baseType.Kind() == reflect.Map {
-				logger.Info("basetype map type, tread var as map element")
+				logger.Debug("basetype map type, tread var as map element")
 				baseType = baseType.Elem()
 			} else {
 				varName := strings.TrimPrefix(funcName, "var:")
@@ -319,13 +319,13 @@ func getReturnType(code string) (reflect.Type, string) {
 		if baseType == nil {
 			if idx == len(funcNameChain)-1 {
 				return baseTypePrev, funcName
-				logger.Info("rb1", baseType, funcName)
+				logger.Debug("rb1", baseType, funcName)
 			}
 			return nil, ""
-			logger.Info("rb2")
+			logger.Debug("rb2")
 		}
 	}
-	logger.Info("rb3", baseType)
+	logger.Debug("rb3", baseType)
 	return baseType, ""
 }
 
@@ -337,7 +337,7 @@ func getBaseTypeAndName(code string) (reflect.Type, string, map[string]string) {
 	for idx, funcName := range funcNameChain {
 		if idx == len(funcNameChain)-1 {
 			return baseType, funcName, attrs
-			logger.Info("rb1", baseType, funcName)
+			logger.Debug("rb1", baseType, funcName)
 		}
 		if strings.HasPrefix(funcName, "var:") {
 			varName := strings.TrimPrefix(funcName, "var:")
@@ -347,15 +347,15 @@ func getBaseTypeAndName(code string) (reflect.Type, string, map[string]string) {
 		}
 		if baseType == nil {
 			return nil, "", nil
-			logger.Info("rb2")
+			logger.Debug("rb2")
 		}
 	}
-	logger.Info("rb3", baseType)
+	logger.Debug("rb3", baseType)
 	return baseType, "", attrs
 }
 
 func returnTypeOfFunc(baseType reflect.Type, funcName string) reflect.Type {
-	logger.Info("returnTypeOfFunc", baseType, funcName)
+	logger.Debug("returnTypeOfFunc", baseType, funcName)
 	method, has := baseType.MethodByName(funcName)
 	if !has {
 		return nil
@@ -393,7 +393,7 @@ func completionsOfType(tp reflect.Type, funcNameFilter string, yamlPos *YamlPosi
 
 	for i := 0; i < numMethods; i++ {
 		method := tp.Method(i)
-		logger.Info("methName:", method.Name)
+		logger.Debug("methName:", method.Name)
 		methodTp := method.Type
 		if funcNameFilter != "" && !strings.HasPrefix(method.Name, funcNameFilter) {
 			continue
@@ -432,13 +432,13 @@ func completionsOfType(tp reflect.Type, funcNameFilter string, yamlPos *YamlPosi
 
 	fieldCompleter := api.SIMapGetByKeyAsMap(typeBasedTypeData, "fieldCompleter")
 	if len(fieldCompleter) == 1 {
-		logger.Info("fieldCompleter found for type:", tp.String())
+		logger.Debug("fieldCompleter found for type:", tp.String())
 		completer, configDataCompleter := lookupCompleter("value", fieldCompleter)
 
 		if completer != nil {
 			configDataCompleter["firstConst"] = configData["firstConst"]
 			configDataCompleter["table"] = configData["table"]
-			logger.Info("configDataCompleter:", configDataCompleter)
+			logger.Debug("configDataCompleter:", configDataCompleter)
 			compl = completer(yamlPos, edContext, configDataCompleter, compl)
 		}
 	}
@@ -451,7 +451,7 @@ func completionsOfFuncParam(tp reflect.Type, methodName string, paramNo int, yam
 	if tp == nil {
 		return compl
 	}
-	logger.Info("completionsOfFuncParam, base type:", tp.String())
+	logger.Debug("completionsOfFuncParam, base type:", tp.String())
 	functionsData := api.SIMapGetByKeyAsMap(configData, "functions")
 
 	typeBasedFunctionsData := api.SIMapGetByKeyAsMap(functionsData, tp.String())
@@ -462,7 +462,7 @@ func completionsOfFuncParam(tp reflect.Type, methodName string, paramNo int, yam
 	}
 
 	paramDescriptor := api.AsSIMap(functionParams[paramNo])
-	logger.Info("paramDescriptor:", paramDescriptor)
+	logger.Debug("paramDescriptor:", paramDescriptor)
 
 	completer, configDataCompleter := lookupCompleter("value", paramDescriptor)
 

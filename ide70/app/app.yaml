@@ -1,11 +1,15 @@
 ---
-description: Sample application
+description: Default application
 name: app
 port: 7080
 secure: false
 loginUnits:
-  - path: airplane/login
   - path: ide/login
+    descr: Dev Environment
+  - path: airplane/login
+    descr: Airplane and extras
+  - path: uconf/login
+    descr: Uconf
 connectors:
   mainDB:
     host: localhost
@@ -13,3 +17,6 @@ connectors:
     dbName: ide_70
     user: ide_70
     password: ide_70_pwd
+log:
+  api:
+    level: INFO

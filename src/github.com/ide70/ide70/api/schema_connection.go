@@ -91,12 +91,12 @@ func loadTableStruct(tableName string) *TableStruct {
 	// load connections
 
 	connMap := SIMapGetByKeyAsMap(fileAsTemplatedYaml.Def, "connections")
-	logger.Info("connMap:", connMap)
+	logger.Debug("connMap:", connMap)
 	for connName, connIf := range connMap {
-		logger.Info("connName:", connName)
+		logger.Debug("connName:", connName)
 		tableConn := &TableConnection{}
 		conn := IAsSIMap(connIf)
-		logger.Info("conn:", conn)
+		logger.Debug("conn:", conn)
 		localColumnName := SIMapGetByKeyAsString(conn, "column")
 		foreignTableName := SIMapGetByKeyAsString(conn, "foreignTable")
 		foreignColumnName := SIMapGetByKeyAsString(conn, "foreignColumn")

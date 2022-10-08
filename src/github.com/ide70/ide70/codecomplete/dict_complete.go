@@ -7,6 +7,7 @@ import (
 
 func dictCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
 	dictName := api.SIMapGetByKeyAsString(configData, "dictName")
+	valueMode := api.SIMapGetByKeyAsBoolean(configData, "value")
 	fileAsTemplatedYaml := loader.GetTemplatedYaml(dictName, "ide70/dcfg/dict/")
 	if fileAsTemplatedYaml != nil {
 		fileData := fileAsTemplatedYaml.Def
@@ -15,7 +16,13 @@ func dictCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData m
 			itemData := api.IAsSIMap(itemIf)
 			code := api.SIMapGetByKeyAsString(itemData, "code")
 			descr := api.SIMapGetByKeyAsString(itemData, "descr")
-			compl = addValueCompletion(code, descr, edContext, configData, compl)
+			if valueMode {
+				compl = addValueCompletion(code, descr, edContext, configData, compl)
+			} else {
+				configDataTmp := api.SIMapLightCopy(configData)
+				configDataTmp["descr"] = descr
+				compl = addCompletion(code, edContext, configDataTmp, compl)
+			}
 		}
 	}
 

@@ -61,15 +61,15 @@ func NewFileUpload(r *http.Request) *FileUpload {
 }
 
 func (u *FileUpload) Stop() {
-	logger.Info("send stop")
+	logger.Debug("send stop")
 	if !u.ready && u.err == nil {
 		u.stop <- true
 	}
-	logger.Info("send stop done")
+	logger.Debug("send stop done")
 }
 
 func (u *FileUpload) Start() {
-	//logger.Info("Upload launch")
+	//logger.Debug("Upload launch")
 	go func() {
 		u.ready = false
 		u.err = nil
@@ -86,24 +86,24 @@ func (u *FileUpload) Start() {
 				return
 			case <-ticker.C:
 				u.setPercent(int(n * 100 / u.totalLength))
-				//logger.Info("set pct:", n, u.totalLength)
+				//logger.Debug("set pct:", n, u.totalLength)
 			default:
 				max := n + step
 				if max > u.totalLength+1 {
 					max = u.totalLength + 1
 				}
 				an, e := u.file.Read(u.buf[n:max])
-				//logger.Info("rd:", an, e)
+				//logger.Debug("rd:", an, e)
 				n += int64(an)
 				if e == io.EOF {
 					u.setPercent(100)
 					u.buf = u.buf[:len(u.buf)-1]
 					u.setReady()
-					logger.Info("Upload finished")
+					logger.Debug("Upload finished")
 					return
 				}
 				if e != nil {
-					logger.Info("Upload error", e.Error())
+					logger.Debug("Upload error", e.Error())
 					u.err = e
 				}
 			}

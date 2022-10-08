@@ -1,0 +1,20 @@
+---
+unitInterface:
+  descr: Push Button
+  properties:
+    text:
+      descr: Label on button
+      mandatory: yes
+    fileName:
+      descr: Proposed downloaded file name
+  events:
+    download: 
+      descr: Event handler responsible producing file to download
+include:
+  - common
+body: |
+  <span id="{{.sid}}">
+  {{if $.fileName}}
+  <a href="{{eventHandlerFileDownload $.This "download"}}" download="{{$.fileName}}">{{.text}}</a>
+  {{end}}
+  </span>

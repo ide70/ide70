@@ -304,14 +304,14 @@ func (st SchemaTable) JoinedTable(connectionName string) SchemaTable {
 		return table
 	}
 	connMap := SIMapGetByKeyAsMap(fileAsTemplatedYaml.Def, "connections")
-	logger.Info("connMap:", connMap)
+	logger.Debug("connMap:", connMap)
 	for connName, connIf := range connMap {
 		if connName != connectionName {
 			continue
 		}
-		logger.Info("connName:", connName)
+		logger.Debug("connName:", connName)
 		conn := IAsSIMap(connIf)
-		logger.Info("conn:", conn)
+		logger.Debug("conn:", conn)
 		localColumnName := SIMapGetByKeyAsString(conn, "column")
 		if localColumnName == "" {
 			localColumnName = idFieldName
@@ -331,7 +331,7 @@ func (st SchemaTable) JoinedTable(connectionName string) SchemaTable {
 		ref.parentConnection = &SchemaConnection{parentTableRef: parentRef, joinType: joinJoin, joinCondition: &QueryConditionWrapper{condition: condition, conditionColumns: []*SchemaCol{}}, uniqueId: parentUniqueId + "." + connectionName}
 		break
 	}
-	logger.Info("JoinedTable:", table)
+	logger.Debug("JoinedTable:", table)
 
 	return table
 }
@@ -418,11 +418,11 @@ func (qd *QueryDef) OneRow() SIMap {
 func (ref *SchemaTableReference) _generateJoin(done map[*SchemaTableReference]bool) string {
 	s := ""
 	if done[ref] {
-		logger.Info("already done:", ref.tableName)
+		logger.Debug("already done:", ref.tableName)
 		return s
 	}
 	done[ref] = true
-	logger.Info("gen:", ref.tableName, ref.parentConnection)
+	logger.Debug("gen:", ref.tableName, ref.parentConnection)
 	for _, sc := range ref.parentConnection.joinCondition.conditionColumns {
 		s += sc.tableRef._generateJoin(done)
 	}
@@ -435,10 +435,10 @@ func (qd *QueryDef) _generateJoins() string {
 	// generate joins
 	done := map[*SchemaTableReference]bool{}
 	for _, join := range qd.connections {
-		logger.Info("generating join:", join)
+		logger.Debug("generating join:", join)
 		sb.WriteString(join._generateJoin(done))
 	}
-	logger.Info("joins generated")
+	logger.Debug("joins generated")
 	return sb.String()
 }
 
@@ -446,14 +446,14 @@ func (qd *QueryDef) _toSQL() string {
 	aliasIdx := 1
 	qd.from.generateAlias(aliasIdx)
 	aliasIdx++
-	logger.Info("connections generation start")
+	logger.Debug("connections generation start")
 	qd.lookupConnections()
-	logger.Info("connections generated")
+	logger.Debug("connections generated")
 	for _, conn := range qd.connections {
 		conn.generateAlias(aliasIdx)
 		aliasIdx++
 	}
-	logger.Info("aliases for connections generated")
+	logger.Debug("aliases for connections generated")
 	var sb strings.Builder
 	sb.WriteString("select ")
 	for idx, selectedColumn := range qd.selectedColumns {
@@ -492,7 +492,7 @@ func (qd *QueryDef) _toSQL() string {
 }
 
 func (qd *QueryDef) lookupConnections() {
-	logger.Info("qd.selectedColumns", qd.selectedColumns)
+	logger.Debug("qd.selectedColumns", qd.selectedColumns)
 	for _, selectedColumn := range qd.selectedColumns {
 		if selectedColumn.tableRef == nil {
 			selectedColumn.tableRef = qd.from
@@ -507,10 +507,10 @@ func (qd *QueryDef) lookupConnections() {
 }
 
 func (qd *QueryDef) addConnectingTable(tableRef *SchemaTableReference) {
-	logger.Info("addConnectingTable tableRef:", tableRef)
+	logger.Debug("addConnectingTable tableRef:", tableRef)
 	conn := tableRef.parentConnection
 	if conn != nil {
-		logger.Info("conn:", conn)
+		logger.Debug("conn:", conn)
 		if qd.connections[conn.uniqueId] == nil {
 			qd.addConnectingTable(conn.parentTableRef)
 			qd.connections[conn.uniqueId] = tableRef
@@ -612,7 +612,7 @@ func (str *SchemaTableReference) toTableSQL() string {
 func (str *SchemaTableReference) toJoinSQL() string {
 	sql := " " + str.parentConnection.joinType + " "
 	sql += str.toTableSQL()
-	logger.Info("str.parentConnection:", str.parentConnection)
+	logger.Debug("str.parentConnection:", str.parentConnection)
 	sql += " ON "
 	sql += str.parentConnection.joinCondition.condition.toSQL()
 	return sql

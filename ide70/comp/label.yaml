@@ -1,3 +1,6 @@
 ---
+unitInterface:
+  properties:
+    text: Label text
 body: |
   <label for="{{.refId}}" id="{{.sid}}">{{.text}}</label>

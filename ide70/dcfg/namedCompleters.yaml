@@ -14,3 +14,9 @@
             pathExpr: "connections.%$"
             pathNodes: yes
             filterExpr: "compType[%].columns[%].key:value"
+  dictCompleter:
+    descr: Completes dictionary file names
+    definition:
+      fileNameCompleter:
+        folderPrefix: dcfg/dict
+        trimSuffix: .yaml

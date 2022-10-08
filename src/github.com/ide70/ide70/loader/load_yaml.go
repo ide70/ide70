@@ -35,7 +35,7 @@ func GetTemplatedYaml(name string, basePath string) *TemplatedYaml {
 	}
 	yamlData := dynConfigCache[basePath+name]
 	if yamlData == nil {
-		logger.Info("NO CACHE:" + basePath + name)
+		logger.Debug("NO CACHE:" + basePath + name)
 		yamlData = LoadTemplatedYaml(name, basePath)
 		dynConfigCache[basePath+name] = yamlData
 	}
@@ -43,12 +43,12 @@ func GetTemplatedYaml(name string, basePath string) *TemplatedYaml {
 }
 
 func DropTemplatedYaml(name string) {
-	logger.Info("drop templatedYaml", name)
+	logger.Debug("drop templatedYaml", name)
 	delete(dynConfigCache, name)
 }
 
 func LoadTemplatedYaml(name, basePath string) *TemplatedYaml {
-	logger.Info("loadTemplatedYaml", name)
+	logger.Debug("loadTemplatedYaml", name)
 	contentB, err := ioutil.ReadFile(basePath + name + ".yaml")
 	if err != nil {
 		logger.Error("Yaml module ", name, "at", basePath, "not found")
@@ -64,6 +64,20 @@ func LoadFileContents(name, basePath string) string {
 		return ""
 	}
 	return string(contentB)
+}
+
+func CheckYaml(contentB []byte) string {
+	
+	decoder := yaml.NewDecoder(bytes.NewReader(contentB))
+
+	var compIf interface{}
+	err := decoder.Decode(&compIf)
+	if err != nil {
+		logger.Error("Yaml check:", err.Error())
+		return err.Error()
+	}
+	
+	return ""
 }
 
 func ConvertTemplatedYaml(contentB []byte, name string) *TemplatedYaml {
@@ -102,7 +116,7 @@ func ConvertTemplatedYaml(contentB []byte, name string) *TemplatedYaml {
 			}
 		}
 	})
-	logger.Info("converted: ", module.Def)*/
+	logger.Debug("converted: ", module.Def)*/
 
 	return module
 }

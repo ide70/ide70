@@ -37,7 +37,7 @@ type CompModule struct {
 
 func loadCompModule(name string) *CompModule {
 	module := &CompModule{}
-	logger.Info("loadCompModule", name)
+	logger.Debug("loadCompModule", name)
 	contentB, err := ioutil.ReadFile(COMP_PATH + name + ".yaml")
 	if err != nil {
 		logger.Error("Component module ", name, "not found")
@@ -85,7 +85,7 @@ func extractSubcomponents(comp *CompType, body string, appParams *AppParams) {
 		subIdx := subIdxs[i]
 		matchIdx := subIdx[0]
 		subCompStr := cutToClosingTag(body[matchIdx:], tagName)
-		logger.Info("subcomp:", subCompName, subCompStr)
+		logger.Debug("subcomp:", subCompName, subCompStr)
 		comp.SubBodies[subCompName] = createTemplate(subCompStr, comp.Name+subCompName, appParams, nil)
 	}
 }
@@ -168,7 +168,7 @@ func parseDefaultValues(def map[string]interface{}, dest map[string]interface{})
 		if entry.Key() == "default" {
 			parentKey := entry.Parent().LinearKey()
 			api.SIMapUpdateValue(parentKey, entry.Value(), dest, false)
-			logger.Warning("default value", parentKey, entry.Value())
+			logger.Debug("default value", parentKey, entry.Value())
 		}
 	})
 }
@@ -257,7 +257,7 @@ func hasIndex(maparrIf interface{}, indexIf interface{}) bool {
 	switch maparrT := maparrIf.(type) {
 	case api.SIMap:
 		index := api.IAsString(indexIf)
-		logger.Info(index)
+		logger.Debug(index)
 		_, has := maparrT[index]
 		return has
 	case map[string]interface{}:
@@ -272,9 +272,9 @@ func hasIndex(maparrIf interface{}, indexIf interface{}) bool {
 }
 
 func htmlId(sI interface{}) string {
-	logger.Info("htmlId")
+	logger.Debug("htmlId")
 	s := api.IAsString(sI)
-	logger.Info("htmlId", s)
+	logger.Debug("htmlId", s)
 	s = strings.ReplaceAll(s, "/", "_")
 	return s
 }
@@ -329,11 +329,11 @@ func GenerateEventHandlerJs(comp *CompRuntime, eventType, valueJs string) string
 
 func GenerateEventHandlerWithKey(comp *CompRuntime, eventTypeCli, eventTypeSvr, keyIf interface{}) string {
 	key := api.IAsString(keyIf)
-	/*logger.Info("GenerateEventHandlerWithKey")
-	logger.Info(comp)
-	logger.Info(eventTypeCli)
-	logger.Info(eventTypeSvr)
-	logger.Info(key)*/
+	/*logger.Debug("GenerateEventHandlerWithKey")
+	logger.Debug(comp)
+	logger.Debug(eventTypeCli)
+	logger.Debug(eventTypeSvr)
+	logger.Debug(key)*/
 	return fmt.Sprintf(" %s=\"se(event,'%s',%d,'%s')\"", eventTypeCli, eventTypeSvr, comp.Sid(), key)
 }
 
@@ -349,7 +349,7 @@ type GenerationContext struct {
 }
 
 func LinearContext(parentComp *CompRuntime, childRefIf interface{}, indexIf interface{}) *GenerationContext {
-	logger.Info("LinearContext")
+	logger.Debug("LinearContext")
 	childRef := ""
 	switch childRefT := childRefIf.(type) {
 	case *CompRuntime:
@@ -359,7 +359,7 @@ func LinearContext(parentComp *CompRuntime, childRefIf interface{}, indexIf inte
 	}
 	index := api.IAsInt(indexIf)
 	gc := &GenerationContext{index: index, parentComp: parentComp, childRef: childRef, generateChildRef: generateChildRefLinear, generateStoreKey: generateStoreKeyLinear, generateChildRefPrefix: generateChildRefPrefixLinear, generateChildRefWithIndex: generateChildRefLinearWithIndex}
-	logger.Info("GenerationContext:", gc)
+	logger.Debug("GenerationContext:", gc)
 	return gc
 }
 
@@ -384,16 +384,20 @@ func generateStoreKeyLinear(gc *GenerationContext, child *CompRuntime) string {
 }
 
 func GenerateSubComp(gc *GenerationContext) string {
-	logger.Info("GenerateSubComp:", gc)
+	logger.Debug("GenerateSubComp:", gc)
 	genChildRefId := gc.generateChildRef(gc, gc.childRef)
 	gc.parentComp.State["keepExistingGenChildren"] = true
 
 	comp := gc.parentComp.GenChildren[genChildRefId]
+	
+	if api.IAsBool(gc.parentComp.State["regenerateOnRefresh"]) {
+		comp = nil
+	}
 
-	logger.Info("comp is new:", (comp == nil))
+	logger.Debug("comp is new:", (comp == nil))
 
 	if comp == nil {
-		logger.Info("genRuntimeRef", genChildRefId)
+		logger.Debug("genRuntimeRef", genChildRefId)
 		srcCompDef := gc.parentComp.Unit.UnitDef.CompsMap[childRefLastTag(gc.childRef)]
 		if srcCompDef == nil {
 			logger.Warning("source component not found:", gc.childRef)
@@ -415,7 +419,7 @@ func GenerateSubComp(gc *GenerationContext) string {
 	e := NewEventRuntime(nil, gc.parentComp.Unit, comp, EvtBeforeCompRefresh, "")
 	ProcessCompEvent(e)
 
-	logger.Info("CRs:", gc.parentComp.Unit.CompByChildRefId)
+	logger.Debug("CRs:", gc.parentComp.Unit.CompByChildRefId)
 
 	sb := &strings.Builder{}
 	comp.Render(sb)
@@ -423,12 +427,12 @@ func GenerateSubComp(gc *GenerationContext) string {
 }
 
 func DropSubComp(gc *GenerationContext) string {
-	logger.Info("DropSubComp:", gc)
+	logger.Debug("DropSubComp:", gc)
 	genChildRefId := gc.generateChildRef(gc, gc.childRef)
 
 	comp := gc.parentComp.GenChildren[genChildRefId]
 
-	logger.Info("comp exist:", (comp != nil))
+	logger.Debug("comp exist:", (comp != nil))
 
 	if comp != nil {
 		delete(gc.parentComp.GenChildren, genChildRefId)
@@ -444,13 +448,13 @@ func childRefLastTag(childRef string) string {
 }
 
 func GenerateComp(parentComp *CompRuntime, sourceChildRef string, genRuntimeRefIf interface{}, context interface{}) string {
-	logger.Info("GenerateComp", sourceChildRef)
+	logger.Debug("GenerateComp", sourceChildRef)
 	genRuntimeRef := api.IAsString(genRuntimeRefIf)
 	genChildRefId := fmt.Sprintf("%s.%s_%s", parentComp.ChildRefId(), sourceChildRef, genRuntimeRef)
 	comp := parentComp.GenChildren[genChildRefId]
 
 	if comp == nil {
-		logger.Info("genRuntimeRef", genChildRefId)
+		logger.Debug("genRuntimeRef", genChildRefId)
 		srcCompDef := parentComp.Unit.UnitDef.CompsMap[sourceChildRef]
 		if srcCompDef == nil {
 			logger.Warning("source component not found:", sourceChildRef)

@@ -38,3 +38,8 @@ dcfg:
     fileName: value
     addPrefix: "dcfg/dict/"
     addSuffix: ".yaml"
+app:
+  - pathExpr: "loginUnits.path"
+    fileName: value
+    addPrefix: "unit/"
+    addSuffix: ".yaml"

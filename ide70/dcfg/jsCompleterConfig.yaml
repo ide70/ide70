@@ -61,11 +61,20 @@ functions:
       params:
         - name: "property name"
           valueCompleter:
-            yamlPathCompleter:
-              self: yes
-              pathExpr: "unitInterface.properties.%$|privateProperties.%$"
-              pathNodes: yes
-              quote: '"'
+            firstOf:
+              - yamlPathCompleter:
+                  fileNameRegex: 'CompByCr\("([\w\/]+)"\)'
+                  fileNameRegexCrToCompType: yes
+                  fileNameExprCond: "cr"
+                  folderPrefix: comp
+                  pathExpr: "unitInterface.properties.%$"
+                  quote: '"'
+                  pathNodes: yes
+              - yamlPathCompleter:
+                  self: yes
+                  pathExpr: "unitInterface.properties.%$|privateProperties.%$"
+                  pathNodes: yes
+                  quote: '"'
         - name: "property value"
     HasProp:
       descr: returns true if property defined
@@ -180,7 +189,7 @@ functions:
     GetParamToCast:
       descr: Retrns parameter attached to event, for data type cast
       params: *EventGetParam
-  "comp.ITable":
+  "api.ITable":
     GroupBy:
       descr: Rearranges table rows grouping them by col
       params:
@@ -250,6 +259,22 @@ functions:
               pathExpr: "connections.%$"
               pathNodes: yes
               quote: '"'
+  "comp.SessionWrapper":
+    SetAuthUser:
+      descr: Set authenticated user name
+      params:
+        - name: "User name"
+    SetAuthRole:
+      descr: Set authenticated user role
+      params:
+        - name: "User role"
+  "*api.Parser":
+    SetExtractor:
+      descr: Set data extractor
+      params:
+        - name: "Regular expression for scan data elements with sub expressions"
+        - name: "Comma separated key list in result table"
+        - name: "Comma separated type conversion pattern: eg: %d,%s"
 types:
   "api.SchemaTable":
     fieldCompleter:

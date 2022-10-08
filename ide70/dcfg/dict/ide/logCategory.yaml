@@ -1,0 +1,21 @@
+---
+descr: Logging categories
+items:
+  - code: common
+    descr: Default logging category (unspecified categories logged this level)
+  - code: app
+    descr: Application
+  - code: codecomplete
+    descr: Code completion
+  - code: comp
+    descr: Component
+  - code: unit
+    descr: Unit
+  - code: event
+    descr: Event
+  - code: loader
+    descr: Loader
+  - code: file
+    descr: File
+  - code: api
+    descr: API calls

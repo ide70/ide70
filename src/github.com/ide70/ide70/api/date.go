@@ -19,7 +19,7 @@ func (dc *DateCtx) PureDate(yearI, monthI, dayI interface{}) time.Time {
 	year := IAsInt(yearI)
 	month := IAsInt(monthI)
 	day := IAsInt(dayI)
-	logger.Info("PureDate", year, month, day)
+	logger.Debug("PureDate", year, month, day)
 	return time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 }
 
@@ -27,7 +27,7 @@ func (dc *DateCtx) PureTime(hourI, minuteI, secondI interface{}) time.Time {
 	hour := IAsInt(hourI)
 	minute := IAsInt(minuteI)
 	second := IAsInt(secondI)
-	logger.Info("PureTime", hour, minute, second)
+	logger.Debug("PureTime", hour, minute, second)
 	return time.Date(0, 1, 1, hour, minute, second, 0, time.UTC)
 }
 

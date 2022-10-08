@@ -179,6 +179,18 @@ class EditorBlock {
     		if (this.readyState == 4 && this.status == 200) {
      			editorBlock.markClean(editorNode);
     		}
+    		var msg = this.getResponseHeader("Msg");
+    		if(msg) {
+    		    var msgTokens = msg.split(":");
+    		    editorNode.dataEditor.getSession().setAnnotations([{
+                  row: parseInt(msgTokens[1])-1,
+                  column: 0,
+                  text: msgTokens[2], 
+                  type: msgTokens[0] // also "warning" and "information"
+                }]);
+    		} else {
+    		    editorNode.dataEditor.getSession().clearAnnotations();
+    		}
   		};
   		  		
   		xhttp.open("POST", _pathApp+"_save/" + editorNode.key, true);

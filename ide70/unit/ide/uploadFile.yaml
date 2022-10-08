@@ -4,7 +4,7 @@
     - dialogBox:
       - inputs:
         - dirName
-        - fileName
+        - inFileFileName
       - buttonBar:
         - create
         - cancel
@@ -17,17 +17,15 @@
       toProp: value
 - compType: dialogContainer
   cr: dialogBox
-  title: Create New File
+  title: Upload File
 - compType: labeledTable
   cr : inputs
 - compType: textbox
   cr: dirName
   name: dirName
   label: 'Dir name'
-- compType: textbox
-  cr: fileName
-  name: fileName
-  value: ""
+- compType: in/file
+  cr: inFileFileName
   label: 'File name'
 - compType: horizontalBar
   cr: buttonBar
@@ -38,14 +36,12 @@
     onclick:
       action: |
           var dirName = CompByCr("dirName").GetProp("value");
-          var fileName = CompByCr("fileName").GetPropToCast("value").AsString();
+          var fileMap = CompByCr("inFileFileName").GetPropToCast("value").AsMap();
+          var fileName = fileMap.Get("fileName");
           var dirTokens = dirName.split("/");
-          dirTokens.push(fileName.S());
+          dirTokens.push(fileName);
           var fullName = dirTokens.join("/");
-          var file = Event().FileCtx().CreateFile(fullName);
-          if(fileName.EndsWith(".yaml")) {
-              file.AppendText("---\n");
-          }
+          Event().FileCtx().CreateFile(fullName).WriteBinaryData(fileMap.Get("data"));
           CompByCr("").ForwardToParent(PassParams.parentCr,"close").
           ForwardToParentComp(PassParams.dirComp, "refresh");
 - compType: button

@@ -12,7 +12,7 @@ var reWord = regexp.MustCompile(`\w+`)
 
 func htmlCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData map[string]interface{}, compl []map[string]string) []map[string]string {
 	code := yamlPos.valuePrefx
-	logger.Info("code:", code+"|")
+	logger.Debug("code:", code+"|")
 
 	if strings.HasSuffix(code, "{") {
 		compl = append(compl, effectiveLoopVars(code, true)...)
@@ -67,7 +67,7 @@ func htmlCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData m
 		}
 		templateConfig := fileAsTemplatedYaml.Def
 		methods := api.SIMapGetByKeyAsMap(templateConfig, "methods")
-		logger.Info("meth listed")
+		logger.Debug("meth listed")
 		methodName := ""
 		methodTokenIdx := 0
 		for i := len(methodTokens) - 1; i >= 0; i-- {
@@ -83,8 +83,8 @@ func htmlCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData m
 		}
 
 		paramNo := len(methodTokens) - 2 - methodTokenIdx
-		logger.Info("meth:", methodName)
-		logger.Info("paramNo:", paramNo)
+		logger.Debug("meth:", methodName)
+		logger.Debug("paramNo:", paramNo)
 
 		methodData := api.SIMapGetByKeyAsMap(methods, methodName)
 
@@ -97,7 +97,7 @@ func htmlCompleter(yamlPos *YamlPosition, edContext *EditorContext, configData m
 
 		methodParam := methodParams[paramNo]
 		methodParamData := api.IAsSIMap(methodParam)
-		logger.Info("meth param data:", methodParamData)
+		logger.Debug("meth param data:", methodParamData)
 		fixedValue := api.SIMapGetByKeyAsString(methodParamData, "fixedValue")
 		paramDescr := api.SIMapGetByKeyAsString(methodParamData, "descr")
 		
@@ -215,7 +215,7 @@ func effectiveLoopVars(code string, wrap bool) []map[string]string {
 	compl := []map[string]string{}
 	depth := 0
 	for code != "" {
-		logger.Info("vars code:", code)
+		logger.Debug("vars code:", code)
 		rangeIdx := strings.LastIndex(code, "{{range ")
 		if rangeIdx == -1 {
 			break
@@ -225,10 +225,10 @@ func effectiveLoopVars(code string, wrap bool) []map[string]string {
 		if rangeIdx > endIdx {
 			if depth <= 0 {
 				assignmentIdx := strings.Index(code[rangeIdx:], ":=")
-				logger.Info("assignmentIdx:", assignmentIdx)
+				logger.Debug("assignmentIdx:", assignmentIdx)
 				if assignmentIdx != -1 {
 					loopVars := strings.Trim(strings.TrimPrefix(code[rangeIdx:rangeIdx+assignmentIdx], "{{range "), " ")
-					logger.Info("loopVars:", loopVars)
+					logger.Debug("loopVars:", loopVars)
 					varTokens := strings.Split(loopVars, ",")
 					for _, varToken := range varTokens {
 						varName := varToken

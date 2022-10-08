@@ -8,7 +8,8 @@ var _pMouseX='mx';
 var _pMouseY='my';
 var _pMouseBtn='mb';
 var _pModKeys='mk';
-var _pKeyCode='kc'; 
+var _pKeyCode='kc';
+var _pKeyString='ks';
 var _pScrollTop='sctp';
 var _pUpload='upl';
 
@@ -127,6 +128,7 @@ function se(event, etype, compId, compValue, async, filter) {
 		modKeys += event.shiftKey ? _modKeyShift : 0;
 		data += "&" + _pModKeys + "=" + modKeys;
 		data += "&" + _pKeyCode + "=" + (event.which ? event.which : event.keyCode);
+		data += "&" + _pKeyString + "=" + event.key;
 	}
 	console.log("send data: "+data)
 	

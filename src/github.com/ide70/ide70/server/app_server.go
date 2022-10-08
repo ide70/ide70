@@ -49,9 +49,10 @@ const (
 	paramMouseBtn      = "mb"   // Mouse button
 	paramModKeys       = "mk"   // Modifier key states
 	paramKeyCode       = "kc"   // Key code
+	paramKeyString     = "ks"   // Key string
 	paramScrollTop     = "sctp" // Scroll top
 	paramUpload        = "upl"  // File upload
-	paramDownload      = "dl"  // File upload
+	paramDownload      = "dl"   // File upload
 )
 
 const sessidCookieName = "ide70-sessid"
@@ -86,6 +87,7 @@ func (s *AppServer) SetApplication(app *app.Application) {
 		RuntimeID:  fmt.Sprintf("%d", time.Now().Unix()),
 	}
 	s.App = app
+	s.printLoginUnitInfo()
 }
 
 func (s *AppServer) Start() error {
@@ -118,7 +120,7 @@ func (s *AppServer) Start() error {
 		s.serveWebfonts(w, r)
 	})
 
-	logger.Info("Starting Ide70 server on:", s.App.URLString)
+	logger.Debug("Starting Ide70")
 
 	s.sessStop = make(chan struct{})
 	go s.sessCleaner(s.sessStop)
@@ -137,7 +139,7 @@ func (s *AppServer) Start() error {
 }
 
 func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
-	logger.Info("Incoming:", r.URL.Path)
+	logger.Debug("Incoming:", r.URL.Path)
 
 	//s.addHeaders(w)
 
@@ -173,7 +175,7 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	action := parts[0]
-	logger.Info("action:", action)
+	logger.Debug("action:", action)
 
 	switch action {
 	case pathEvent, pathRenderComp, comp.PathUnitById:
@@ -202,11 +204,11 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		case pathRenderComp:
 			s.renderComp(unit, w, r)
 		case comp.PathUnitById:
-			logger.Info("existing unit runtime process create event..")
+			logger.Debug("existing unit runtime process create event..")
 			//e := comp.NewEventRuntime(sess, unit, nil, comp.EvtUnitCreate, "")
 			//unit.ProcessEvent(e)
 			unit.ProcessInitEvents(sess)
-			logger.Info("existing unit runtime render start..")
+			logger.Debug("existing unit runtime render start..")
 			unit.Render(w)
 			unit.ProcessPostRenderEvents(sess)
 		}
@@ -215,21 +217,21 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 
 		if sess == nil {
 			if s.App.Access.LoginUnits[unitName] {
-				sess = s.newSession(nil)
+				sess = s.newSession(nil, action)
 				s.addSessCookie(sess, w)
-				logger.Info("session created:", sess.ID)
+				logger.Debug("session created:", sess.ID)
 			} else {
 				http.Error(w, "no session", http.StatusUnauthorized)
 				return
 			}
 		}
 
-		if !sess.IsAuthenticated() && !s.App.Access.LoginUnits[unitName] {
+		if (!sess.IsAuthenticated() || !sess.Accessible(action)) && !s.App.Access.LoginUnits[unitName] {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		logger.Info("new unit runtime...")
+		logger.Debug("new unit runtime...")
 		passParamId := r.FormValue(comp.ParamPassParamID)
 		unit := comp.InstantiateUnit(unitName, s.App, s.AppParams, sess.GetPassParameters(passParamId))
 		if unit == nil {
@@ -237,18 +239,18 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
-		logger.Info("instantiation finished")
+		logger.Debug("instantiation finished")
 		if sess != nil {
 			sess.UnitCache.AddUnit(unit)
-			logger.Info("unit runtime cached in session")
+			logger.Debug("unit runtime cached in session")
 		}
-		logger.Info("unit runtime process create event..")
+		logger.Debug("unit runtime process create event..")
 		unit.ProcessInitEvents(sess)
 		//e := comp.NewEventRuntime(sess, unit, nil, comp.EvtUnitCreate, "")
 		//unit.ProcessEvent(e)
-		logger.Info("unit runtime render start..")
+		logger.Debug("unit runtime render start..")
 		unit.Render(w)
-		logger.Info("unit runtime rendered")
+		logger.Debug("unit runtime rendered")
 		unit.ProcessPostRenderEvents(sess)
 	}
 
@@ -327,14 +329,14 @@ func (s *AppServer) handleEvent(sess *comp.Session, unit *comp.UnitRuntime, wr h
 		return
 	}
 
-	logger.Info("event, component found:", c.ChildRefId())
+	logger.Debug("event, component found:", c.ChildRefId())
 
 	etype := r.FormValue(paramEventType)
 	if etype == "" {
 		http.Error(wr, "Invalid event type!", http.StatusBadRequest)
 		return
 	}
-	logger.Info("Event from comp:", compId, " event:", etype)
+	logger.Debug("Event from comp:", compId, " event:", etype)
 
 	isUpload := r.FormValue(paramUpload)
 	if isUpload == "y" {
@@ -347,7 +349,7 @@ func (s *AppServer) handleEvent(sess *comp.Session, unit *comp.UnitRuntime, wr h
 	}
 
 	evalue := r.FormValue(paramCompValue)
-	logger.Info("event,value:", evalue)
+	logger.Debug("event,value:", evalue)
 
 	e := comp.NewEventRuntime(sess, unit, c, etype, evalue)
 
@@ -355,13 +357,15 @@ func (s *AppServer) handleEvent(sess *comp.Session, unit *comp.UnitRuntime, wr h
 	e.MouseWX = mouseWX
 	mouseWY, _ := strconv.ParseInt(r.FormValue(paramMouseWY), 10, 64)
 	e.MouseWY = mouseWY
-
+	e.KeyString = r.FormValue(paramKeyString)
+	keyCode, _ := strconv.ParseInt(r.FormValue(paramKeyCode), 10, 64)
+	e.KCode = keyCode
 	//c.CompDef.EventsHandler.ProcessEvent(e)
 	comp.ProcessCompEvent(e)
 
 	e.ResponseAction.Write(wr)
 	//wr.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	//logger.Info("act result:", e.ResponseAction.Encode())
+	//logger.Debug("act result:", e.ResponseAction.Encode())
 	//wr.Write([]byte(e.ResponseAction.Encode()))
 
 	/*event := newEventImpl(EventType(etype), comp, s, sess, wr, r)
@@ -470,7 +474,7 @@ func (s *AppServer) renderComp(unit *comp.UnitRuntime, w http.ResponseWriter, r 
 		return
 	}
 
-	logger.Info("event, component found:", c.ChildRefId())
+	logger.Debug("event, component found:", c.ChildRefId())
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8") // We send it as text!
 	if subpartName == "" {
@@ -569,7 +573,7 @@ func (s *AppServer) serveFileSave(w http.ResponseWriter, r *http.Request) {
 
 	content := r.FormValue("content")
 	fileName := strings.Join(parts, "/")
-	logger.Info("Incoming save file name:", fileName)
+	logger.Debug("Incoming save file name:", fileName)
 
 	if fileName != "" {
 		if strings.Contains(fileName, "/") {
@@ -584,6 +588,20 @@ func (s *AppServer) serveFileSave(w http.ResponseWriter, r *http.Request) {
 
 	}
 
+	if strings.HasSuffix(fileName, ".yaml") {
+		msg := loader.CheckYaml([]byte(content))
+		//line 3: mapping values are not allowed in this context
+		if msg != "" {
+			line := 1
+			fmt.Sscanf(msg, "yaml: line %d:", &line)
+			lastColon := strings.LastIndex(msg, ":")
+			errMsg := msg[lastColon+2:]
+			msg = fmt.Sprintf("error:%d:%s", line, errMsg)
+		}
+		w.Header().Set("Msg", msg)
+		w.Write([]byte(loader.CheckYaml([]byte(content))))
+	}
+
 	if parts[0] == "ide70" {
 		if parts[1] == "comp" {
 			comp.RefreshCompType(strings.TrimSuffix(strings.Join(parts[2:], "/"), ".yaml"))
@@ -595,6 +613,10 @@ func (s *AppServer) serveFileSave(w http.ResponseWriter, r *http.Request) {
 		}
 		if parts[1] == "dcfg" {
 			loader.DropTemplatedYaml(strings.TrimSuffix(strings.Join(parts, "/"), ".yaml"))
+		}
+		if parts[1] == "app" {
+			s.App.ReconfigureApplication()
+			s.printLoginUnitInfo()
 		}
 	}
 
@@ -635,7 +657,7 @@ func (s *AppServer) serveCodeComplete(w http.ResponseWriter, r *http.Request) {
 	col, _ := strconv.ParseInt(r.FormValue("col"), 10, 32)
 	//fileName := strings.Join(parts, "/")
 	pureFileName := strings.Join(parts[1:], "/")
-	logger.Info("Code complete file name:", pureFileName, int(row), int(col))
+	logger.Debug("Code complete file name:", pureFileName, int(row), int(col))
 
 	completions := codecomplete.CodeComplete(content, int(row), int(col), pureFileName)
 	w.Header().Set("Content-Type", "application/json")
@@ -661,7 +683,7 @@ func (s *AppServer) serveCodeNavigate(w http.ResponseWriter, r *http.Request) {
 	col, _ := strconv.ParseInt(r.FormValue("col"), 10, 32)
 	fileName := strings.Join(parts, "/")
 	fileType := parts[1]
-	logger.Info("Code complete file name:", fileName, fileType, int(row), int(col))
+	logger.Debug("Code complete file name:", fileName, fileType, int(row), int(col))
 
 	completions := codecomplete.CodeNavigate(content, int(row), int(col), fileType)
 	w.Header().Set("Content-Type", "application/json")
@@ -674,7 +696,7 @@ func (s *AppServer) sessCleaner(stop chan struct{}) {
 	for {
 		select {
 		case <-stop:
-			logger.Info("stop all sessions")
+			logger.Debug("stop all sessions")
 			s.sessMux.Lock()
 			for _, sess := range s.sessions {
 				s.removeSession(sess)
@@ -696,14 +718,14 @@ func (s *AppServer) sessCleaner(stop chan struct{}) {
 	}
 }
 
-func (s *AppServer) newSession(oldSess *comp.Session) *comp.Session {
-	sess := comp.NewSession()
+func (s *AppServer) newSession(oldSess *comp.Session, accessPrefix string) *comp.Session {
+	sess := comp.NewSession(accessPrefix)
 
 	// Store new session
 	s.sessMux.Lock()
 	s.sessions[sess.ID] = sess
 
-	logger.Info("SESSION created:", sess.ID)
+	logger.Debug("SESSION created:", sess.ID)
 
 	// Notify session handlers
 	//for _, handler := range s.sessionHandlers {
@@ -719,7 +741,7 @@ func (s *AppServer) newSession(oldSess *comp.Session) *comp.Session {
 // public session is a no-op.
 // serverImpl.mux must be locked when this is called.
 func (s *AppServer) removeSession(sess *comp.Session) {
-	logger.Info("SESSION removed:", sess.ID)
+	logger.Debug("SESSION removed:", sess.ID)
 
 	// Notify session handlers
 	//for _, handler := range s.sessionHandlers {
@@ -756,5 +778,15 @@ func registerServer(app *app.Application, server *AppServer) {
 	var err error
 	if app.URL, err = url.Parse(app.URLString); err != nil {
 		logger.Error("Parse", app.URLString, err)
+	}
+}
+
+func (s *AppServer) printLoginUnitInfo() {
+	loginUnitsArr := api.SIMapGetByKeyAsList(s.App.Config, "loginUnits")
+	for _, loginUnitIf := range loginUnitsArr {
+		loginUnitMap := api.IAsSIMap(loginUnitIf)
+		loginUnitPath := api.SIMapGetByKeyAsString(loginUnitMap, "path")
+		loginUnitDescr := api.SIMapGetByKeyAsString(loginUnitMap, "descr")
+		logger.Info("login URL:", s.App.URLString+loginUnitPath, "("+loginUnitDescr+")")
 	}
 }

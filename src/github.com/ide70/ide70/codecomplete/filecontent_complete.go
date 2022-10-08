@@ -27,14 +27,14 @@ func fileContentCompleter(yamlPos *YamlPosition, edContext *EditorContext, confi
 		if fileNameExpr != "" {
 			selfAsTemplatedYaml := loader.ConvertTemplatedYaml([]byte(edContext.content), "self")
 			selfData := selfAsTemplatedYaml.IDef
-			logger.Info("fileNameExpr:", fileNameExpr)
+			logger.Debug("fileNameExpr:", fileNameExpr)
 			rePath, _ := convertYamlpathToRegex(fileNameExpr, yamlPos)
 			api.IApplyFn(selfData, func(entry api.CollectionEntry) {
-				logger.Info("sleaf:", entry.LinearKey())
+				logger.Debug("sleaf:", entry.LinearKey())
 				if rePath.MatchString(entry.LinearKey()) {
-					logger.Info("match")
+					logger.Debug("match")
 					fileName := api.IAsString(entry.Value())
-					logger.Info("fileName:" + fileName)
+					logger.Debug("fileName:" + fileName)
 					fileContents := loader.LoadFileContents(fileName, "ide70/"+folderPrefix+"/")
 					compl = scanContents(fileContents, reSearch, compl)
 				}

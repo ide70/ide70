@@ -1,12 +1,18 @@
 package api
 
 import (
+	"bytes"
+	"crypto/md5"
+	"encoding/gob"
+	"encoding/hex"
 	"github.com/ide70/ide70/loader"
 	"github.com/ide70/ide70/util/log"
 	"reflect"
+	"regexp"
 	"runtime"
 	"sort"
 	"strings"
+	"unicode"
 )
 
 var logger = log.Logger{"api"}
@@ -69,8 +75,16 @@ func (i Interface) AsITable() ITable {
 	return ITable{}
 }
 
-func (i Interface) AsString() string {
-	return IAsString(i.I)
+func (i Interface) AsHTable() *HTable {
+	switch iT := i.I.(type) {
+	case *HTable:
+		return iT
+	}
+	return nil
+}
+
+func (i Interface) AsString() String {
+	return String{s: IAsString(i.I)}
 }
 
 func (i Interface) AsInt64() int64 {
@@ -90,6 +104,16 @@ func (i Interface) AsDBO() *DataBaseObject {
 	case *DataBaseObject:
 		return iT
 	case DataBaseObject:
+		return &iT
+	}
+	return nil
+}
+
+func (i Interface) AsBinaryData() *BinaryData {
+	switch iT := i.I.(type) {
+	case *BinaryData:
+		return iT
+	case BinaryData:
 		return &iT
 	}
 	return nil
@@ -178,16 +202,48 @@ func (a IArray) Sort() IArray {
 		aiStr := IAsString(a[i])
 		ajStr := IAsString(a[j])
 		return aiStr < ajStr
+		return ByCaseLess(aiStr, ajStr)
 	})
 	return a
 }
 
+func ByCaseLess(si, sj string) bool {
+	iRunes := []rune(si)
+	jRunes := []rune(sj)
+
+	max := len(iRunes)
+	if max > len(jRunes) {
+		max = len(jRunes)
+	}
+
+	for idx := 0; idx < max; idx++ {
+		ir := iRunes[idx]
+		jr := jRunes[idx]
+
+		lir := unicode.ToLower(ir)
+		ljr := unicode.ToLower(jr)
+
+		if lir != ljr {
+			return lir < ljr
+		}
+
+		// the lowercase runes are the same, so compare the original
+		if ir != jr {
+			return ir < jr
+		}
+	}
+
+	// If the strings are the same up to the length of the shortest string,
+	// the shorter string comes first
+	return len(iRunes) < len(jRunes)
+}
+
 func (a IArray) PrintDBG() {
-	logger.Info("IArray:", a)
+	logger.Debug("IArray:", a)
 }
 
 func (t ITable) PrintDBG() {
-	logger.Info("ITable:", t)
+	logger.Debug("ITable:", t)
 }
 
 func (t ITable) Get(idxIf interface{}) SIMap {
@@ -271,7 +327,7 @@ func opSToken(pc *ProcessContext) OpResult {
 
 func opFromSToken(pc *ProcessContext) OpResult {
 	opSubject := pc.opSubject.(string)
-	logger.Info("opSubject", opSubject)
+	logger.Debug("opSubject", opSubject)
 	idx := pc.actArgs[0].(int)
 	sep := pc.actArgs[1].(string)
 	tokens := strings.Split(opSubject, sep)
@@ -302,17 +358,17 @@ func (a IArray) ProcessContext() *ArrProcessContext {
 }
 
 func (t ITable) ProcessContext() *TblProcessContext {
-	logger.Info("ProcessContext()")
+	logger.Debug("ProcessContext()")
 	pc := &TblProcessContext{pc: &ProcessContext{}, subject: t}
-	logger.Info("ProcessContext() end")
+	logger.Debug("ProcessContext() end")
 	return pc
 }
 
 func (pcT *TblProcessContext) AsStr() *TblProcessContextStr {
-	logger.Info("AsStr()")
+	logger.Debug("AsStr()")
 	pc := pcT.pc
 	pc.ops = append(pc.ops, ProcessContextFuncWithArgs{ProcessContextFunc: opAsString})
-	logger.Info("AsStr() end")
+	logger.Debug("AsStr() end")
 	return &TblProcessContextStr{pc: pcT}
 }
 
@@ -339,12 +395,12 @@ func (pcT *TblProcessContext) Set(key string) *TblProcessContext {
 }
 
 func (pcT *TblProcessContext) Get(key string) *TblProcessContext {
-	logger.Info("Get()")
-	logger.Info("pcT", pcT)
+	logger.Debug("Get()")
+	logger.Debug("pcT", pcT)
 	pc := pcT.pc
-	logger.Info("pc.ops", pc.ops)
+	logger.Debug("pc.ops", pc.ops)
 	pc.ops = append(pc.ops, ProcessContextFuncWithArgs{opMapGet, []interface{}{key}})
-	logger.Info("End()")
+	logger.Debug("End()")
 	return pcT
 }
 
@@ -368,10 +424,10 @@ func (pcT *TblProcessContext) Get(key string) *TblProcessContext {
 }*/
 
 func (pcT *TblProcessContext) Process() ITable {
-	logger.Info("Process()")
+	logger.Debug("Process()")
 	pc := pcT.pc
 	for idx, elem := range pcT.subject {
-		logger.Info("elem:", elem)
+		logger.Debug("elem:", elem)
 		pc.actIdx = idx
 		pc.actElem = elem
 		for _, opWA := range pc.ops {
@@ -382,12 +438,21 @@ func (pcT *TblProcessContext) Process() ITable {
 			}
 		}
 	}
-	logger.Info("Process() end")
+	logger.Debug("Process() end")
 	return pcT.subject
 }
 
 func getFunctionName(i interface{}) string {
 	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
+}
+
+func (t ITable) Len() int {
+	return len(t)
+}
+
+type HTable struct {
+	header ITable
+	data   ITable
 }
 
 func (t ITable) GroupBy(col, groupCol string) ITable {
@@ -419,6 +484,202 @@ func (t ITable) GroupBy(col, groupCol string) ITable {
 		dt = append(dt, dRow)
 	}
 	return dt
+}
+
+type SSet map[string]bool
+
+func (set SSet) ToSortedArray() IArray {
+	a := IArray{}
+	for k, _ := range set {
+		a = append(a, k)
+	}
+	return a.Sort()
+}
+
+func (t ITable) MatrixView(colVert, colHoriz, colCell string) *HTable {
+	hd := ITable{}
+	dt := ITable{}
+	horizNamesSet := SSet{}
+	vertNamesSet := SSet{}
+	cellMap := map[string]map[string]interface{}{}
+	for _, row := range t {
+		horizVal := IAsString(row[colHoriz])
+		vertVal := IAsString(row[colVert])
+		horizNamesSet[horizVal] = true
+		vertNamesSet[vertVal] = true
+		if _, has := cellMap[vertVal]; !has {
+			cellMap[vertVal] = map[string]interface{}{}
+		}
+		cellMap[vertVal][horizVal] = row[colCell]
+	}
+	horizNames := horizNamesSet.ToSortedArray()
+	vertNames := vertNamesSet.ToSortedArray()
+	firstHdrCol := SIMap{}
+	firstHdrCol["header"] = colVert + "/" + colHoriz
+	firstHdrCol["key"] = colVert
+	hd = append(hd, firstHdrCol)
+	for _, horizName := range horizNames {
+		hdrCol := SIMap{}
+		hdrCol["header"] = horizName
+		hdrCol["key"] = horizName
+		hd = append(hd, hdrCol)
+	}
+	for _, vertName := range vertNames {
+		row := SIMap{}
+		row[colVert] = vertName
+		for _, horizName := range horizNames {
+			row[IAsString(horizName)] = cellMap[IAsString(vertName)][IAsString(horizName)]
+		}
+		dt = append(dt, row)
+	}
+	return &HTable{header: hd, data: dt}
+}
+
+func (ht *HTable) Header() ITable {
+	return ht.header
+}
+
+func (ht *HTable) Data() ITable {
+	return ht.data
+}
+
+func (ht *HTable) SetHeader(t ITable) {
+	ht.header = t
+}
+
+func (ht *HTable) SetData(t ITable) {
+	ht.data = t
+}
+
+func (t ITable) ReoderBy(col string, order ITable) ITable {
+	dt := ITable{}
+	byColVal := map[interface{}]SIMap{}
+	for _, row := range t {
+		colVal := row[col]
+		byColVal[colVal] = row
+	}
+	for _, row := range order {
+		colVal := row[col]
+		if connRow, has := byColVal[colVal]; has {
+			dt = append(dt, connRow)
+		}
+	}
+	return dt
+}
+
+func (t ITable) ColReplaceVal(col string, oldValue, newValue interface{}) ITable {
+	for _, row := range t {
+		colVal := row[col]
+		if IAsString(colVal) == IAsString(oldValue) {
+			row[col] = newValue
+		}
+	}
+	return t
+}
+
+func (t ITable) ColView(col string) ITable {
+	dt := ITable{}
+	for _, row := range t {
+		dstRow := SIMap{}
+		dstRow[col] = row[col]
+		dt = append(dt, dstRow)
+	}
+	return dt
+}
+
+func (t ITable) Distinct() ITable {
+	dt := ITable{}
+	rowMap := map[string]bool{}
+	for _, row := range t {
+		hash := Hash(row)
+		if _, has := rowMap[hash]; !has {
+			rowMap[hash] = true
+			dt = append(dt, row)
+		}
+	}
+	return dt
+}
+
+func Hash(s interface{}) string {
+	var b bytes.Buffer
+	gob.NewEncoder(&b).Encode(s)
+	hash := md5.Sum(b.Bytes())
+	return hex.EncodeToString(hash[:])
+}
+
+func (t ITable) ColJoinBySeparator(srcCol1, srcCol2, dstCol, separator string) ITable {
+	for _, row := range t {
+		srcColVal1 := IAsString(row[srcCol1])
+		srcColVal2 := IAsString(row[srcCol2])
+		if IsEmpty(srcColVal1) || IsEmpty(srcColVal2) {
+			row[dstCol] = srcColVal1 + srcColVal2
+		} else {
+			row[dstCol] = srcColVal1 + separator + srcColVal2
+		}
+	}
+	return t
+}
+
+type FilterExpr interface {
+	Match(SIMap) bool
+}
+
+type ITFilter struct {
+	t ITable
+	f FilterExpr
+}
+
+type LikeFilter struct {
+	col string
+	re  *regexp.Regexp
+}
+
+func (f *LikeFilter) Match(row SIMap) bool {
+	return f.re.MatchString(IAsString(row[f.col]))
+}
+
+func (t ITable) ExprLikeContains(col, sub string) *ITFilter {
+	return &ITFilter{t: t, f: &LikeFilter{col: col, re: regexp.MustCompile(".*" + sub + ".*")}}
+}
+
+func (t ITable) ExprLikePrefix(col, sub string) *ITFilter {
+	return &ITFilter{t: t, f: &LikeFilter{col: col, re: regexp.MustCompile(sub + ".*")}}
+}
+
+func (f *ITFilter) Select() ITable {
+	dt := ITable{}
+	for _, row := range f.t {
+		if f.f.Match(row) {
+			dt = append(dt, row)
+		}
+	}
+	return dt
+}
+
+func (t ITable) RowsSelectByVal(col string, val interface{}) ITable {
+	dt := ITable{}
+	for _, row := range t {
+		colVal := row[col]
+		if IAsString(colVal) == IAsString(val) {
+			dt = append(dt, row)
+		}
+	}
+	return dt
+}
+
+func (t ITable) Copy() ITable {
+	dt := ITable{}
+	for _, row := range t {
+		dt = append(dt, SIMapLightCopy(row))
+	}
+	return dt
+}
+
+func (t ITable) AddTable(at ITable) ITable {
+	for _, row := range at {
+		t = append(t, row)
+	}
+	return t
 }
 
 type LoadContext struct {

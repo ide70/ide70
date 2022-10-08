@@ -1,12 +1,73 @@
 ---
+unitInterface:
+  descr: General purpose data table
+  properties:
+    columns:
+      descr: Columns of data list
+      mapHead: yes
+      children:
+        header:
+          descr: Column header title
+          listHead: yes
+          children:
+            items:
+              descr: Sub components to display in columns cells
+              mapHead: yes
+              children:
+                cr:
+                  descr: Component reference to display
+                  listHead: yes
+                  valueCompleter:
+                    yamlPathCompleter:
+                      self: yes
+                      pathExpr: "[%].cr:value"
+    htable:
+      descr: Contents
+      type: map
+  events:
+    cellUpdate:
+      descr: Fires when key pressed on cell, waits nem cell value
+      params:
+        oldValue: Current cell value
+        key: Key pressed
+        data: Data table as ITable
+        row: row number
+        col: column name
 body: |
-  <table class="datatable">
-  {{range .displayRows}}
+  <table class="datatable" id="{{.sid}}">
   <tr>
-    {{range .c}}
+  {{range $column := $.htable.Header}}
+    <th>{{$column.header}}</th>
+  {{end}}
+  </tr>
+  {{range $i, $dataRow := $.htable.Data}}
+  <tr>
+    {{range $column := $.htable.Header}}
+    <td tabindex="1" {{eventHandlerJs $.This "onkeypress" "this.getAttribute('cellid')"}} cellid="{{$i}}:{{$column.key}}" onmouseover="this.focus();" onmouseleave="this.blur();">
+    {{if $column.key}}{{index $dataRow $column.key}}{{end}}
+    {{range $child := $column.items}}
+    {{generateComp $.This $child.cr $i $dataRow}}
+    {{end}}
+    </td>
+    {{end}}
   </tr>
   {{end}}
   </table>
+eventHandlers:
+  onkeypress:
+    action: |
+      var dataIndex = Event().EventKey();
+      var dataIndexTokens = dataIndex.split(":");
+      var row = dataIndexTokens[0];
+      var col = dataIndexTokens[1];
+      var key = Event().KeyStr();
+      var data = CompCtx().GetPropToCast("htable").AsHTable().Data();
+      var oldValue = data.Get(row).Get(col);
+      CompCtx().ForwardEvent("cellUpdate").AddForwardParam("data", data).
+      AddForwardParam("col", col).
+      AddForwardParam("row", row).
+      AddForwardParam("key", key).
+      AddForwardParam("oldValue", oldValue);
 injectRootComp:
   css:
     - name: comp/dataTable.css

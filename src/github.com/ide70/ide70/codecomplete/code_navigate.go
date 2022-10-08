@@ -20,7 +20,7 @@ func CodeNavigate(content string, row, col int, fileType string) *NavigationResu
 	lines := preProcessLines(content)
 
 	yamlPos := getYamlPosition(lines, row, col, true)
-	logger.Info("n.pos:", yamlPos.getKey())
+	logger.Debug("n.pos:", yamlPos.getKey())
 
 	complDescrTY := loader.GetTemplatedYaml("codeNavigate", "")
 	if complDescrTY == nil {
@@ -35,7 +35,7 @@ func CodeNavigate(content string, row, col int, fileType string) *NavigationResu
 		if !rePathExpr.MatchString(yamlPos.getKey()) {
 			continue
 		}
-		logger.Info("navigation pathExpr matches:", pathExpr)
+		logger.Debug("navigation pathExpr matches:", pathExpr)
 		fileNameSrc := api.SIMapGetByKeyAsString(pattern, "fileName")
 		fileName := ""
 		createFile := false
@@ -52,27 +52,27 @@ func CodeNavigate(content string, row, col int, fileType string) *NavigationResu
 				continue
 			}
 		}
-		logger.Info("targetValue:", targetValue)
+		logger.Debug("targetValue:", targetValue)
 		if fileNameSrc == "value" {
 			fileName = targetValue
 			if strings.HasSuffix(fileName, "+") {
 				createFile = true
 				fileName = strings.TrimSuffix(fileName, "+")
 			}
-			logger.Info("navigation target value:", fileName)
+			logger.Debug("navigation target value:", fileName)
 		}
 		addPrefix := api.SIMapGetByKeyAsString(pattern, "addPrefix")
 		addSuffix := api.SIMapGetByKeyAsString(pattern, "addSuffix")
 		if fileName != "" {
 			fileName = "ide70/" + addPrefix + fileName + addSuffix
 		}
-		logger.Info("result file name:", fileName)
+		logger.Debug("result file name:", fileName)
 		
 		if fileName != "" && !createFile {
-			logger.Info("checking target file: ", fileName)
+			logger.Debug("checking target file: ", fileName)
 			fc := &file.FileContext{}
 			if !fc.IsRegularFile(fileName) {
-				logger.Info("missing target file: ", fileName)
+				logger.Debug("missing target file: ", fileName)
 				return &NavigationResult{Success: false}
 			}
 		}
@@ -91,45 +91,45 @@ func CodeNavigate(content string, row, col int, fileType string) *NavigationResu
 
 			if fileAsTemplatedYaml != nil {
 				fileData := fileAsTemplatedYaml.IDef
-				logger.Info("pathExpr:", pathExpr)
+				logger.Debug("pathExpr:", pathExpr)
 				rePath, selector := convertYamlpathToRegex(navigateExpr, yamlPos)
 				if rePath != nil {
 					row := 0
 					col := 0
 					api.IApplyFn(fileData, func(entry api.CollectionEntry) {
-						logger.Info("leaf:", entry.LinearKey())
+						logger.Debug("leaf:", entry.LinearKey())
 						if rePath.MatchString(entry.LinearKey()) {
-							logger.Info("match")
+							logger.Debug("match")
 							entryValue,_ := leafValDescr(entry, selector)
 							targetMatch := entryValue == targetValue
 							if targetMatch {
-								logger.Info("targetMatch:", entry.LinearKey())
+								logger.Debug("targetMatch:", entry.LinearKey())
 								row, col = leafPos(entry.LinearKey(), lines)
-								logger.Info("row, col:", row, col)
+								logger.Debug("row, col:", row, col)
 							}
 						}
 					})
 					if row > 0 {
 						return &NavigationResult{FileName: fileName, Row: row, Col: col, Success: true}
 					}
-					logger.Info("fileAsTemplatedYaml finished")
+					logger.Debug("fileAsTemplatedYaml finished")
 				}
 
 			}
 		}
 		if fileName != "" && createFile {
-			logger.Info("checking create new file: ", fileName)
+			logger.Debug("checking create new file: ", fileName)
 			fc := &file.FileContext{}
 			if !fc.IsRegularFile(fileName) {
 				fc.CreateFileWithPath(fileName)
-				logger.Info("create new file: ", fileName)
+				logger.Debug("create new file: ", fileName)
 			}
 		}
 		return &NavigationResult{FileName: fileName, Success: true}
 	}
 
 	//return &NavigationResult{FileName: "ide70/comp/layer/layer.yaml", Col: 1, Row: 3, Success: true}
-	logger.Info("no matching navigation found")
+	logger.Debug("no matching navigation found")
 	return &NavigationResult{Success: false}
 }
 
@@ -157,17 +157,17 @@ func leafPos(path string, lines []string) (row, col int) {
 	for row < len(lines) {
 		line := lines[row]
 		if strings.HasSuffix(line, "---") {
-			logger.Info("skipping --- at row", row)
+			logger.Debug("skipping --- at row", row)
 			row++
 			continue
 		}
 		lineFromCol := line[col:]
 		if idxToSearch > -1 {
 			if strings.HasPrefix(lineFromCol, "- ") {
-				logger.Info("idx entry at line:", row)
+				logger.Debug("idx entry at line:", row)
 				idxToSearch--
 				if idxToSearch == -1 {
-					logger.Info("idx found at line:", row)
+					logger.Debug("idx found at line:", row)
 					if tokenNo < len(pathTokens)-1 {
 						tokenNo++
 						col += 2
@@ -186,11 +186,11 @@ func leafPos(path string, lines []string) (row, col int) {
 		if strings.HasPrefix(token, "[") {
 			idxStr := strings.TrimSuffix(strings.TrimPrefix(token, "["), "]")
 			fmt.Sscanf(idxStr, "%d", &idxToSearch)
-			logger.Info("idxToSearch:", idxToSearch)
+			logger.Debug("idxToSearch:", idxToSearch)
 			continue
 		} else {
 			if strings.HasPrefix(lineFromCol, token+":") {
-				logger.Info("key", token, "found at line:", row)
+				logger.Debug("key", token, "found at line:", row)
 				if tokenNo < len(pathTokens)-1 {
 					tokenNo++
 					col += 2

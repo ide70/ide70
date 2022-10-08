@@ -43,18 +43,18 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 			} else {
 				fileName = lastMatch[0]
 			}
-			logger.Info("regex fileName:" + fileName)
+			logger.Debug("regex fileName:" + fileName)
 			if fileNameRegexCrToCompType {
 				selfAsTemplatedYaml := loader.ConvertTemplatedYaml([]byte(edContext.content), "self")
 				selfData := selfAsTemplatedYaml.IDef
 				rePath, _ := convertYamlpathToRegex("[%].cr", yamlPos)
 				api.IApplyFn(selfData, func(entry api.CollectionEntry) {
-					logger.Info("sleaf:", entry.LinearKey())
+					logger.Debug("sleaf:", entry.LinearKey())
 					if rePath.MatchString(entry.LinearKey()) {
-						logger.Info("match")
+						logger.Debug("match")
 						if api.IAsString(entry.Value()) == fileName {
 							fileName = api.IAsString(entry.SameLevelValue("compType"))
-							logger.Info("comptype fileName:" + fileName)
+							logger.Debug("comptype fileName:" + fileName)
 							entry.Stop()
 						}
 					}
@@ -64,14 +64,14 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 		if fileNameExpr != "" {
 			selfAsTemplatedYaml := loader.ConvertTemplatedYaml([]byte(edContext.content), "self")
 			selfData := selfAsTemplatedYaml.IDef
-			logger.Info("fileNameExpr:", fileNameExpr)
+			logger.Debug("fileNameExpr:", fileNameExpr)
 			rePath, _ := convertYamlpathToRegex(fileNameExpr, yamlPos)
 			api.IApplyFn(selfData, func(entry api.CollectionEntry) {
-				logger.Info("sleaf:", entry.LinearKey())
+				logger.Debug("sleaf:", entry.LinearKey())
 				if rePath.MatchString(entry.LinearKey()) {
-					logger.Info("match")
+					logger.Debug("match")
 					fileName = api.IAsString(entry.Value())
-					logger.Info("fileName:" + fileName)
+					logger.Debug("fileName:" + fileName)
 				}
 			})
 		}
@@ -82,7 +82,7 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 	}
 	if fileAsTemplatedYaml != nil {
 		fileData := fileAsTemplatedYaml.IDef
-		logger.Info("pathExpr:", pathExpr)
+		logger.Debug("pathExpr:", pathExpr)
 		rePath, selector := convertYamlpathToRegex(pathExpr, yamlPos)
 		if rePath != nil {
 			treeIterationFn := api.IApplyFn
@@ -90,23 +90,23 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 				treeIterationFn = api.IApplyFnToNodes
 			}
 			treeIterationFn(fileData, func(entry api.CollectionEntry) {
-				logger.Info("leaf:", entry.LinearKey())
+				logger.Debug("leaf:", entry.LinearKey())
 				if rePath.MatchString(entry.LinearKey()) {
 					value, descr := leafValDescr(entry, selector)
-					logger.Info("match val:", value)
-					logger.Info("match descr:", descr)
+					logger.Debug("match val:", value)
+					logger.Debug("match descr:", descr)
 
 					filtered := false
 					if filterExprList != "" {
-						logger.Info("filterExprList:", filterExprList)
+						logger.Debug("filterExprList:", filterExprList)
 						filterExprArr := strings.Split(filterExprList, "|")
 						for _, filterExpr := range filterExprArr {
 							reFilterExpr, isFilterValue := convertYamlpathToRegex(filterExpr, yamlPos)
-							logger.Info("filterExpr:", filterExpr)
+							logger.Debug("filterExpr:", filterExpr)
 							if reFilterExpr != nil {
-								logger.Info("examine nodes")
+								logger.Debug("examine nodes")
 								api.IApplyFnToNodes(fileData, func(entry api.CollectionEntry) {
-									logger.Info("lin key:", entry.LinearKey())
+									logger.Debug("lin key:", entry.LinearKey())
 									if reFilterExpr.MatchString(entry.LinearKey()) {
 										filterValue, _ := leafValDescr(entry, isFilterValue)
 										if value == filterValue {
@@ -114,18 +114,18 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 										}
 									}
 								})
-								logger.Info("examine nodes done")
+								logger.Debug("examine nodes done")
 							}
 						}
 					}
 
-					logger.Info("kpfx:", yamlPos.keyPrefix)
+					logger.Debug("kpfx:", yamlPos.keyPrefix)
 					if convertMapDescr != "" && yamlPos.keyPrefix == value && !yamlPos.keyComplete {
 						matchConfigData := map[string]interface{}{"singleToMap": true, "mapHead": true, "descr": convertMapDescr}
 						compl = addCompletion(value, edContext, matchConfigData, compl)
 					} else {
 						if filtered {
-							logger.Info("filtered:", value)
+							logger.Debug("filtered:", value)
 							return
 						}
 						actconfigData := api.SIMapLightCopy(configData)
@@ -136,7 +136,7 @@ func yamlPathCompleter(yamlPos *YamlPosition, edContext *EditorContext, configDa
 					}
 				}
 			})
-			logger.Info("IApplyFn finished")
+			logger.Debug("IApplyFn finished")
 		}
 
 	}
@@ -178,7 +178,7 @@ func convertYamlpathToRegex(path string, ypos *YamlPosition) (*regexp.Regexp, st
 		path = ypos.getIndexedKey() + path
 	}
 	if levelBack > 0 {
-		logger.Info("indexed key:" + ypos.getIndexedKey())
+		logger.Debug("indexed key:" + ypos.getIndexedKey())
 		absPathTokens := strings.Split(ypos.getIndexedKey(), ".")
 		if len(absPathTokens) < levelBack {
 			logger.Error("relative expr failed")
@@ -191,7 +191,7 @@ func convertYamlpathToRegex(path string, ypos *YamlPosition) (*regexp.Regexp, st
 	path = strings.ReplaceAll(path, "[", "\\[")
 	path = strings.ReplaceAll(path, "]", "\\]")
 	path = strings.ReplaceAll(path, ".", "\\.")
-	logger.Info("regex:", path)
+	logger.Debug("regex:", path)
 	re, err := regexp.Compile(path)
 	if err != nil {
 		logger.Error("compiling regex:", err.Error())

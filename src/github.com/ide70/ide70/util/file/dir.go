@@ -1,6 +1,7 @@
 package file
 
 import (
+	"github.com/ide70/ide70/api"
 	"github.com/ide70/ide70/util/log"
 	"io"
 	"io/ioutil"
@@ -50,12 +51,14 @@ func (fc *FileContext) ReadDir(basePath string) []interface{} {
 	return list
 }
 
-func (fc *FileContext) CreateFile(path string) {
+func (fc *FileContext) CreateFile(path string) *api.File {
 	emptyFile, err := os.Create(path)
 	if err != nil {
 		logger.Error(err.Error())
+		return nil
 	}
 	emptyFile.Close()
+	return api.NewFile(path)
 }
 
 func (fc *FileContext) CreateFolder(path string) {

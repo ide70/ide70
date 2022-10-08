@@ -1,0 +1,9 @@
+---
+unitInterface:
+  descr: Template data holder
+  properties:
+    template:
+      descr: Template
+      multilineValue: yes
+      valueCompleter:
+        htmlCompleter:

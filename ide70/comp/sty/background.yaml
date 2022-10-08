@@ -1,0 +1,17 @@
+---
+unitInterface:
+  properties:
+    imageFileName:
+      descr: Backround image file name
+      valueCompleter:
+        fileNameCompleter:
+          folderPrefix: css/img
+          quote: "'"
+body: |
+  <style>
+    body {
+      background-image: url("../_static/{{.imageFileName}}");
+      background-size: cover;
+      background-position: center;
+    }
+  </style>

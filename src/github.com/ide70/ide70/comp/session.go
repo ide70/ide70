@@ -163,3 +163,7 @@ func (sess *Session) DeleteUnit(unit *UnitRuntime) {
 func (sess *Session) Accessible(action string) bool {
 	return sess.accessPrefix == action
 }
+
+func (sess *Session) GetAccessPrefix() string {
+	return sess.accessPrefix
+}

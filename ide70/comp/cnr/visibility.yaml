@@ -1,0 +1,9 @@
+---
+unitInterface:
+  descr: Container with visibility feature
+  properties:
+    visible:
+      default: yes
+body: |
+  <div id="{{.sid}}">{{if $.visible}}{{range .Children}}{{evalComp .}}{{end}}{{end}}
+  </div>

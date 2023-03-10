@@ -308,7 +308,7 @@ func GnearateEventHandlerFileUpload(comp *CompRuntime, eventTypeCli string, even
 }
 
 func GnearateEventHandlerFileDownload(comp *CompRuntime, eventType string) string {
-	return comp.Unit.Application.Path + "e/" + comp.Unit.getID() + "?et=" + eventType + "&cid=" + fmt.Sprintf("%d", comp.Sid()) + "&dl=y"
+	return comp.Unit.Application.Path + comp.Unit.session.GetAccessPrefix() +"/e/" + comp.Unit.getID() + "?et=" + eventType + "&cid=" + fmt.Sprintf("%d", comp.Sid()) + "&dl=y"
 }
 
 func GenerateEventHandler(comp *CompRuntime, eventTypeCli string, eventTypeSvrOpt ...string) string {
@@ -360,6 +360,7 @@ func LinearContext(parentComp *CompRuntime, childRefIf interface{}, indexIf inte
 	index := api.IAsInt(indexIf)
 	gc := &GenerationContext{index: index, parentComp: parentComp, childRef: childRef, generateChildRef: generateChildRefLinear, generateStoreKey: generateStoreKeyLinear, generateChildRefPrefix: generateChildRefPrefixLinear, generateChildRefWithIndex: generateChildRefLinearWithIndex}
 	logger.Debug("GenerationContext:", gc)
+	parentComp.State["_generationContext"] = gc
 	return gc
 }
 

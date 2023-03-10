@@ -10,7 +10,7 @@ type UnitXform struct {
 
 func (uCtx *UnitCtx) CreateXForm(importUnitName string) *UnitXform {
 	unit := uCtx.unit
-	unitImport := InstantiateUnit(importUnitName, unit.Application, unit.appParams, unit.PassContext)
+	unitImport := InstantiateUnit(importUnitName, unit.Application, unit.appParams, unit.PassContext, unit.session)
 	if unitImport == nil {
 		return nil
 	}

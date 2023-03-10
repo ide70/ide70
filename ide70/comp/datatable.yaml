@@ -37,7 +37,7 @@ body: |
   <table class="datatable" id="{{.sid}}">
   <tr>
   {{range $column := $.htable.Header}}
-    <th>{{$column.header}}</th>
+    <th class="{{if $column.vertical}}vertical{{end}}">{{$column.header}}</th>
   {{end}}
   </tr>
   {{range $i, $dataRow := $.htable.Data}}

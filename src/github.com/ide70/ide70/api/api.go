@@ -40,6 +40,25 @@ type IArray []interface{}
 
 type ITable []SIMap
 
+type ValueMapping struct {
+	m  map[interface{}]interface{}
+	rm map[interface{}]interface{}
+}
+
+func (vm *ValueMapping) Put(k, v interface{}) *ValueMapping {
+	vm.m[k] = v
+	vm.rm[v] = k
+	return vm
+}
+
+func (vm *ValueMapping) Get(k interface{}) interface{} {
+	return vm.m[k]
+}
+
+func (vm *ValueMapping) GetReverse(k interface{}) interface{} {
+	return vm.rm[k]
+}
+
 type Interface struct {
 	I interface{}
 }
@@ -78,6 +97,14 @@ func (i Interface) AsITable() ITable {
 func (i Interface) AsHTable() *HTable {
 	switch iT := i.I.(type) {
 	case *HTable:
+		return iT
+	}
+	return nil
+}
+
+func (i Interface) AsValueMapping() *ValueMapping {
+	switch iT := i.I.(type) {
+	case *ValueMapping:
 		return iT
 	}
 	return nil
@@ -198,6 +225,15 @@ func (m SIMap) ValueList() IArray {
 }
 
 func (a IArray) Sort() IArray {
+	if len(a) > 0 && IIsInt(a[0]) {
+		sort.SliceStable(a, func(i, j int) bool {
+			ai := IAsInt64(a[i])
+			aj := IAsInt64(a[j])
+			return ai < aj
+		})
+		return a
+	}
+
 	sort.SliceStable(a, func(i, j int) bool {
 		aiStr := IAsString(a[i])
 		ajStr := IAsString(a[j])
@@ -486,6 +522,30 @@ func (t ITable) GroupBy(col, groupCol string) ITable {
 	return dt
 }
 
+func (t ITable) AscBy(col string) ITable {
+	dt := ITable{}
+	byColVal := map[interface{}]ITable{}
+	for _, row := range t {
+		val := row[col]
+		byColValTbl := byColVal[val]
+		if byColValTbl == nil {
+			byColValTbl = ITable{}
+		}
+		byColVal[val] = append(byColValTbl, row)
+	}
+	colVals := IArray{}
+	for k, _ := range byColVal {
+		colVals = append(colVals, k)
+	}
+	logger.Info("colVals:", colVals)
+	colValsSorted := colVals.Sort()
+	logger.Info("colValS:", colValsSorted)
+	for _, colVal := range colValsSorted {
+		dt = dt.AddTable(byColVal[colVal])
+	}
+	return dt
+}
+
 type SSet map[string]bool
 
 func (set SSet) ToSortedArray() IArray {
@@ -577,6 +637,13 @@ func (t ITable) ColReplaceVal(col string, oldValue, newValue interface{}) ITable
 	return t
 }
 
+func (t ITable) ColAddWithVal(col string, value interface{}) ITable {
+	for _, row := range t {
+		row[col] = value
+	}
+	return t
+}
+
 func (t ITable) ColView(col string) ITable {
 	dt := ITable{}
 	for _, row := range t {
@@ -587,17 +654,150 @@ func (t ITable) ColView(col string) ITable {
 	return dt
 }
 
+func (t ITable) MergeView(t2 ITable) ITable {
+	dt := ITable{}
+	for idx, row := range t {
+		dstRow := SIMap{}
+		for k, v := range row {
+			dstRow[k] = v
+		}
+		if idx < t2.Len() {
+			t2row := t2[idx]
+			for k, v := range t2row {
+				dstRow[k] = v
+			}
+		}
+		dt = append(dt, dstRow)
+	}
+	return dt
+}
+
+func (t ITable) LeftJoinView(tcol, t2col string, t2 ITable) ITable {
+	dt := ITable{}
+	keyMap2 := map[interface{}]interface{}{}
+	for _, row := range t2 {
+		keyMap2[row[t2col]] = row
+	}
+	for _, row := range t {
+		dstRow := SIMap{}
+		for k, v := range row {
+			dstRow[k] = v
+		}
+		if row[tcol] != nil {
+			row2 := keyMap2[row[tcol]].(SIMap)
+			if row2 != nil {
+				for k, v := range row2 {
+					if k != t2col {
+						dstRow[k] = v
+					}
+				}
+			}
+		}
+		dt = append(dt, dstRow)
+	}
+	return dt
+}
+
+func (t ITable) InnerJoinView(tcol, t2col string, t2 ITable) ITable {
+	dt := ITable{}
+	keyMap2 := map[interface{}]interface{}{}
+	for _, row := range t2 {
+		keyMap2[row[t2col]] = row
+	}
+	for _, row := range t {
+		dstRow := SIMap{}
+		if row[tcol] != nil {
+			row2 := keyMap2[row[tcol]].(SIMap)
+			if row2 != nil {
+				for k, v := range row2 {
+					if k != t2col {
+						dstRow[k] = v
+					}
+				}
+				for k, v := range row {
+					dstRow[k] = v
+				}
+				dt = append(dt, dstRow)
+			}
+		}
+	}
+	return dt
+}
+
+func (t ITable) ColRenameView(colsrc, coldst string) ITable {
+	dt := ITable{}
+	for _, row := range t {
+		dstRow := SIMap{}
+		dstRow[coldst] = row[colsrc]
+		dt = append(dt, dstRow)
+	}
+	return dt
+}
+
+func (t ITable) ColsView(cols ...string) ITable {
+	dt := ITable{}
+	for _, row := range t {
+		dstRow := SIMap{}
+		for _, col := range cols {
+			dstRow[col] = row[col]
+		}
+		dt = append(dt, dstRow)
+	}
+	return dt
+}
+
+func (t ITable) RemapColView(col string, vm *ValueMapping, reverse bool) ITable {
+	dt := ITable{}
+	m := map[interface{}]interface{}{}
+	if reverse {
+		m = vm.rm
+	} else {
+		m = vm.m
+	}
+	
+	for _, row := range t {
+		dstRow := SIMap{}
+		for ck, cv := range row {
+			if ck == col && m[cv] != nil {
+				dstRow[ck] = m[cv]
+			} else {
+				dstRow[ck] = cv
+			}
+		}
+		dt = append(dt, dstRow)
+	}
+	return dt
+}
+
 func (t ITable) Distinct() ITable {
 	dt := ITable{}
 	rowMap := map[string]bool{}
 	for _, row := range t {
-		hash := Hash(row)
+		hash := Hash(prepareHash(row))
 		if _, has := rowMap[hash]; !has {
 			rowMap[hash] = true
 			dt = append(dt, row)
 		}
 	}
 	return dt
+}
+
+type MapVal struct {
+	Keys   []string
+	Values []interface{}
+}
+
+func prepareHash(m SIMap) MapVal {
+	keys := []string{}
+	for k, _ := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	values := IArray{}
+	for _, k := range keys {
+		values = append(values, m[k])
+	}
+	return MapVal{Keys: keys, Values: values}
 }
 
 func Hash(s interface{}) string {

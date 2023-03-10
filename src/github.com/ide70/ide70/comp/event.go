@@ -403,6 +403,22 @@ func (cSW *CompCtx) RepeatIdx() int {
 	return -1
 }
 
+func (cSW *CompCtx) CompByIndexAndCr(idx interface{}, cr string) *CompCtx {
+	switch pc := cSW.c.State["_generationContext"].(type) {
+	case *GenerationContext:
+		genChildRefId := pc.generateChildRefWithIndex(pc, cr, idx)
+		logger.Debug("genChildRefId:", genChildRefId)
+		logger.Debug("pc.parentComp.GenChildren:", pc.parentComp.GenChildren)
+		comp := pc.parentComp.GenChildren[genChildRefId]
+		logger.Debug("CompByIndexAndCrInRepeat comp:", comp, "idx:", idx, "cr:", cr)
+		if comp == nil {
+			return nil
+		}
+		return &CompCtx{c: comp, event: cSW.event}
+	}
+	return nil
+}
+
 func (cSW *CompCtx) CompByIndexAndCrInRepeat(idx interface{}, cr string) *CompCtx {
 	switch pc := cSW.c.State["parentContext"].(type) {
 	case *GenerationContext:

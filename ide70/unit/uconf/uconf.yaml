@@ -1,0 +1,605 @@
+---
+- compType: page
+  tree:
+    - muveletVisibility:
+        - Muveletek:
+            - textboxUjMunkafolyamatlepes
+            - inPrefixSuggestMunkafolyamatlepesAlapjan
+            - buttonLetrehoz
+            - textboxUjUrlap
+            - textboxUjUrlapSorrend
+            - inPrefixSuggestUrlapAlapjan
+            - buttonUrlapotLetrehoz
+            - textboxUjCsoport
+            - inPrefixSuggestCsoportAlapjan
+            - buttonCsoportotLetrehoz
+            - buttonExportSQLBe
+            - buttonExportJSONBa
+        - Betoltes2:
+            - UgyCimke
+            - urlapData
+        - buttonManualisModositasokMentese
+    - importVisibility:
+        - Betoltes:
+            - inFileImportUconfJson
+            - inFileImportDbCsv
+            - inFileSQLScript
+    - csoportok:
+        - csopCimke
+        - configDataCsop
+- compType: data/shared
+  lathatoMapping:
+    calc: |
+      Api().Arrays().NewValueMapping().Put("K", "Különbség")
+      .Put("L", "Látható")
+      .Put("", "Nem látható")
+      .Put("M", "Módosítható")
+      .Put("MJ", "Megjegyzés")
+      .Put("P", "Pótlás");
+  dftMapping:
+    calc: |
+      Api().Arrays().NewValueMapping().Put(1, true)
+      .Put(0, false)
+  mode: none
+  cr: dataShared
+- compType: labeledTable
+  cr: Betoltes
+- compType: labeledTable
+  cr: Betoltes2
+- compType: cnr/visibility
+  cr: importVisibility
+- compType: cnr/visibility
+  cr: muveletVisibility
+  visible: no
+- compType: in/file
+  label: Import uconf json
+  cr: inFileImportUconfJson
+  showDownload: no
+  eventHandlers:
+    onUploadComplete:
+      action: |
+        CompByCr("dataShared").SetProp("mode", "json");
+        var fileData = Event().GetParamToCast("binaryData").AsBinaryData();
+        var urlapok = fileData.AsJSONToSIMap().GetForConvert("urlapok").AsITable();
+        var ugyletTipusok = fileData.AsJSONToSIMap().GetForConvert("ugyletTipusok").AsITable();
+        Api().Logger().Info("urlapok", urlapok.Len(), urlapok);
+        var sorrendOszlopW = Api().Arrays().NewITableW();
+        for(var i=0;i<urlapok.Len();i++) {
+            sorrendOszlopW.AddEmptyRow().AddCol("sorrend", (i+1)*10);
+        }
+        Api().Logger().Info("urlapok", urlapok.ColRenameView("nev", "urlap"));
+        var urlapSorrend = urlapok.ColRenameView("nev", "urlap").MergeView(sorrendOszlopW.Finalize());
+        CompByCr("urlapData").SetProp("DataSet", urlapSorrend);
+        
+        var konfigW = Api().Arrays().NewITableW();
+        var konfigT = konfigW.Finalize();
+        konfigT.RowsSelectByVal("mfl", kod).Len()
+        
+        var urlapKonfig = fileData.AsJSONToSIMap().GetForConvert("ugyletTipusok").AsITable().Get(0).GetForConvert("ugyletTipusAdatok").AsITable();
+        var lathatoMapping = CompByCr("dataShared").GetPropToCast("lathatoMapping").AsValueMapping();
+        var dftMapping = CompByCr("dataShared").GetPropToCast("dftMapping").AsValueMapping();
+        for(var i=0;i<urlapKonfig.Len();i++) {
+            var urlapNev = urlapKonfig.Get(i).Get("urlap");
+            var konfig = urlapKonfig.Get(i).GetForConvert("konfig").AsITable();
+            for(var j=0;j<konfig.Len();j++) {
+                var konfigKey = konfig.Get(j).GetForConvert("konfigKey").AsMap();
+                var mfl = konfigKey.Get("munkafolyamatLepes");
+                var mtcs = konfigKey.Get("munkatarsCsoport");
+                var konfigMod = konfig.Get(j).GetForConvert("konfigMod").AsMap();
+                var isDefault = dftMapping.GetReverse(konfigMod.Get("default"));
+                var nezetMod = konfig.Get(j).Get("nezetMod");
+                var lathato = lathatoMapping.GetReverse(nezetMod);
+                
+
+                konfigW.AddEmptyRow().
+                    AddCol("csop", mtcs).
+                    AddCol("mfl", mfl).
+                    AddCol("urlap", urlapNev).
+                    AddCol("lathato", lathato).
+                    AddCol("dft", isDefault);
+                
+            }
+        }
+        
+        var konfigT = konfigW.Finalize();
+        
+        var mtcsLista = fileData.AsJSONToSIMap().GetForConvert("munkatarsCsoportok").AsITable();
+        var mflReszletek = fileData.AsJSONToSIMap().GetForConvert("munkafolyamatLepesek").AsITable();
+        for(var i=0;i<mflReszletek.Len();i++) {
+            var kod = mflReszletek.Get(i).Get("kod");
+            for(var j=0;j<mtcsLista.Len();j++) {
+                var mtcs = mtcsLista.Get(j).Get("nev");
+                if(konfigT.RowsSelectByVal("mfl", kod).RowsSelectByVal("csop", mtcs).Len() == 0) {
+                    Api().Logger().Info("hiányzik:", kod, mtcs);
+                    var urlapNev = urlapKonfig.Get(0).Get("urlap");
+                    konfigW.AddEmptyRow().
+                        AddCol("csop", mtcs).
+                        AddCol("mfl", kod).
+                        AddCol("urlap", urlapNev).
+                        AddCol("lathato", "").
+                        AddCol("dft", false);
+                }
+            }
+        }
+        
+        CompByCr("configData").SetProp("DataSet", konfigW.Finalize());
+        
+        CompCtx().SetProp("mflReszletek", mflReszletek);
+        
+        CompByCr("UgyCimke").SetProp("text", ugyletTipusok.Get(0).Get("nev")).Refresh();
+        CompByCr("buttonExportSQLBe").SetProp("fileName", CompCtx().GetProp("fileName")).Refresh();
+        CompByCr("buttonExportJSONBa").SetProp("fileName", CompCtx().GetProp("fileName")).Refresh();
+        CompByCr("importVisibility").SetProp("visible", false).Refresh();
+        CompByCr("muveletVisibility").SetProp("visible", true).Refresh();
+        CompByCr("inFileSQLScript").ForwardEvent("convertData");
+- compType: in/file
+  label: Import Db csv
+  cr: inFileImportDbCsv
+  showDownload: no
+  eventHandlers:
+    onUploadComplete:
+      action: |
+        var fileData = Event().GetParamToCast("binaryData").AsBinaryData();
+        var rawTable = fileData.CreateParser().
+        SetExtractor("([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([0-9]+),([0-9]+)", "ugy,urlap,csop,mfl,lathato,dft,sorrend", "%s,%s,%s,%s,%s,%d,%d").
+        Extract();
+        var configTable = rawTable.Copy().ColsView("csop","mfl","urlap","lathato","dft");
+        var urlapSorrend = rawTable.Copy().ColsView("ugy","urlap","sorrend").Distinct().AscBy("sorrend");
+        Api().Logger().Info("configTable", configTable.Len(), configTable);
+        Api().Logger().Info("urlapSorrend", urlapSorrend.Len(), urlapSorrend);
+        
+        var ugy = urlapSorrend.ColView("ugy").Get(0).Get("ugy");
+        
+        CompByCr("configData").SetProp("DataSet", configTable);
+        CompByCr("urlapData").SetProp("DataSet", urlapSorrend);
+        CompByCr("UgyCimke").SetProp("text", ugy).Refresh();
+
+        CompByCr("buttonExportSQLBe").SetProp("fileName", CompCtx().GetProp("fileName")).Refresh();
+        CompByCr("importVisibility").SetProp("visible", false).Refresh();
+        CompByCr("muveletVisibility").SetProp("visible", true).Refresh();
+        CompByCr("inFileSQLScript").ForwardEvent("convertData");
+- compType: in/file
+  label: Import SQL script
+  cr: inFileSQLScript
+  showDownload: no
+  eventHandlers:
+    convertData:
+      action: |
+        var configTable = CompByCr("configData").GetPropToCast("DataSet").AsITable().Copy();
+        var urlapSorrend = CompByCr("urlapData").GetPropToCast("DataSet").AsITable();
+        configTable.ColReplaceVal("dft", 1, "d").
+        ColReplaceVal("dft", 0, "").ColJoinBySeparator("lathato", "dft", "lathato", ";");
+        var mfls = configTable.ColView("mfl").Distinct();
+        CompByCr("inPrefixSuggestMunkafolyamatlepesAlapjan").SetProp("data", mfls);
+        var urlapok = configTable.ColView("urlap").Distinct();
+        CompByCr("inPrefixSuggestUrlapAlapjan").SetProp("data", urlapok);
+        var csoportok = configTable.ColView("csop").Distinct();
+        CompByCr("inPrefixSuggestCsoportAlapjan").SetProp("data", csoportok);
+        
+        CompByCr("urlapData").Refresh();
+        var confByCsop = configTable.GroupBy("csop", "csopData");
+        for (i = 0; i < confByCsop.Len(); i++) {
+          var csop = confByCsop.Get(i);
+          var csopData = csop.GetForConvert("csopData").AsITable();
+          var csopMatrix = csopData.MatrixView("urlap", "mfl", "lathato");
+          var csopReoder = csopMatrix.Data().ReoderBy("urlap", urlapSorrend);
+          csopMatrix.SetData(csopReoder);
+          var csopheader = csopMatrix.Header().ColAddWithVal("vertical", true);
+          csopheader.Get(0).Put("vertical", false);
+          csop.Put("csopData", csopMatrix);
+          Api().Logger().Info("csop", i, "finished" );
+        }
+        CompByCr("hlpMultipleHelper").SetProp("value", confByCsop);
+        CompByCr("csoportok").SetProp("nrRows", confByCsop.Len()).Refresh();
+    onUploadComplete:
+      action: |
+        var fileData = Event().GetParamToCast("binaryData").AsBinaryData();
+        var configTable = fileData.CreateParser().
+        SetExtractor("VALUES \\('([^']*)', '([^']*)', '([^']*)', '([^']*)', ([0-9]+)\\)", "csop,mfl,urlap,lathato,dft", "%s,%s,%s,%s,%d").
+        Extract();
+        var urlapSorrend = fileData.CreateParser().
+        SetExtractor("urlapkonfigimport.urlap_konfig_sorrend_utp\\('([^']*)', '([^']*)', '([0-9]+)'\\);", "ugy,urlap,sorrend", "%s,%s,%d").
+        Extract();
+        var ugy = urlapSorrend.ColView("ugy").Get(0).Get("ugy");
+        
+        CompByCr("configData").SetProp("DataSet", configTable);
+        CompByCr("urlapData").SetProp("DataSet", urlapSorrend);
+        CompByCr("UgyCimke").SetProp("text", ugy).Refresh();
+
+        CompByCr("importVisibility").SetProp("visible", false).Refresh();
+        CompByCr("muveletVisibility").SetProp("visible", true).Refresh();
+        CompByCr("buttonExportSQLBe").SetProp("fileName", CompCtx().GetProp("fileName")).Refresh();
+        CompCtx().ForwardEvent("convertData");
+- compType: hlp/multipleHelper
+  cr: hlpMultipleHelper
+  dummy: dummyval
+- compType: cnr/repeat
+  cr: csoportok
+  nrRows: 0
+  regenerateOnRefresh: true
+- compType: label
+  cr: csopCimke
+  multiKey: csop
+  multiTargetProp: text
+- compType: datatable
+  cr: configDataCsop
+  multiKey: csopData
+  multiTargetProp: htable
+  eventHandlers:
+    cellUpdate:
+      action: |
+        var key = Event().GetParam("key");
+        var data = Event().GetParamToCast("data").AsITable();
+        var row = Event().GetParam("row");
+        var col = Event().GetParam("col");
+        var value = Event().GetParam("oldValue");
+        if (!value) {
+            value = '';
+        }
+        var valueTokens = value.split(';');
+        var oldValue = valueTokens[0];
+        var dft = (valueTokens.length > 1 && valueTokens[1] == 'd') ? ';d' : '';
+        var newValue = '*';
+        var delDftinCol = false;
+        if(key == '-') {
+            newValue = '';
+            dft = '';
+        }
+        if(key == 'l') {
+            newValue = 'L';
+        }
+        if(key == 'm') {
+            newValue = 'M';
+        }
+        if(key == 'k') {
+            newValue = 'K';
+        }
+        if(key == 'j') {
+            newValue = 'MJ';
+        }
+        if(key == 'p') {
+            newValue = 'P';
+        }
+        if(key == 'd' && value) {
+            dft = ';d';
+            newValue = oldValue;
+            delDftinCol = true;
+        }
+        if(delDftinCol) {
+            for(var i=0;i<data.Len();i++) {
+                var colVal = data.Get(i).Get(col);
+                if(colVal) {
+                    var colTokens = colVal.split(';');
+                    data.Get(i).Put(col, colTokens[0]);
+                }
+            }
+        }
+        if(newValue != '*') {
+            data.Get(row).Put(col, newValue+dft);
+            CompCtx().Refresh();
+            var buttonSave = CompByCr("buttonManualisModositasokMentese");
+            if(buttonSave.GetProp("disabled")) {
+                buttonSave.SetProp("disabled", false).Refresh();
+            }
+        }
+- compType: label
+  cr: UgyCimke
+- compType: datalist
+  columns:
+    - header: "Űrlap"
+      key: urlap
+    - header: "Sorrend"
+      key: sorrend
+  cr: urlapData
+- compType: textbox
+  label: Új munkafolyamatlépés
+  cr: textboxUjMunkafolyamatlepes
+- compType: labeledTable
+  cr: Muveletek
+- compType: in/prefixSuggest
+  label: Munkafolyamatlépés Alapján
+  cr: inPrefixSuggestMunkafolyamatlepesAlapjan
+  eventHandlers:
+    filter:
+      action: |
+        var search = Event().GetParam("searchPrefix");
+        CompCtx().GetPropToCast("data").AsITable().ExprLikeContains("mfl", search).Select();
+  keyColumn: "mfl"
+  descrColumn: "mfl"
+  searchResultDisplayColumns:
+    - mfl
+- compType: button
+  text: Létrehoz
+  cr: buttonLetrehoz
+  eventHandlers:
+    onclick:
+      action: |
+        var mflAlap = CompByCr("inPrefixSuggestMunkafolyamatlepesAlapjan").GetProp("value");
+        var mflUj = CompByCr("textboxUjMunkafolyamatlepes").GetProp("value");
+        var configTable = CompByCr("configData").GetPropToCast("DataSet").AsITable();
+        var mflAlapTable = configTable.RowsSelectByVal("mfl", mflAlap).Copy();
+        var mlfUjTable = mflAlapTable.ColReplaceVal("mfl", mflAlap, mflUj);
+        configTable = configTable.AddTable(mlfUjTable);
+        CompByCr("configData").SetProp("DataSet", configTable);
+        CompByCr("inFileSQLScript").ForwardEvent("convertData");
+- compType: textbox
+  label: Új űrlap
+  cr: textboxUjUrlap
+- compType: textbox
+  label: Új űrlap sorrend
+  cr: textboxUjUrlapSorrend
+- compType: in/prefixSuggest
+  label: Űrlap Alapján
+  cr: inPrefixSuggestUrlapAlapjan
+  eventHandlers:
+    filter:
+      action: |
+        var search = Event().GetParam("searchPrefix");
+        CompCtx().GetPropToCast("data").AsITable().ExprLikeContains("urlap", search).Select();
+  keyColumn: "urlap"
+  descrColumn: "urlap"
+  searchResultDisplayColumns:
+    - urlap
+- compType: button
+  text: Űrlapot Létrehoz
+  cr: buttonUrlapotLetrehoz
+  eventHandlers:
+    onclick:
+      action: |
+        var urlapAlap = CompByCr("inPrefixSuggestUrlapAlapjan").GetProp("value");
+        var urlapUj = CompByCr("textboxUjUrlap").GetProp("value");
+        var urlapSeq = CompByCr("textboxUjUrlapSorrend").GetProp("value");
+        var configTable = CompByCr("configData").GetPropToCast("DataSet").AsITable();
+        var urlapSorrend = CompByCr("urlapData").GetPropToCast("DataSet").AsITable();
+        
+        var urlapAlapTable = configTable.RowsSelectByVal("urlap", urlapAlap).Copy();
+        var urlapUjTable = urlapAlapTable.ColReplaceVal("urlap", urlapAlap, urlapUj);
+        configTable = configTable.AddTable(urlapUjTable);
+        
+        var urlapSorrendAlapTable = urlapSorrend.RowsSelectByVal("urlap", urlapAlap).Copy();
+        var urlapSorrendUjTable = urlapSorrendAlapTable.ColReplaceVal("urlap", urlapAlap, urlapUj);
+        urlapSorrendUjTable.Get(0).Put("sorrend", urlapSeq);
+        urlapSorrend = urlapSorrend.AddTable(urlapSorrendUjTable);
+        
+        CompByCr("configData").SetProp("DataSet", configTable);
+        CompByCr("urlapData").SetProp("DataSet", urlapSorrend).Refresh();
+        CompByCr("inFileSQLScript").ForwardEvent("convertData");
+- compType: textbox
+  label: Új csoport
+  cr: textboxUjCsoport
+- compType: in/prefixSuggest
+  label: Csoport Alapján
+  cr: inPrefixSuggestCsoportAlapjan
+  eventHandlers:
+    filter:
+      action: |
+        var search = Event().GetParam("searchPrefix");
+        CompCtx().GetPropToCast("data").AsITable().ExprLikeContains("csop", search).Select();
+  keyColumn: "csop"
+  descrColumn: "csop"
+  searchResultDisplayColumns:
+    - csop
+- compType: button
+  text: Csoportot Létrehoz
+  cr: buttonCsoportotLetrehoz
+  eventHandlers:
+    onclick:
+      action: |
+        var csoportAlap = CompByCr("inPrefixSuggestCsoportAlapjan").GetProp("value");
+        var csoportUj = CompByCr("textboxUjCsoport").GetProp("value");
+
+        var configTable = CompByCr("configData").GetPropToCast("DataSet").AsITable();
+
+        var csopAlapTable = configTable.RowsSelectByVal("csop", csoportAlap).Copy();
+        var csopUjTable = csopAlapTable.ColReplaceVal("csop", csoportAlap, csoportUj);
+        configTable = configTable.AddTable(csopUjTable);
+        
+        CompByCr("configData").SetProp("DataSet", configTable);
+        CompByCr("inFileSQLScript").ForwardEvent("convertData");
+- compType: button
+  text: Manuális módosítások mentése
+  cr: buttonManualisModositasokMentese
+  disabled: yes
+  eventHandlers:
+    onclick:
+      action: |
+        var mode = CompByCr("dataShared").GetProp("mode");
+        var csoportok = CompByCr("csoportok");
+        var nrCsop = csoportok.GetProp("nrRows");
+        var dst = Api().Arrays().NewITableW();
+        for(var i=0;i<nrCsop;i++) {
+            var csopHTable = csoportok.CompByIndexAndCr(i, "configDataCsop").
+            GetPropToCast("htable").AsHTable();
+            var csop = csoportok.CompByIndexAndCr(i, "csopCimke").GetProp("text");
+            var hdr = csopHTable.Header();
+            var data = csopHTable.Data();
+            
+            for(var d=0;d<data.Len();d++) {
+                var row = data.Get(d);
+                for(var h=1;h<hdr.Len();h++) {
+                    var mfl = hdr.Get(h).Get("header");
+                    var lathdef = row.Get(mfl);
+                    if (mode == "json" || lathdef) {
+                        var lathdefTokens = lathdef ? lathdef.split(';') : null;
+                        var lathato = lathdefTokens ? lathdefTokens[0] : "";
+                        var dft = (lathdefTokens && lathdefTokens.length > 1) ? 1 : 0;
+                        dst.RowToInsert().
+                        AddCol("csop", csop).
+                        AddCol("mfl", mfl).
+                        AddCol("urlap", row.Get("urlap")).
+                        AddCol("lathato", lathato).
+                        AddCol("dft", dft).Append();
+                    }
+                }
+            }
+        }
+        dst = dst.Finalize();
+        CompByCr("configData").SetProp("DataSet", dst);
+        CompCtx().SetProp("disabled", true).Refresh();
+- compType: datalist
+  columns:
+    - header: "Csoport"
+      key: csop
+    - header: "Mfl"
+      key: mfl
+    - header: "Űrlap"
+      key: urlap
+    - header: "Láthatóság"
+      key: lathato
+    - header: "Default űrlap"
+      key: dft
+  cr: configData
+- compType: ctrl/downloadbutton
+  text: Export SQL-be
+  cr: buttonExportSQLBe
+  eventHandlers:
+    download:
+      action: |
+        var configTable = CompByCr("configData").GetPropToCast("DataSet").AsITable();
+        var urlapSorrend = CompByCr("urlapData").GetPropToCast("DataSet").AsITable();
+        var ugy = CompByCr("UgyCimke").GetProp("text");
+        var template = CompByCr("dataTemplate").GetProp("template");
+        var templateData = Api().Arrays().NewSIMap();
+        templateData.Put("config", configTable);
+        templateData.Put("urlap", urlapSorrend);
+        templateData.Put("ugy", ugy);
+        Api().Logger().Info("genetaing template");
+        Api().Logger().Info("res:", Api().Text().CreateTemplate(template).Render(templateData));
+        var binResult = Api().Text().CreateTemplate(template).RenderBinary(templateData);
+        CompCtx().SetBinaryResponse("text/sql", binResult);
+- compType: ctrl/downloadbutton
+  text: Export JSON-ba
+  cr: buttonExportJSONBa
+  eventHandlers:
+    download:
+      action: |
+        var configTable = CompByCr("configData").GetPropToCast("DataSet").AsITable();
+        var urlapSorrend = CompByCr("urlapData").GetPropToCast("DataSet").AsITable();
+        var ugy = CompByCr("UgyCimke").GetProp("text");
+        var template = CompByCr("jsonTemplate").GetProp("template");
+        var templateData = Api().Arrays().NewSIMap();
+        var mflTable = configTable.ColView("mfl").Distinct();
+        var mtcsTable = configTable.ColView("csop").Distinct();
+        var mflReszletek = CompByCr("inFileImportUconfJson").GetPropToCast("mflReszletek").AsITable();
+        var lathatoMapping = CompByCr("dataShared").GetPropToCast("lathatoMapping").AsValueMapping();
+        var dftMapping = CompByCr("dataShared").GetPropToCast("dftMapping").AsValueMapping();
+        configTable = configTable.RemapColView("lathato", lathatoMapping, false)
+        .RemapColView("dft", dftMapping, false);
+        templateData.Put("config", configTable);
+        templateData.Put("urlap", urlapSorrend);
+        templateData.Put("konfByurlap", configTable.GroupBy("urlap", "grp"));
+        templateData.Put("ugy", ugy);
+        templateData.Put("mfl", mflTable.LeftJoinView("mfl", "kod", mflReszletek));
+        templateData.Put("mtcs", mtcsTable);
+        Api().Logger().Info("genetaing template");
+        Api().Logger().Info("res:", Api().Text().CreateTemplate(template).Render(templateData));
+        var binResult = Api().Text().CreateTemplate(template).RenderBinary(templateData);
+        CompCtx().SetBinaryResponse("text/sql", binResult);
+- compType: data/template
+  template: |
+    --
+    -- Generálta a uconf
+    --
+    TRUNCATE TABLE FTR_URLAPKONFIGIMPORT_TMP;
+
+    /* URLAP IMPORT INSERTS */
+    BEGIN
+    /* {{$.ugy}} */
+    INSERT ALL
+    {{- range $k,$v := $.config}}
+      INTO ftr_urlapkonfigimport_tmp (MFLCSOPORTNEV, MUNKAFOLYAMATLEPESNEV, URLAPSABLONNEV, LATHATOSAG, DEFAULT_URLAP) VALUES ('{{$v.csop}}', '{{$v.mfl}}', '{{$v.urlap}}', '{{$v.lathato}}', {{$v.dft}})
+    {{- end}}
+    select * from dual;
+    END;
+    /
+    
+    /* URLAP IMPORT PROCEDURE */
+    BEGIN
+      urlapkonfigimport.import('{{$.ugy}}');
+    END;
+    /
+
+    /* URLAPSORREND */
+    BEGIN
+    /* {{$.ugy}} */
+    {{- range $k,$v := $.urlap}}
+      urlapkonfigimport.urlap_konfig_sorrend_utp('{{$v.ugy}}', '{{$v.urlap}}', '{{$v.sorrend}}');
+    {{- end}}
+    END;
+    /
+    
+
+  cr: dataTemplate
+- compType: data/template
+  cr: jsonTemplate
+  template: |
+    {
+      "munkafolyamatLepesek": [
+      {{- range $index,$v := $.mfl}}
+        {{- if $index}},{{end}}
+        {
+          "kod": "{{$v.mfl}}",
+          "nev": "{{$v.nev}}"
+        }
+      {{- end}}
+      ],
+      "munkatarsCsoportok": [
+      {{- range $index,$v := $.mtcs}}
+        {{- if $index}},{{end}}
+        {
+          "nev": "{{$v.csop}}"
+        }
+      {{- end}}
+      ],
+      "mxLepesCsoport": [],
+      "ugyletTipusok": [
+        {
+          "lepesek": [
+          {{- range $index,$v := $.mfl}}
+          {{- if $index}},{{end}}
+            "{{$v.mfl}}"
+          {{- end}}
+          ],
+          "munkatarsCsoportok": [
+          {{- range $index,$v := $.mtcs}}
+          {{- if $index}},{{end}}
+            "{{$v.csop}}"
+          {{- end}}
+          ],
+          "nev": "{{$.ugy}}",
+          "ugyletTipusAdatok": [
+            {{- range $idx1,$v := $.konfByurlap}}
+            {{- if $idx1}},{{end}}
+            {
+              "konfig": [
+                {{- range $idx2,$uv := $v.grp }}
+                {{- if $idx2}},{{end}}
+                {
+                  "konfigKey": {
+                    "munkafolyamatLepes": "{{$uv.mfl}}",
+                    "munkatarsCsoport": "{{$uv.csop}}"
+                  },
+                  "konfigMod": {
+                    "default": {{$uv.dft}},
+                    "megjegyzesLathato": false,
+                    "megjegyzesSzerkeszt": false,
+                    "nemMentendo": false
+                  },
+                  "nezetMod": "{{$uv.lathato}}"
+                }
+                {{- end}}
+              ],
+              "urlap": "{{$v.urlap}}"
+            }
+            {{- end}}
+          ]
+        }
+      ],
+      "urlapok": [
+        {{- range $idx1,$v := $.konfByurlap}}
+        {{if $idx1}},{{end}}{
+          "nev": "{{$v.urlap}}"
+        }
+        {{- end}}
+      ]
+    }

@@ -1,0 +1,38 @@
+---
+- compType: page
+  tree:
+    - styBackground
+    - dialogContainerBelepes:
+        - labeledTable:
+            - textboxFelhasznalonev
+            - passwordboxJelszo
+            - buttonBelepes
+- compType: dialogContainer
+  title: Belépés
+  cr: dialogContainerBelepes
+- compType: labeledTable
+  cr: labeledTable
+- compType: textbox
+  label: Felhasználónév
+  cr: textboxFelhasznalonev
+  value: uconf
+- compType: passwordbox
+  label: Jelszó
+  cr: passwordboxJelszo
+  value: uconf
+- compType: sty/background
+  imageFileName: 'nyaj.jpg'
+  cr: styBackground
+- compType: button
+  text: Belépés
+  cr: buttonBelepes
+  eventHandlers:
+    onclick:
+      action: |
+        var felh = CompByCr("textboxFelhasznalonev").GetProp("value");
+        var pwd = CompByCr("passwordboxJelszo").GetProp("value");
+        if(felh == "uconf" && pwd == "uconf") {
+            Event().GetSession().SetAuthUser(felh);
+            Event().GetSession().SetAuthRole("uconf");
+            CompCtx().LoadUnit("uconf/menu");
+        }

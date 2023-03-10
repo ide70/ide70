@@ -141,20 +141,6 @@ func (s *AppServer) Start() error {
 func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	logger.Debug("Incoming:", r.URL.Path)
 
-	//s.addHeaders(w)
-
-	// Check session
-	var sess *comp.Session
-	c, err := r.Cookie(sessidCookieName)
-	if err == nil {
-		s.sessMux.RLock()
-		sess = s.sessions[c.Value]
-		s.sessMux.RUnlock()
-	}
-	/*if sess == nil {
-		sess = &s.sessionImpl
-	}*/
-
 	// Parts example: "/appname/winname/e?et=0&cid=1" => {"", "appname", "winname", "e"}
 	// Parts example: "/appname/action/unitName" => {"", "appname", "action", "unitName1", "unigNameN"}
 	parts := strings.Split(r.URL.Path, "/")
@@ -174,12 +160,22 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	action := parts[0]
-	logger.Debug("action:", action)
+	accessPrefix := parts[0]
+	logger.Debug("accessPrefix:", accessPrefix)
+	
+	// Check session
+	var sess *comp.Session
+	c, err := r.Cookie(sessidCookieName + accessPrefix)
+	if err == nil {
+		s.sessMux.RLock()
+		sess = s.sessions[c.Value]
+		s.sessMux.RUnlock()
+	}
 
+	action := parts[1]
 	switch action {
 	case pathEvent, pathRenderComp, comp.PathUnitById:
-		unitId := parts[1]
+		unitId := parts[2]
 		if sess == nil {
 			logger.Error("no session for event")
 			http.NotFound(w, r)
@@ -217,8 +213,8 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 
 		if sess == nil {
 			if s.App.Access.LoginUnits[unitName] {
-				sess = s.newSession(nil, action)
-				s.addSessCookie(sess, w)
+				sess = s.newSession(nil, accessPrefix)
+				s.addSessCookie(sess, w, accessPrefix)
 				logger.Debug("session created:", sess.ID)
 			} else {
 				http.Error(w, "no session", http.StatusUnauthorized)
@@ -226,14 +222,14 @@ func (s *AppServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		if (!sess.IsAuthenticated() || !sess.Accessible(action)) && !s.App.Access.LoginUnits[unitName] {
+		if (!sess.IsAuthenticated() || !sess.Accessible(accessPrefix)) && !s.App.Access.LoginUnits[unitName] {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 
 		logger.Debug("new unit runtime...")
 		passParamId := r.FormValue(comp.ParamPassParamID)
-		unit := comp.InstantiateUnit(unitName, s.App, s.AppParams, sess.GetPassParameters(passParamId))
+		unit := comp.InstantiateUnit(unitName, s.App, s.AppParams, sess.GetPassParameters(passParamId), sess)
 		if unit == nil {
 			logger.Error("no unit found by name:", unitName)
 			http.NotFound(w, r)
@@ -750,12 +746,12 @@ func (s *AppServer) removeSession(sess *comp.Session) {
 	delete(s.sessions, sess.ID)
 }
 
-func (s *AppServer) addSessCookie(sess *comp.Session, w http.ResponseWriter) {
+func (s *AppServer) addSessCookie(sess *comp.Session, w http.ResponseWriter, action string) {
 	// HttpOnly: do not allow non-HTTP access to it (like javascript) to prevent stealing it...
 	// Secure: only send it over HTTPS
 	// MaxAge: to specify the max age of the cookie in seconds, else it's a session cookie and gets deleted after the browser is closed.
 	c := http.Cookie{
-		Name: sessidCookieName, Value: sess.ID,
+		Name: sessidCookieName + action, Value: sess.ID,
 		Path:     s.App.URL.EscapedPath(),
 		HttpOnly: true, Secure: s.Secure,
 		MaxAge: 72 * 60 * 60, // 72 hours max age

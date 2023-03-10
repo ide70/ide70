@@ -151,6 +151,11 @@ var YamlHighlightRules = function() {
                 next : "templateFunc"
             },
             {
+                token : "template.function",
+                regex : /\{\{- \w/,
+                next : "templateFunc"
+            },
+            {
                 token : "string",
                 regex : /[^{]+/
             }

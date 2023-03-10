@@ -30,6 +30,10 @@ func (bd *BinaryData) CreateParser() *Parser {
 	return &Parser{text: string(*bd.GetData())}
 }
 
+func (bd *BinaryData) AsJSONToSIMap() SIMap {
+	return JsonToSIMap(string(*bd.GetData()))
+}
+
 func (p *Parser) SetSplitBySep(sep string) *Parser {
 	p.splitter = &SplitBySep{sep: sep}
 	return p

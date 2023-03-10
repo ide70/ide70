@@ -44,6 +44,10 @@ func (as *Arrays) NewSIMap() SIMap {
 	return SIMap{}
 }
 
+func (as *Arrays) NewValueMapping() *ValueMapping {
+	return &ValueMapping{m: map[interface{}]interface{}{}, rm: map[interface{}]interface{}{}}
+}
+
 func (t ITable) Change() *ITableW {
 	return &ITableW{t: t}
 }
@@ -74,6 +78,30 @@ func (tw *ITableW) AddEmptyRow() *ITableW {
 
 func (tw *ITableW) RowToInsert() *RowToInsert {
 	return &RowToInsert{itablew: tw, row: SIMap{}}
+}
+
+type ScanElement struct {
+	scanExpr string
+	target string
+}
+
+type ScanConfig struct {
+	m *SIMap
+	elements []*ScanElement
+}
+
+func (m SIMap) ScanConfig() *ScanConfig {
+	return &ScanConfig{m :&m}
+}
+
+func (scfg *ScanConfig) AddScanElement(scanExpr, target string) *ScanConfig {
+	scfg.elements = append(scfg.elements, &ScanElement{scanExpr: scanExpr, target:target})
+	return scfg
+}
+
+func (scfg *ScanConfig) ScanToTable() ITable {
+	t := ITable{}
+	return t
 }
 
 func (m SIMap) HasKey(keyIf interface{}) bool {

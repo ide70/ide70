@@ -14,6 +14,10 @@ unitInterface:
       descr: Persistence key
       valueCompleter:
         completerRef: dbFieldCompleter
+    showDownload:
+      descr: Show download link, default yes
+      default: yes
+      type: boolean
   events:
     onUploadComplete:
       descr: Fires when upload completes
@@ -35,7 +39,9 @@ body: |
       {{if ne $.progress -1}}<div class="progess-holder">
         <div class="progress-bar" style="width: {{.progress}}%"></div>
       </div>{{end}}
+      {{if $.showDownload}}
       {{if $.value}}<a href="{{eventHandlerFileDownload $.This "download"}}">Download</a>{{end}}
+      {{end}}
     </span>
   </div>
 eventHandlers:

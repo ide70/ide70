@@ -1,0 +1,6 @@
+---
+unitInterface:
+  descr: Shared data conatiner
+  properties:
+    data:
+      descr: Arbitary shared data

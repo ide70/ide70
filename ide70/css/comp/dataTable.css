@@ -17,3 +17,21 @@ table.datatable tr:nth-child(even) {
 table.datatable td:focus {
     background-color: lightblue;
 }
+
+table.datatable th.vertical {
+    writing-mode: vertical-lr;
+}
+
+/* table.datatable th.vertical {
+    text-align:center;
+    white-space:nowrap;
+    transform-origin:50% 50%;
+    transform: rotate(90deg);
+
+
+table.datatable th.vertical:before {
+    content:'';
+    padding-top:110%;
+    display:inline-block;
+    vertical-align:middle;
+}*/

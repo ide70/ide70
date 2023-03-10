@@ -20,6 +20,7 @@ type UnitRuntime struct {
 	Application      *app.Application
 	IDSeq            int64
 	appParams *AppParams
+	session			*Session
 }
 
 type AppParams struct {
@@ -39,13 +40,14 @@ func (unit *UnitRuntime) registerComp(compRuntime *CompRuntime) {
 	unit.CompByChildRefId[compRuntime.ChildRefId()] = compRuntime
 }
 
-func InstantiateUnit(name string, app *app.Application, appParams *AppParams, passContext *PassContext) *UnitRuntime {
+func InstantiateUnit(name string, app *app.Application, appParams *AppParams, passContext *PassContext, session *Session) *UnitRuntime {
 	unitRuntime := &UnitRuntime{}
 	unitRuntime.appParams = appParams
 	unitRuntime.PassContext = passContext
 	unitRuntime.Application = app
 	unitRuntime.CompRegistry = map[int64]*CompRuntime{}
 	unitRuntime.CompByChildRefId = map[string]*CompRuntime{}
+	unitRuntime.session = session
 	unitDef, has := UnitDefCache[name]
 
 	if !has {
@@ -61,6 +63,7 @@ func InstantiateUnit(name string, app *app.Application, appParams *AppParams, pa
 
 	unitRuntime.UnitDef = unitDef
 	unitRuntime.RootComp = InstantiateComp(unitDef.RootComp, unitRuntime, nil)
+	unitRuntime.RootComp.State["_accessPrefix"] = session.GetAccessPrefix()
 	for _, comp := range unitDef.UnattachedComps {
 		InstantiateComp(comp, unitRuntime, nil)
 	}

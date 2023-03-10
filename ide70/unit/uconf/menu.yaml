@@ -1,0 +1,21 @@
+---
+- compType: page
+  tree:
+    - navmenu
+    - mainPanel
+- compType: navmenu
+  structure:
+    - name: Uconf
+      loadUnit: uconf/uconf
+    - name: Kijelentkezés
+      alignRight: yes
+      fireEvent: logout
+  cr: navmenu
+  loadTarget: mainPanel
+  eventHandlers:
+    logout:
+      action: |
+        Event().ClearAuthentication();
+        Event().LoadUnit("uconf/login");
+- compType: mainPanel
+  cr: mainPanel

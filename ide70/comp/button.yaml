@@ -5,12 +5,16 @@ unitInterface:
     text:
       descr: Label on button
       mandatory: yes
+    disabled:
+      descr: Disabled state
   events:
     onclick: 
       descr: Button pressed
 include:
   - common
 body: |
-  <button type="button" id="{{.sid}}"{{template "eventHandlers" .}}>
+  <button type="button" id="{{.sid}}"{{template "eventHandlers" .}}{{if .disabled}} disabled{{end}}>
   {{.text}}
   </button>
+eventHandlers:
+  

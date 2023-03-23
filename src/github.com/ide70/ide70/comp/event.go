@@ -77,7 +77,7 @@ type EventRuntime struct {
 	MouseWX        int64
 	MouseWY        int64
 	KeyString      string
-	KCode		   int64
+	KCode          int64
 	Params         map[string]interface{}
 }
 
@@ -784,7 +784,7 @@ func newUnitRuntimeEventsHandler(unit *UnitRuntime) *UnitRuntimeEventsHandler {
 		return co
 	})
 	vm.Set("Api", func(call otto.FunctionCall) otto.Value {
-		result, _ := vm.ToValue(api.ApiInst)
+		result, _ := vm.ToValue(api.NewApi(vm))
 		return result
 	})
 
@@ -879,14 +879,22 @@ func (eh *UnitRuntimeEventsHandler) runJs(e *EventRuntime, jsCode string) interf
 	eh.exMutex.Lock()
 	defer eh.exMutex.Unlock()
 	eh.Vm.Set("currentEvent", e)
-	defer eh.Vm.Set("currentEvent", nil)
+	defer func() {
+		eh.Vm.Set("currentEvent", nil)
+	}()
 	//eventLogger.Debug("executing: ", jsCode)
 	//eventLogger.Debug("event: ", e)
 
 	eventLogger.Debug("Vm.Run: ", jsCode)
 	value, err := eh.Vm.Run(jsCode)
 	eventLogger.Debug("Vm.Run end")
+	
 	if err != nil {
+		// throwing exit in main block treated as normal termination
+		if err.Error() == "Error: exit" {
+			eventLogger.Debug("error is normal exit")
+			return nil
+		}
 		eventLogger.Error("error evaluating script:", jsCode, err.Error())
 	}
 	valueIf, err := value.Export()

@@ -145,6 +145,29 @@ func IIsInt(i interface{}) bool {
 	return false
 }
 
+func IIsNumber(i interface{}) bool {
+	if i == nil {
+		return false
+	}
+	switch i.(type) {
+	case int:
+		return true
+	case int8:
+		return true
+	case int16:
+		return true
+	case int32:
+		return true
+	case int64:
+		return true
+	case float32:
+		return true
+	case float64:
+		return true
+	}
+	return false
+}
+
 func IAsInt(i interface{}) int {
 	if i == nil {
 		return 0

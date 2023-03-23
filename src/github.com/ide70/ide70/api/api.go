@@ -13,14 +13,18 @@ import (
 	"sort"
 	"strings"
 	"unicode"
+	"github.com/robertkrimen/otto"
 )
 
 var logger = log.Logger{"api"}
 
 type API struct {
+	vm *otto.Otto;
 }
 
-var ApiInst = &API{}
+func NewApi(vm *otto.Otto) *API {
+	return &API{vm: vm}
+}
 
 func (a *API) Logger() *log.Logger {
 	return ApiLogger()
@@ -225,7 +229,7 @@ func (m SIMap) ValueList() IArray {
 }
 
 func (a IArray) Sort() IArray {
-	if len(a) > 0 && IIsInt(a[0]) {
+	if len(a) > 0 && IIsNumber(a[0]) {
 		sort.SliceStable(a, func(i, j int) bool {
 			ai := IAsInt64(a[i])
 			aj := IAsInt64(a[j])

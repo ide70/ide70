@@ -3,8 +3,7 @@ package api
 import (
 	"regexp"
 	"strings"
-	//"github.com/robertkrimen/otto"
-	//"reflect"
+	"github.com/robertkrimen/otto"
 )
 
 type Arrays struct {
@@ -31,9 +30,20 @@ type TableLike struct {
 	re *regexp.Regexp
 }
 
+type Function struct {
+	fn otto.Value;
+}
 
 func (a *API) Arrays() *Arrays {
 	return &Arrays{}
+}
+
+func (a *API) Function(name string) *Function {
+	fn, err := a.vm.Get(name)
+	if err != nil || !fn.IsFunction() {
+		return nil
+	}
+	return &Function{fn: fn}
 }
 
 func (as *Arrays) NewITableW() *ITableW {

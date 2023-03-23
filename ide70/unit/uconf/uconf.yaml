@@ -3,20 +3,12 @@
   tree:
     - muveletVisibility:
         - Muveletek:
-            - textboxUjMunkafolyamatlepes
-            - inPrefixSuggestMunkafolyamatlepesAlapjan
-            - buttonLetrehoz
-            - textboxUjUrlap
-            - textboxUjUrlapSorrend
-            - inPrefixSuggestUrlapAlapjan
-            - buttonUrlapotLetrehoz
-            - textboxUjCsoport
-            - inPrefixSuggestCsoportAlapjan
-            - buttonCsoportotLetrehoz
             - buttonExportSQLBe
             - buttonExportJSONBa
         - Betoltes2:
-            - UgyCimke
+            - horizontalBarUgy:
+                - UgyNevCimke
+                - UgyCimke
             - urlapData
         - buttonManualisModositasokMentese
     - importVisibility:
@@ -26,7 +18,34 @@
             - inFileSQLScript
     - csoportok:
         - csopCimke
-        - configDataCsop
+        - dataTableBar:
+            - configDataCsop
+            - dataTableVerticalBar:
+                - buttonNewMFL
+                - buttonNewUrlap
+                - buttonNewMtcs
+    - newMflDialog:
+        - dialogContainerUjMunkafolyamatlepes:
+            - newMflTable:
+                - textboxUjMunkafolyamatlepes
+                - inPrefixSuggestMunkafolyamatlepesAlapjan
+                - buttonNewMflMegse
+                - buttonLetrehoz
+    - newUrlapDialog:
+        - dialogContainerUjUrlap:
+            - newUrlapTable:
+                - textboxUjUrlap
+                - textboxUjUrlapSorrend
+                - inPrefixSuggestUrlapAlapjan
+                - buttonNewUrlapMegse
+                - buttonUrlapotLetrehoz
+    - newMtcsDialog:
+        - dialogContainerUjMtcs:
+            - newMtcsTable:
+                - textboxUjCsoport
+                - inPrefixSuggestCsoportAlapjan
+                - buttonNewMtcsMegse
+                - buttonCsoportotLetrehoz
 - compType: data/shared
   lathatoMapping:
     calc: |
@@ -217,10 +236,22 @@
   cr: csoportok
   nrRows: 0
   regenerateOnRefresh: true
+  expandable: no
 - compType: label
   cr: csopCimke
   multiKey: csop
   multiTargetProp: text
+- compType: button
+  text: "+MFL"
+  cr: buttonNewMFL
+  eventHandlers:
+    onclick:
+      action: |
+        CompByCr("newMflDialog").SetProp("visible", true).Refresh();
+- compType: horizontalBar
+  cr: dataTableBar
+- compType: cnr/verticalBar
+  cr: dataTableVerticalBar
 - compType: datatable
   cr: configDataCsop
   multiKey: csopData
@@ -232,6 +263,9 @@
         var data = Event().GetParamToCast("data").AsITable();
         var row = Event().GetParam("row");
         var col = Event().GetParam("col");
+        if(col == "urlap") {
+            throw new Error("exit");
+        }
         var value = Event().GetParam("oldValue");
         if (!value) {
             value = '';
@@ -282,6 +316,11 @@
                 buttonSave.SetProp("disabled", false).Refresh();
             }
         }
+- compType: horizontalBar
+  cr: horizontalBarUgy
+- compType: label
+  cr: UgyNevCimke
+  text: "Ügylet:"
 - compType: label
   cr: UgyCimke
 - compType: datalist
@@ -291,6 +330,14 @@
     - header: "Sorrend"
       key: sorrend
   cr: urlapData
+- compType: cnr/visibility
+  cr: newMflDialog
+  visible: false
+- compType: dialogContainer
+  title: Új munkafolyamatlépés
+  cr: dialogContainerUjMunkafolyamatlepes
+- compType: labeledTable
+  cr: newMflTable
 - compType: textbox
   label: Új munkafolyamatlépés
   cr: textboxUjMunkafolyamatlepes
@@ -309,6 +356,13 @@
   searchResultDisplayColumns:
     - mfl
 - compType: button
+  text: Mégse
+  cr: buttonNewMflMegse
+  eventHandlers:
+    onclick:
+      action: |
+        CompByCr("newMflDialog").SetProp("visible", false).Refresh();
+- compType: button
   text: Létrehoz
   cr: buttonLetrehoz
   eventHandlers:
@@ -317,11 +371,37 @@
         var mflAlap = CompByCr("inPrefixSuggestMunkafolyamatlepesAlapjan").GetProp("value");
         var mflUj = CompByCr("textboxUjMunkafolyamatlepes").GetProp("value");
         var configTable = CompByCr("configData").GetPropToCast("DataSet").AsITable();
-        var mflAlapTable = configTable.RowsSelectByVal("mfl", mflAlap).Copy();
-        var mlfUjTable = mflAlapTable.ColReplaceVal("mfl", mflAlap, mflUj);
-        configTable = configTable.AddTable(mlfUjTable);
+        if(!mflAlap) {
+            var csoportok = configTable.ColView("csop").Distinct();
+            var urlapok = configTable.ColView("urlap").Distinct();
+            var ujTable = csoportok.ColAddWithVal("mfl", mflUj)
+                .ColAddWithVal("urlap", urlapok.Get(0).Get("urlap"))
+                .ColAddWithVal("dft", 0)
+                .ColAddWithVal("lathato", "");
+            configTable = configTable.AddTable(ujTable);
+        } else {
+            var mflAlapTable = configTable.RowsSelectByVal("mfl", mflAlap).Copy();
+            var mlfUjTable = mflAlapTable.ColReplaceVal("mfl", mflAlap, mflUj);
+            configTable = configTable.AddTable(mlfUjTable);
+        }
         CompByCr("configData").SetProp("DataSet", configTable);
+        CompByCr("newMflDialog").SetProp("visible", false).Refresh();
         CompByCr("inFileSQLScript").ForwardEvent("convertData");
+- compType: button
+  text: "+Űrlap"
+  cr: buttonNewUrlap
+  eventHandlers:
+    onclick:
+      action: |
+        CompByCr("newUrlapDialog").SetProp("visible", true).Refresh();
+- compType: cnr/visibility
+  cr: newUrlapDialog
+  visible: false
+- compType: dialogContainer
+  title: Új űrlap
+  cr: dialogContainerUjUrlap
+- compType: labeledTable
+  cr: newUrlapTable
 - compType: textbox
   label: Új űrlap
   cr: textboxUjUrlap
@@ -341,6 +421,13 @@
   searchResultDisplayColumns:
     - urlap
 - compType: button
+  text: Mégse
+  cr: buttonNewUrlapMegse
+  eventHandlers:
+    onclick:
+      action: |
+        CompByCr("newUrlapDialog").SetProp("visible", false).Refresh();
+- compType: button
   text: Űrlapot Létrehoz
   cr: buttonUrlapotLetrehoz
   eventHandlers:
@@ -348,27 +435,56 @@
       action: |
         var urlapAlap = CompByCr("inPrefixSuggestUrlapAlapjan").GetProp("value");
         var urlapUj = CompByCr("textboxUjUrlap").GetProp("value");
-        var urlapSeq = CompByCr("textboxUjUrlapSorrend").GetProp("value");
+        var urlapSeq = CompByCr("textboxUjUrlapSorrend").GetPropToCast("value").AsInt64();
         var configTable = CompByCr("configData").GetPropToCast("DataSet").AsITable();
         var urlapSorrend = CompByCr("urlapData").GetPropToCast("DataSet").AsITable();
         
-        var urlapAlapTable = configTable.RowsSelectByVal("urlap", urlapAlap).Copy();
-        var urlapUjTable = urlapAlapTable.ColReplaceVal("urlap", urlapAlap, urlapUj);
-        configTable = configTable.AddTable(urlapUjTable);
+        if(!urlapAlap) {
+            var mflCsopTable = configTable.ColsView("mfl", "csop").Distinct();
+            var ujTable = mflCsopTable.ColAddWithVal("urlap", urlapUj)
+                .ColAddWithVal("dft", 0)
+                .ColAddWithVal("lathato", "");
+            configTable = configTable.AddTable(ujTable);
+        } else {
+            var urlapAlapTable = configTable.RowsSelectByVal("urlap", urlapAlap).Copy();
+            var urlapUjTable = urlapAlapTable.ColReplaceVal("urlap", urlapAlap, urlapUj);
+            configTable = configTable.AddTable(urlapUjTable);
+        }
         
-        var urlapSorrendAlapTable = urlapSorrend.RowsSelectByVal("urlap", urlapAlap).Copy();
-        var urlapSorrendUjTable = urlapSorrendAlapTable.ColReplaceVal("urlap", urlapAlap, urlapUj);
-        urlapSorrendUjTable.Get(0).Put("sorrend", urlapSeq);
-        urlapSorrend = urlapSorrend.AddTable(urlapSorrendUjTable);
+        var urlapSorrendUj = Api().Arrays().NewITableW();
+        urlapSorrendUj.AddCol("urlap", urlapUj).AddCol("sorrend", urlapSeq);
+        urlapSorrend = urlapSorrend.AddTable(urlapSorrendUj.Finalize()).AscBy("sorrend");
+        
+        var sorrendOszlopW = Api().Arrays().NewITableW();
+        for(var i=0;i<urlapSorrend.Len();i++) {
+            sorrendOszlopW.AddEmptyRow().AddCol("sorrend", (i+1)*10);
+        }
+        urlapSorrend = urlapSorrend.ColView("urlap").MergeView(sorrendOszlopW.Finalize());
         
         CompByCr("configData").SetProp("DataSet", configTable);
         CompByCr("urlapData").SetProp("DataSet", urlapSorrend).Refresh();
         CompByCr("inFileSQLScript").ForwardEvent("convertData");
+        CompByCr("newUrlapDialog").SetProp("visible", false).Refresh();
+- compType: button
+  text: "+Mtcs"
+  cr: buttonNewMtcs
+  eventHandlers:
+    onclick:
+      action: |
+        CompByCr("newMtcsDialog").SetProp("visible", true).Refresh();
+- compType: cnr/visibility
+  cr: newMtcsDialog
+  visible: false
+- compType: dialogContainer
+  title: Új munkatárs csoport
+  cr: dialogContainerUjMtcs
+- compType: labeledTable
+  cr: newMtcsTable
 - compType: textbox
-  label: Új csoport
+  label: Új munkatárs csoport
   cr: textboxUjCsoport
 - compType: in/prefixSuggest
-  label: Csoport Alapján
+  label: Munkatárs csoport alapján
   cr: inPrefixSuggestCsoportAlapjan
   eventHandlers:
     filter:
@@ -380,6 +496,13 @@
   searchResultDisplayColumns:
     - csop
 - compType: button
+  text: Mégse
+  cr: buttonNewMtcsMegse
+  eventHandlers:
+    onclick:
+      action: |
+        CompByCr("newMtcsDialog").SetProp("visible", false).Refresh();
+- compType: button
   text: Csoportot Létrehoz
   cr: buttonCsoportotLetrehoz
   eventHandlers:
@@ -389,13 +512,23 @@
         var csoportUj = CompByCr("textboxUjCsoport").GetProp("value");
 
         var configTable = CompByCr("configData").GetPropToCast("DataSet").AsITable();
-
-        var csopAlapTable = configTable.RowsSelectByVal("csop", csoportAlap).Copy();
-        var csopUjTable = csopAlapTable.ColReplaceVal("csop", csoportAlap, csoportUj);
-        configTable = configTable.AddTable(csopUjTable);
+        
+        
+        if(!csoportAlap) {
+            var mflUrlapTable = configTable.ColsView("mfl", "urlap").Distinct();
+            var ujTable = mflUrlapTable.ColAddWithVal("csop", csoportUj)
+                .ColAddWithVal("dft", 0)
+                .ColAddWithVal("lathato", "");
+            configTable = configTable.AddTable(ujTable);
+        } else {
+            var csopAlapTable = configTable.RowsSelectByVal("csop", csoportAlap).Copy();
+            var csopUjTable = csopAlapTable.ColReplaceVal("csop", csoportAlap, csoportUj);
+            configTable = configTable.AddTable(csopUjTable);
+        }
         
         CompByCr("configData").SetProp("DataSet", configTable);
         CompByCr("inFileSQLScript").ForwardEvent("convertData");
+        CompByCr("newMtcsDialog").SetProp("visible", false).Refresh();
 - compType: button
   text: Manuális módosítások mentése
   cr: buttonManualisModositasokMentese

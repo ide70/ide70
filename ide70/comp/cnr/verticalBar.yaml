@@ -1,0 +1,16 @@
+---
+unitInterface:
+  descr: Container displaying children vertically
+body: |
+  <table class="horizontal-bar">
+  {{range .Children}}
+    <tr>
+      <td>
+  {{evalComp .}}
+      </td>
+    </tr>
+  {{end}}
+  </table>
+injectRootComp:
+  css:
+    - name: comp/horizontalBar.css
